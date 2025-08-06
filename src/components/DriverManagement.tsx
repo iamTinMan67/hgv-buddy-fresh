@@ -1031,6 +1031,154 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
         </Grid>
       </TabPanel>
 
+      {/* Driver Status Tab */}
+      <TabPanel value={tabValue} index={5}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h6">Driver Status Management</Typography>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => {/* Add status handler */}}
+          >
+            Add Status
+          </Button>
+        </Box>
+
+        <Grid container spacing={3}>
+          {driverStatuses.map((status) => (
+            <Grid item xs={12} md={6} lg={4} key={status.id}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6">{status.driverName}</Typography>
+                    <Chip
+                      icon={getDriverStatusIcon(status.status)}
+                      label={status.status.charAt(0).toUpperCase() + status.status.slice(1)}
+                      color={getDriverStatusColor(status.status) as any}
+                      size="small"
+                    />
+                  </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    <strong>Start Date:</strong> {new Date(status.startDate).toLocaleDateString()}
+                  </Typography>
+                  {status.endDate && (
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>End Date:</strong> {new Date(status.endDate).toLocaleDateString()}
+                    </Typography>
+                  )}
+                  {status.reason && (
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Reason:</strong> {status.reason}
+                    </Typography>
+                  )}
+                  {status.notes && (
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Notes:</strong> {status.notes}
+                    </Typography>
+                  )}
+                  <Box sx={{ mt: 2 }}>
+                    <IconButton size="small">
+                      <Edit />
+                    </IconButton>
+                    <IconButton size="small" color="error">
+                      <Delete />
+                    </IconButton>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </TabPanel>
+
+      {/* Terminated Drivers Tab */}
+      <TabPanel value={tabValue} index={6}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h6">Terminated Driver Data Compliance</Typography>
+          <Button
+            variant="contained"
+            startIcon={<Archive />}
+            onClick={() => {/* Archive driver handler */}}
+          >
+            Archive Driver
+          </Button>
+        </Box>
+
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            <strong>Data Compliance Notice:</strong> All terminated driver data is retained for 3 years as per GDPR requirements. 
+            This includes wage settings, bank details, job history, timesheets, and incident reports.
+          </Typography>
+        </Alert>
+
+        <Grid container spacing={3}>
+          {terminatedDrivers.map((driver) => (
+            <Grid item xs={12} key={driver.id}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6">{driver.driverName}</Typography>
+                    <Chip
+                      icon={<Archive />}
+                      label="Archived"
+                      color="warning"
+                      size="small"
+                    />
+                  </Box>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Termination Date:</strong> {new Date(driver.terminationDate).toLocaleDateString()}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Reason:</strong> {driver.reason}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Final Pay Date:</strong> {new Date(driver.finalPayDate).toLocaleDateString()}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Data Retention Until:</strong> {new Date(driver.dataRetentionUntil).toLocaleDateString()}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Compliance Notes:</strong> {driver.complianceNotes}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle2" gutterBottom>
+                    Archived Data Summary:
+                  </Typography>
+                  <Grid container spacing={1}>
+                    <Grid item xs={6} md={3}>
+                      <Chip icon={<AttachMoney />} label="Wage Settings" size="small" />
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                      <Chip icon={<AccountBalance />} label="Bank Details" size="small" />
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                      <Chip icon={<Work />} label="Job History" size="small" />
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                      <Chip icon={<Schedule />} label="Timesheets" size="small" />
+                    </Grid>
+                  </Grid>
+                  <Box sx={{ mt: 2 }}>
+                    <Button size="small" startIcon={<Download />}>
+                      Export Data
+                    </Button>
+                    <Button size="small" startIcon={<Visibility />} sx={{ ml: 1 }}>
+                      View Details
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </TabPanel>
+
       {/* Add Driver Dialog */}
       <Dialog open={showAddDialog} onClose={() => setShowAddDialog(false)} maxWidth="md" fullWidth>
         <DialogTitle>Add New Driver</DialogTitle>

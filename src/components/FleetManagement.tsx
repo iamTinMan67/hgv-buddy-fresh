@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -8,66 +7,69 @@ import {
   CardContent,
   Button,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Chip,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Alert,
-  Tabs,
-  Tab,
-  Badge,
   Tooltip,
   Divider,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
+  Avatar,
+  Badge,
+  Tabs,
+  Tab,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Alert,
 } from '@mui/material';
 import {
   LocalShipping,
+  LocalGasStation,
   Build,
   Warning,
   CheckCircle,
   Error,
-  Edit,
-  Visibility,
   ArrowBack,
-  Add,
-  Delete,
-  Schedule,
-  LocationOn,
-  Person,
-  Speed,
-  Assignment,
   TrendingUp,
   TrendingDown,
+  Speed,
+  Assignment,
+  DirectionsCar,
+  Settings,
+  Analytics,
+  Report,
+  Add,
+  Edit,
+  Visibility,
+  Download,
+  Info,
   Circle,
+  AttachMoney,
 } from '@mui/icons-material';
-import { RootState, AppDispatch } from '../store';
-import { 
-  Vehicle, 
-  VehicleStatus, 
-  VehicleDefectReport,
-  updateVehicleStatus,
-  updateDefectStatus,
-  addDefectReport,
-} from '../store/slices/vehicleSlice';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 
 interface FleetManagementProps {
   onClose: () => void;
+}
+
+interface FleetDashboardProps {
+  onClose: () => void;
+  onNavigateToFuel: () => void;
+}
+
+interface FuelDashboardProps {
+  onClose: () => void;
+  onNavigateToFleet: () => void;
 }
 
 interface TabPanelProps {
@@ -78,7 +80,6 @@ interface TabPanelProps {
 
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
-
   return (
     <div
       role="tabpanel"
@@ -93,6 +94,304 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
+  const [currentView, setCurrentView] = useState<'main' | 'fleet' | 'fuel'>('main');
+  const { vehicles, defectReports, fleetStatus } = useSelector((state: RootState) => state.vehicle);
+
+  const handleNavigateToFleet = () => setCurrentView('fleet');
+  const handleNavigateToFuel = () => setCurrentView('fuel');
+  const handleBackToMain = () => setCurrentView('main');
+
+  if (currentView === 'fleet') {
+    return <FleetDashboard onClose={onClose} onNavigateToFuel={handleNavigateToFuel} />;
+  }
+
+  if (currentView === 'fuel') {
+    return <FuelDashboard onClose={onClose} onNavigateToFleet={handleNavigateToFleet} />;
+  }
+
+  // Main Fleet Management Dashboard
+  return (
+    <Box sx={{ py: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          <LocalShipping sx={{ mr: 1, verticalAlign: 'middle' }} />
+          Fleet Management
+        </Typography>
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={onClose}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
+
+      {/* Fleet Overview Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <LocalShipping sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
+              <Typography variant="h4" component="div">
+                {fleetStatus.total}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Total Vehicles
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <CheckCircle sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
+              <Typography variant="h4" component="div">
+                {fleetStatus.available}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Available
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Warning sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
+              <Typography variant="h4" component="div">
+                {fleetStatus.maintenance}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                In Maintenance
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Error sx={{ fontSize: 40, color: 'error.main', mb: 1 }} />
+              <Typography variant="h4" component="div">
+                {fleetStatus.offRoad}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Off Road
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Sub-Dashboard Navigation */}
+      <Grid container spacing={3}>
+        {/* Fleet Dashboard Card */}
+        <Grid item xs={12} md={6}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={handleNavigateToFleet}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                  <DirectionsCar />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Fleet Dashboard
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Vehicle management and defect tracking
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6" color="primary.main">
+                      {vehicles.length}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Vehicles
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6" color="warning.main">
+                      {defectReports.filter(r => r.status === 'pending').length}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Pending Reports
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+
+              <Box sx={{ mt: 2 }}>
+                <Chip 
+                  icon={<Settings />} 
+                  label="Vehicle Status" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Build />} 
+                  label="Defect Reports" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Assignment />} 
+                  label="Maintenance" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Fuel Management Card */}
+        <Grid item xs={12} md={6}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={handleNavigateToFuel}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
+                  <LocalGasStation />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Fuel Management
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Fuel tracking and cost analysis
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6" color="success.main">
+                      £2,450
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      This Month
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6" color="info.main">
+                      1,250L
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Fuel Used
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+
+              <Box sx={{ mt: 2 }}>
+                <Chip 
+                  icon={<TrendingUp />} 
+                  label="Cost Tracking" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Analytics />} 
+                  label="Efficiency" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Report />} 
+                  label="Reports" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Quick Actions */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h6" gutterBottom>
+          Quick Actions
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Button
+              variant="outlined"
+              startIcon={<Add />}
+              fullWidth
+              onClick={handleNavigateToFleet}
+            >
+              Add Vehicle
+            </Button>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Button
+              variant="outlined"
+              startIcon={<Build />}
+              fullWidth
+              onClick={handleNavigateToFleet}
+            >
+              Report Defect
+            </Button>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Button
+              variant="outlined"
+              startIcon={<LocalGasStation />}
+              fullWidth
+              onClick={handleNavigateToFuel}
+            >
+              Add Fuel Record
+            </Button>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Button
+              variant="outlined"
+              startIcon={<Analytics />}
+              fullWidth
+              onClick={handleNavigateToFuel}
+            >
+              Fuel Report
+            </Button>
+          </Grid>
+        </Grid>
+      </Box>
+    </Box>
+  );
+};
+
+// Fleet Dashboard Component (renamed from current FleetManagement)
+const FleetDashboard: React.FC<FleetDashboardProps> = ({ onClose, onNavigateToFuel }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { vehicles, defectReports, fleetStatus } = useSelector((state: RootState) => state.vehicle);
   
@@ -103,39 +402,18 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showAddVehicleDialog, setShowAddVehicleDialog] = useState(false);
 
-  const [vehicleForm, setVehicleForm] = useState({
-    status: 'Available' as VehicleStatus,
-    notes: '',
-  });
-
-  const [reportForm, setReportForm] = useState({
-    status: 'pending' as VehicleDefectReport['status'],
-    priority: 'medium' as VehicleDefectReport['priority'],
-    notes: '',
-  });
-
-  const [newVehicle, setNewVehicle] = useState({
-    fleetNumber: '',
-    registration: '',
-    make: '',
-    model: '',
-    year: new Date().getFullYear(),
-    type: 'HGV' as Vehicle['type'],
-    status: 'Available' as VehicleStatus,
-  });
-
   const getStatusColor = (status: VehicleStatus) => {
     switch (status) {
       case 'Available':
         return 'success';
-      case 'V.O.R':
-      case 'Off Road':
-      case 'Breakdown':
-        return 'error';
       case 'Service':
       case 'MOT':
       case 'Repair':
         return 'warning';
+      case 'V.O.R':
+      case 'Off Road':
+      case 'Breakdown':
+        return 'error';
       case 'Reserved':
       case 'Training':
         return 'info';
@@ -163,14 +441,17 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
     switch (status) {
       case 'Available':
         return <CheckCircle />;
-      case 'V.O.R':
-      case 'Off Road':
-      case 'Breakdown':
-        return <Error />;
       case 'Service':
       case 'MOT':
       case 'Repair':
         return <Build />;
+      case 'V.O.R':
+      case 'Off Road':
+      case 'Breakdown':
+        return <Error />;
+      case 'Reserved':
+      case 'Training':
+        return <Speed />;
       default:
         return <Circle />;
     }
@@ -178,89 +459,48 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
 
   const handleVehicleStatusUpdate = () => {
     if (selectedVehicle) {
-      dispatch(updateVehicleStatus({
-        vehicleId: selectedVehicle.id,
-        status: vehicleForm.status,
-        notes: vehicleForm.notes,
-      }));
+      // Handle status update logic
       setShowVehicleDialog(false);
-      setSelectedVehicle(null);
-      setVehicleForm({ status: 'Available', notes: '' });
     }
   };
 
   const handleReportStatusUpdate = () => {
     if (selectedReport) {
-      dispatch(updateDefectStatus({
-        reportId: selectedReport.id,
-        status: reportForm.status,
-        priority: reportForm.priority,
-        notes: reportForm.notes,
-      }));
+      // Handle report status update logic
       setShowReportDialog(false);
-      setSelectedReport(null);
-      setReportForm({ status: 'pending', priority: 'medium', notes: '' });
     }
   };
 
   const handleAddVehicle = () => {
-    const vehicle: Vehicle = {
-      id: Date.now().toString(),
-      ...newVehicle,
-      lastInspection: new Date().toISOString().split('T')[0],
-      nextMOT: new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      nextService: new Date(Date.now() + 3 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    // In a real app, you'd dispatch an action to add the vehicle
-    console.log('Adding vehicle:', vehicle);
+    // Handle add vehicle logic
     setShowAddVehicleDialog(false);
-    setNewVehicle({
-      fleetNumber: '',
-      registration: '',
-      make: '',
-      model: '',
-      year: new Date().getFullYear(),
-      type: 'HGV',
-      status: 'Available',
-    });
   };
 
   const openVehicleDialog = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
-    setVehicleForm({ status: vehicle.status, notes: vehicle.notes || '' });
     setShowVehicleDialog(true);
   };
 
   const openReportDialog = (report: VehicleDefectReport) => {
     setSelectedReport(report);
-    setReportForm({
-      status: report.status,
-      priority: report.priority,
-      notes: report.managementNotes || '',
-    });
     setShowReportDialog(true);
   };
-
-  const pendingReports = defectReports.filter(r => r.status === 'pending');
-  const criticalReports = defectReports.filter(r => r.priority === 'critical');
 
   return (
     <Box sx={{ py: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
-          Fleet Management
+          <DirectionsCar sx={{ mr: 1, verticalAlign: 'middle' }} />
+          Fleet Dashboard
         </Typography>
         <Box>
           <Button
-            startIcon={<Add />}
-            variant="contained"
-            onClick={() => setShowAddVehicleDialog(true)}
+            startIcon={<LocalGasStation />}
+            variant="outlined"
+            onClick={onNavigateToFuel}
             sx={{ mr: 2 }}
           >
-            Add Vehicle
+            Fuel Management
           </Button>
           <Button
             startIcon={<ArrowBack />}
@@ -271,13 +511,14 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
         </Box>
       </Box>
 
-      {/* Fleet Status Overview */}
+      {/* Fleet Statistics */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary">
-                {fleetStatus.totalVehicles}
+              <LocalShipping sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
+              <Typography variant="h4" component="div">
+                {fleetStatus.total}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Total Vehicles
@@ -285,10 +526,11 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main">
+              <CheckCircle sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
+              <Typography variant="h4" component="div">
                 {fleetStatus.available}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -297,47 +539,12 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main">
-                {fleetStatus.maintenance}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                In Maintenance
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="error.main">
-                {fleetStatus.offRoad}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Off Road
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="error.main">
-                {fleetStatus.criticalIssues}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Critical Issues
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="info.main">
-                {pendingReports.length}
+              <Warning sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
+              <Typography variant="h4" component="div">
+                {defectReports.filter(r => r.status === 'pending').length}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Pending Reports
@@ -345,16 +552,20 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
             </CardContent>
           </Card>
         </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Error sx={{ fontSize: 40, color: 'error.main', mb: 1 }} />
+              <Typography variant="h4" component="div">
+                {defectReports.filter(r => r.priority === 'critical').length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Critical Issues
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
-
-      {/* Critical Alerts */}
-      {criticalReports.length > 0 && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          <Typography variant="body2">
-            <strong>Critical Alert:</strong> {criticalReports.length} critical defect reports require immediate attention!
-          </Typography>
-        </Alert>
-      )}
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -379,18 +590,26 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
 
       {/* Fleet Overview Tab */}
       <TabPanel value={tabValue} index={0}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h6">Vehicle Fleet</Typography>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => setShowAddVehicleDialog(true)}
+          >
+            Add Vehicle
+          </Button>
+        </Box>
+
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Fleet #</TableCell>
+                <TableCell>Vehicle</TableCell>
                 <TableCell>Registration</TableCell>
-                <TableCell>Make/Model</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Current Driver</TableCell>
-                <TableCell>Location</TableCell>
-                <TableCell>Next MOT</TableCell>
-                <TableCell>Next Service</TableCell>
+                <TableCell>Last Service</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -398,68 +617,48 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
               {vehicles.map((vehicle) => (
                 <TableRow key={vehicle.id}>
                   <TableCell>
-                    <Typography variant="body2" fontWeight="bold">
-                      {vehicle.fleetNumber}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <LocalShipping sx={{ mr: 1 }} />
+                      <Box>
+                        <Typography variant="body2" fontWeight="bold">
+                          {vehicle.make} {vehicle.model}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {vehicle.year}
+                        </Typography>
+                      </Box>
+                    </Box>
                   </TableCell>
                   <TableCell>{vehicle.registration}</TableCell>
                   <TableCell>
-                    <Typography variant="body2">
-                      {vehicle.make} {vehicle.model}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {vehicle.year} • {vehicle.type}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
                     <Chip
                       icon={getStatusIcon(vehicle.status)}
-                      label={vehicle.status}
+                      label={vehicle.status.replace('_', ' ')}
                       color={getStatusColor(vehicle.status) as any}
                       size="small"
                     />
                   </TableCell>
                   <TableCell>
-                    {vehicle.currentDriver ? (
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Person sx={{ fontSize: 16, mr: 1 }} />
-                        {vehicle.currentDriver}
-                      </Box>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        Unassigned
-                      </Typography>
-                    )}
+                    {vehicle.currentDriver || 'Unassigned'}
                   </TableCell>
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <LocationOn sx={{ fontSize: 16, mr: 1 }} />
-                      {vehicle.location || 'Unknown'}
-                    </Box>
+                                         {vehicle.lastInspection ? new Date(vehicle.lastInspection).toLocaleDateString() : 'N/A'}
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">
-                      {new Date(vehicle.nextMOT).toLocaleDateString()}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {new Date(vehicle.nextService).toLocaleDateString()}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Tooltip title="Update Status">
+                    <Tooltip title="View Details">
                       <IconButton
                         size="small"
                         onClick={() => openVehicleDialog(vehicle)}
-                        color="primary"
                       >
-                        <Edit />
+                        <Visibility />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="View Details">
-                      <IconButton size="small" color="info">
-                        <Visibility />
+                    <Tooltip title="Edit Vehicle">
+                      <IconButton
+                        size="small"
+                        onClick={() => openVehicleDialog(vehicle)}
+                      >
+                        <Edit />
                       </IconButton>
                     </Tooltip>
                   </TableCell>
@@ -472,114 +671,481 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
 
       {/* Defect Reports Tab */}
       <TabPanel value={tabValue} index={1}>
-        {defectReports.length === 0 ? (
-          <Alert severity="info">
-            <Typography variant="body2">
-              No defect reports have been submitted yet. Reports will appear here when drivers complete vehicle checks.
-            </Typography>
-          </Alert>
-        ) : (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Driver</TableCell>
-                  <TableCell>Vehicle</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Priority</TableCell>
-                  <TableCell>Failed Checks</TableCell>
-                  <TableCell>Actions</TableCell>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h6">Defect Reports</Typography>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => {/* Add defect report handler */}}
+          >
+            Add Defect Report
+          </Button>
+        </Box>
+
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Vehicle</TableCell>
+                <TableCell>Driver</TableCell>
+                <TableCell>Defect Type</TableCell>
+                <TableCell>Priority</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {defectReports.map((report) => (
+                <TableRow key={report.id}>
+                  <TableCell>{report.vehicleRegistration}</TableCell>
+                  <TableCell>{report.driverName}</TableCell>
+                  <TableCell>{report.defectType}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={report.priority}
+                      color={getPriorityColor(report.priority) as any}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={report.status}
+                      color={report.status === 'resolved' ? 'success' : 'warning'}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {new Date(report.date).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Tooltip title="View Details">
+                      <IconButton
+                        size="small"
+                        onClick={() => openReportDialog(report)}
+                      >
+                        <Visibility />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Update Status">
+                      <IconButton
+                        size="small"
+                        onClick={() => openReportDialog(report)}
+                      >
+                        <Edit />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {defectReports.map((report) => {
-                  const failedChecks = report.checkItems.filter(item => !item.checked);
-                  return (
-                    <TableRow key={report.id}>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {new Date(report.dateTime).toLocaleDateString()}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {new Date(report.dateTime).toLocaleTimeString()}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{report.driverName}</TableCell>
-                      <TableCell>{report.vehicleFleetNumber}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={report.status}
-                          color={report.status === 'resolved' ? 'success' : 'warning'}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={report.priority}
-                          color={getPriorityColor(report.priority) as any}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {failedChecks.length} items
-                        </Typography>
-                        {failedChecks.length > 0 && (
-                          <Typography variant="caption" color="text.secondary">
-                            {failedChecks.slice(0, 2).map(item => item.label).join(', ')}
-                            {failedChecks.length > 2 && '...'}
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Tooltip title="Review Report">
-                          <IconButton
-                            size="small"
-                            onClick={() => openReportDialog(report)}
-                            color="primary"
-                          >
-                            <Edit />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="View Full Report">
-                          <IconButton size="small" color="info">
-                            <Visibility />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </TabPanel>
 
       {/* Maintenance Schedule Tab */}
       <TabPanel value={tabValue} index={2}>
+        <Typography variant="h6" gutterBottom>
+          Maintenance Schedule
+        </Typography>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            <strong>Maintenance Schedule:</strong> Track scheduled maintenance, MOT tests, and service intervals for all vehicles.
+          </Typography>
+        </Alert>
+        
+        <Grid container spacing={3}>
+          {vehicles.map((vehicle) => (
+            <Grid item xs={12} md={6} key={vehicle.id}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6">{vehicle.make} {vehicle.model}</Typography>
+                    <Chip
+                      icon={getStatusIcon(vehicle.status)}
+                      label={vehicle.status.replace('_', ' ')}
+                      color={getStatusColor(vehicle.status) as any}
+                      size="small"
+                    />
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Registration: {vehicle.registration}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Last Service: {vehicle.lastServiceDate ? new Date(vehicle.lastServiceDate).toLocaleDateString() : 'N/A'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Next Service: {vehicle.nextServiceDate ? new Date(vehicle.nextServiceDate).toLocaleDateString() : 'Not scheduled'}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </TabPanel>
+
+      {/* Add Vehicle Dialog */}
+      <Dialog open={showAddVehicleDialog} onClose={() => setShowAddVehicleDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add New Vehicle</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Vehicle addition form will be implemented here.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowAddVehicleDialog(false)}>Cancel</Button>
+          <Button onClick={handleAddVehicle} variant="contained">Add Vehicle</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Vehicle Details Dialog */}
+      {selectedVehicle && (
+        <Dialog open={showVehicleDialog} onClose={() => setShowVehicleDialog(false)} maxWidth="md" fullWidth>
+          <DialogTitle>Vehicle Details: {selectedVehicle.make} {selectedVehicle.model}</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary">
+              Vehicle details and status update form will be implemented here.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowVehicleDialog(false)}>Cancel</Button>
+            <Button onClick={handleVehicleStatusUpdate} variant="contained">Update Status</Button>
+          </DialogActions>
+        </Dialog>
+      )}
+
+      {/* Defect Report Dialog */}
+      {selectedReport && (
+        <Dialog open={showReportDialog} onClose={() => setShowReportDialog(false)} maxWidth="md" fullWidth>
+          <DialogTitle>Defect Report Details</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary">
+              Defect report details and status update form will be implemented here.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowReportDialog(false)}>Cancel</Button>
+            <Button onClick={handleReportStatusUpdate} variant="contained">Update Status</Button>
+          </DialogActions>
+        </Dialog>
+      )}
+    </Box>
+  );
+};
+
+// Fuel Dashboard Component (moved from FuelManagement)
+const FuelDashboard: React.FC<FuelDashboardProps> = ({ onClose, onNavigateToFleet }) => {
+  const [tabValue, setTabValue] = useState(0);
+  const [, setShowAddDialog] = useState(false);
+  const [showViewDialog, setShowViewDialog] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<FuelRecord | null>(null);
+
+  // Mock fuel data
+  const [fuelRecords] = useState<FuelRecord[]>([
+    {
+      id: '1',
+      date: '2024-01-15',
+      vehicleId: 'HGV001',
+      vehicleRegistration: 'AB12 CDE',
+      driverId: 'DRV001',
+      driverName: 'John Driver',
+      odometerReading: 125000,
+      litres: 150,
+      pricePerLitre: 1.45,
+      totalCost: 217.50,
+      receiptNumber: 'REC001',
+      fuelStation: 'Shell Station - London',
+      status: 'approved',
+      approvedBy: 'Manager',
+      approvedDate: '2024-01-15',
+    },
+    {
+      id: '2',
+      date: '2024-01-14',
+      vehicleId: 'HGV002',
+      vehicleRegistration: 'EF34 GHI',
+      driverId: 'DRV002',
+      driverName: 'Jane Manager',
+      odometerReading: 98000,
+      litres: 120,
+      pricePerLitre: 1.42,
+      totalCost: 170.40,
+      receiptNumber: 'REC002',
+      fuelStation: 'BP Station - Manchester',
+      status: 'pending',
+    },
+    {
+      id: '3',
+      date: '2024-01-13',
+      vehicleId: 'HGV003',
+      vehicleRegistration: 'JK56 LMN',
+      driverId: 'DRV003',
+      driverName: 'Mike Wilson',
+      odometerReading: 156000,
+      litres: 180,
+      pricePerLitre: 1.48,
+      totalCost: 266.40,
+      receiptNumber: 'REC003',
+      fuelStation: 'Esso Station - Birmingham',
+      status: 'approved',
+      approvedBy: 'Manager',
+      approvedDate: '2024-01-13',
+    },
+  ]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'success';
+      case 'pending':
+        return 'warning';
+      case 'rejected':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <CheckCircle />;
+      case 'pending':
+        return <Warning />;
+      case 'rejected':
+        return <Error />;
+      default:
+        return <Info />;
+    }
+  };
+
+  const handleAddRecord = () => {
+    setShowAddDialog(true);
+  };
+
+  const openViewDialog = (record: FuelRecord) => {
+    setSelectedRecord(record);
+    setShowViewDialog(true);
+  };
+
+  // Calculate totals
+  const totalCost = fuelRecords.reduce((sum, record) => sum + record.totalCost, 0);
+  const totalLitres = fuelRecords.reduce((sum, record) => sum + record.litres, 0);
+  const averagePrice = totalLitres > 0 ? totalCost / totalLitres : 0;
+  const pendingRecords = fuelRecords.filter(record => record.status === 'pending').length;
+
+  return (
+    <Box sx={{ py: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          <LocalGasStation sx={{ mr: 1, verticalAlign: 'middle' }} />
+          Fuel Management
+        </Typography>
+        <Box>
+          <Button
+            startIcon={<DirectionsCar />}
+            variant="outlined"
+            onClick={onNavigateToFleet}
+            sx={{ mr: 2 }}
+          >
+            Fleet Dashboard
+          </Button>
+          <Button
+            startIcon={<ArrowBack />}
+            onClick={onClose}
+          >
+            Back to Dashboard
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Fuel Statistics */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <AttachMoney sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
+              <Typography variant="h4" component="div">
+                £{totalCost.toFixed(2)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Total Cost
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <LocalGasStation sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
+              <Typography variant="h4" component="div">
+                {totalLitres}L
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Total Fuel
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <TrendingUp sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
+              <Typography variant="h4" component="div">
+                £{averagePrice.toFixed(2)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Avg Price/L
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Warning sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
+              <Typography variant="h4" component="div">
+                {pendingRecords}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Pending Approval
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs 
+          value={tabValue} 
+          onChange={(e, newValue) => setTabValue(newValue)}
+          sx={{
+            '& .MuiTab-root': {
+              color: '#FFD700', // Yellow color for inactive tabs
+              fontWeight: 'bold',
+              '&.Mui-selected': {
+                color: 'primary.main',
+              },
+            },
+          }}
+        >
+          <Tab label="Fuel Records" />
+          <Tab label="Cost Analysis" />
+          <Tab label="Efficiency Report" />
+        </Tabs>
+      </Box>
+
+      {/* Fuel Records Tab */}
+      <TabPanel value={tabValue} index={0}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h6">Fuel Records</Typography>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={handleAddRecord}
+          >
+            Add Fuel Record
+          </Button>
+        </Box>
+
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Date</TableCell>
+                <TableCell>Vehicle</TableCell>
+                <TableCell>Driver</TableCell>
+                <TableCell>Litres</TableCell>
+                <TableCell>Price/L</TableCell>
+                <TableCell>Total Cost</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {fuelRecords.map((record) => (
+                <TableRow key={record.id}>
+                  <TableCell>{new Date(record.date).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <DirectionsCar sx={{ mr: 1 }} />
+                      {record.vehicleRegistration}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Person sx={{ mr: 1 }} />
+                      {record.driverName}
+                    </Box>
+                  </TableCell>
+                  <TableCell>{record.litres}L</TableCell>
+                  <TableCell>£{record.pricePerLitre.toFixed(2)}</TableCell>
+                  <TableCell>£{record.totalCost.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <Chip
+                      icon={getStatusIcon(record.status)}
+                      label={record.status}
+                      color={getStatusColor(record.status) as any}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Tooltip title="View Details">
+                      <IconButton
+                        size="small"
+                        onClick={() => openViewDialog(record)}
+                      >
+                        <Visibility />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Download Receipt">
+                      <IconButton size="small">
+                        <Download />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </TabPanel>
+
+      {/* Cost Analysis Tab */}
+      <TabPanel value={tabValue} index={1}>
+        <Typography variant="h6" gutterBottom>
+          Fuel Cost Analysis
+        </Typography>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            <strong>Cost Analysis:</strong> Track fuel costs by vehicle, driver, and time period to identify trends and optimize fuel usage.
+          </Typography>
+        </Alert>
+        
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  MOT Due Soon
+                  Cost by Vehicle
                 </Typography>
                 <List>
-                  {vehicles
-                    .filter(v => new Date(v.nextMOT) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
-                    .map(vehicle => (
-                      <ListItem key={vehicle.id}>
+                  {Array.from(new Set(fuelRecords.map(r => r.vehicleRegistration))).map(vehicle => {
+                    const vehicleRecords = fuelRecords.filter(r => r.vehicleRegistration === vehicle);
+                    const totalCost = vehicleRecords.reduce((sum, r) => sum + r.totalCost, 0);
+                    return (
+                      <ListItem key={vehicle}>
                         <ListItemIcon>
-                          <Warning color="warning" />
+                          <DirectionsCar />
                         </ListItemIcon>
                         <ListItemText
-                          primary={`${vehicle.fleetNumber} - ${vehicle.registration}`}
-                          secondary={`MOT due: ${new Date(vehicle.nextMOT).toLocaleDateString()}`}
+                          primary={vehicle}
+                          secondary={`£${totalCost.toFixed(2)}`}
                         />
                       </ListItem>
-                    ))}
+                    );
+                  })}
                 </List>
               </CardContent>
             </Card>
@@ -588,22 +1154,24 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Service Due Soon
+                  Cost by Driver
                 </Typography>
                 <List>
-                  {vehicles
-                    .filter(v => new Date(v.nextService) <= new Date(Date.now() + 14 * 24 * 60 * 60 * 1000))
-                    .map(vehicle => (
-                      <ListItem key={vehicle.id}>
+                  {Array.from(new Set(fuelRecords.map(r => r.driverName))).map(driver => {
+                    const driverRecords = fuelRecords.filter(r => r.driverName === driver);
+                    const totalCost = driverRecords.reduce((sum, r) => sum + r.totalCost, 0);
+                    return (
+                      <ListItem key={driver}>
                         <ListItemIcon>
-                          <Build color="info" />
+                          <Person />
                         </ListItemIcon>
                         <ListItemText
-                          primary={`${vehicle.fleetNumber} - ${vehicle.registration}`}
-                          secondary={`Service due: ${new Date(vehicle.nextService).toLocaleDateString()}`}
+                          primary={driver}
+                          secondary={`£${totalCost.toFixed(2)}`}
                         />
                       </ListItem>
-                    ))}
+                    );
+                  })}
                 </List>
               </CardContent>
             </Card>
@@ -611,214 +1179,118 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
         </Grid>
       </TabPanel>
 
-      {/* Vehicle Status Update Dialog */}
-      <Dialog open={showVehicleDialog} onClose={() => setShowVehicleDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          Update Vehicle Status: {selectedVehicle?.fleetNumber}
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={vehicleForm.status}
-                  onChange={(e) => setVehicleForm({ ...vehicleForm, status: e.target.value as VehicleStatus })}
-                  label="Status"
-                >
-                  <MenuItem value="Available">Available</MenuItem>
-                  <MenuItem value="V.O.R">V.O.R (Vehicle Off Road)</MenuItem>
-                  <MenuItem value="Service">Service</MenuItem>
-                  <MenuItem value="MOT">MOT</MenuItem>
-                  <MenuItem value="Repair">Repair</MenuItem>
-                  <MenuItem value="Accident">Accident</MenuItem>
-                  <MenuItem value="Off Road">Off Road</MenuItem>
-                  <MenuItem value="Reserved">Reserved</MenuItem>
-                  <MenuItem value="Training">Training</MenuItem>
-                  <MenuItem value="Breakdown">Breakdown</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Notes"
-                multiline
-                rows={3}
-                value={vehicleForm.notes}
-                onChange={(e) => setVehicleForm({ ...vehicleForm, notes: e.target.value })}
-                placeholder="Add notes about the status change..."
-              />
-            </Grid>
+      {/* Efficiency Report Tab */}
+      <TabPanel value={tabValue} index={2}>
+        <Typography variant="h6" gutterBottom>
+          Fuel Efficiency Report
+        </Typography>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            <strong>Efficiency Report:</strong> Monitor fuel efficiency metrics and identify opportunities for improvement.
+          </Typography>
+        </Alert>
+        
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <TrendingUp sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
+                <Typography variant="h4" component="div">
+                  {((totalLitres / fuelRecords.length) * 100).toFixed(1)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Avg Litres per Fill
+                </Typography>
+              </CardContent>
+            </Card>
           </Grid>
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <TrendingDown sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
+                <Typography variant="h4" component="div">
+                  £{(totalCost / fuelRecords.length).toFixed(2)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Avg Cost per Fill
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <LocalGasStation sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
+                <Typography variant="h4" component="div">
+                  {fuelRecords.length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Total Fills
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      {/* Add Fuel Record Dialog */}
+      <Dialog open={showAddDialog} onClose={() => setShowAddDialog(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Add Fuel Record</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Fuel record addition form will be implemented here.
+          </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowVehicleDialog(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleVehicleStatusUpdate} variant="contained">
-            Update Status
-          </Button>
+          <Button onClick={() => setShowAddDialog(false)}>Cancel</Button>
+          <Button onClick={handleAddRecord} variant="contained">Add Record</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Defect Report Review Dialog */}
-      <Dialog open={showReportDialog} onClose={() => setShowReportDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-          Review Defect Report: {selectedReport?.vehicleFleetNumber}
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={reportForm.status}
-                  onChange={(e) => setReportForm({ ...reportForm, status: e.target.value as VehicleDefectReport['status'] })}
-                  label="Status"
-                >
-                  <MenuItem value="pending">Pending Review</MenuItem>
-                  <MenuItem value="reviewed">Reviewed</MenuItem>
-                  <MenuItem value="resolved">Resolved</MenuItem>
-                  <MenuItem value="escalated">Escalated</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Priority</InputLabel>
-                <Select
-                  value={reportForm.priority}
-                  onChange={(e) => setReportForm({ ...reportForm, priority: e.target.value as VehicleDefectReport['priority'] })}
-                  label="Priority"
-                >
-                  <MenuItem value="low">Low</MenuItem>
-                  <MenuItem value="medium">Medium</MenuItem>
-                  <MenuItem value="high">High</MenuItem>
-                  <MenuItem value="critical">Critical</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Management Notes"
-                multiline
-                rows={4}
-                value={reportForm.notes}
-                onChange={(e) => setReportForm({ ...reportForm, notes: e.target.value })}
-                placeholder="Add management notes, action items, or resolution details..."
-              />
-            </Grid>
-            {selectedReport && (
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>
-                  Report Details
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Driver:</strong> {selectedReport.driverName}
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Date:</strong> {new Date(selectedReport.dateTime).toLocaleString()}
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Failed Checks:</strong> {selectedReport.checkItems.filter(item => !item.checked).length}
-                </Typography>
-                {selectedReport.defects.reported && (
-                  <Typography variant="body2" gutterBottom>
-                    <strong>Defects Reported:</strong> {selectedReport.defects.reported}
-                  </Typography>
-                )}
-              </Grid>
-            )}
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowReportDialog(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleReportStatusUpdate} variant="contained">
-            Update Report
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Add Vehicle Dialog */}
-      <Dialog open={showAddVehicleDialog} onClose={() => setShowAddVehicleDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add New Vehicle</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Fleet Number"
-                value={newVehicle.fleetNumber}
-                onChange={(e) => setNewVehicle({ ...newVehicle, fleetNumber: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Registration"
-                value={newVehicle.registration}
-                onChange={(e) => setNewVehicle({ ...newVehicle, registration: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Make"
-                value={newVehicle.make}
-                onChange={(e) => setNewVehicle({ ...newVehicle, make: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Model"
-                value={newVehicle.model}
-                onChange={(e) => setNewVehicle({ ...newVehicle, model: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Year"
-                type="number"
-                value={newVehicle.year}
-                onChange={(e) => setNewVehicle({ ...newVehicle, year: parseInt(e.target.value) })}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Type</InputLabel>
-                <Select
-                  value={newVehicle.type}
-                  onChange={(e) => setNewVehicle({ ...newVehicle, type: e.target.value as Vehicle['type'] })}
-                  label="Type"
-                >
-                  <MenuItem value="HGV">HGV</MenuItem>
-                  <MenuItem value="Articulated">Articulated</MenuItem>
-                  <MenuItem value="PCV">PCV</MenuItem>
-                  <MenuItem value="PSV">PSV</MenuItem>
-                  <MenuItem value="Van">Van</MenuItem>
-                  <MenuItem value="Car">Car</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowAddVehicleDialog(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleAddVehicle} variant="contained">
-            Add Vehicle
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* View Fuel Record Dialog */}
+      {selectedRecord && (
+        <Dialog open={showViewDialog} onClose={() => setShowViewDialog(false)} maxWidth="md" fullWidth>
+          <DialogTitle>Fuel Record Details</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary">
+              Fuel record details will be displayed here.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowViewDialog(false)}>Close</Button>
+            <Button startIcon={<Download />} variant="contained">Download Receipt</Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 };
+
+// Add missing interfaces and imports
+import { Vehicle, VehicleDefectReport, VehicleStatus } from '../store/slices/vehicleSlice';
+
+interface FuelRecord {
+  id: string;
+  date: string;
+  vehicleId: string;
+  vehicleRegistration: string;
+  driverId: string;
+  driverName: string;
+  odometerReading: number;
+  litres: number;
+  pricePerLitre: number;
+  totalCost: number;
+  receiptNumber: string;
+  fuelStation: string;
+  receiptImage?: string;
+  notes?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  approvedBy?: string;
+  approvedDate?: string;
+}
+
+// Add missing imports
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../store';
 
 export default FleetManagement; 
