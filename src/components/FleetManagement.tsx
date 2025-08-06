@@ -358,7 +358,19 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
+        <Tabs 
+          value={tabValue} 
+          onChange={(e, newValue) => setTabValue(newValue)}
+          sx={{
+            '& .MuiTab-root': {
+              color: '#FFD700', // Yellow color for inactive tabs
+              fontWeight: 'bold',
+              '&.Mui-selected': {
+                color: 'primary.main',
+              },
+            },
+          }}
+        >
           <Tab label="Fleet Overview" />
           <Tab label="Defect Reports" />
           <Tab label="Maintenance Schedule" />

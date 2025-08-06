@@ -386,7 +386,19 @@ const ComplianceTracking: React.FC<ComplianceTrackingProps> = ({ onClose }) => {
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
+        <Tabs 
+          value={tabValue} 
+          onChange={(e, newValue) => setTabValue(newValue)}
+          sx={{
+            '& .MuiTab-root': {
+              color: '#FFD700', // Yellow color for inactive tabs
+              fontWeight: 'bold',
+              '&.Mui-selected': {
+                color: 'primary.main',
+              },
+            },
+          }}
+        >
           <Tab label="All Compliance" />
           <Tab label="Driver Compliance" />
           <Tab label="Vehicle Compliance" />

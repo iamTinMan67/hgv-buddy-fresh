@@ -422,11 +422,24 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
+        <Tabs 
+          value={tabValue} 
+          onChange={(e, newValue) => setTabValue(newValue)}
+          sx={{
+            '& .MuiTab-root': {
+              color: '#FFD700', // Yellow color for inactive tabs
+              fontWeight: 'bold',
+              '&.Mui-selected': {
+                color: 'primary.main',
+              },
+            },
+          }}
+        >
           <Tab label="Today's Jobs" />
           <Tab label="Hours & Pay" />
           <Tab label="Weekly Summary" />
           <Tab label="Job History" />
+          <Tab label="Fuel" />
         </Tabs>
       </Box>
 
@@ -796,6 +809,89 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
                 </TableBody>
               </Table>
             </TableContainer>
+          </CardContent>
+        </Card>
+      </TabPanel>
+
+      {/* Fuel Tab */}
+      <TabPanel value={tabValue} index={4}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Fuel Entry
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Enter your fuel purchase details for today
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Current Odometer Reading"
+                  type="number"
+                  placeholder="e.g., 125450"
+                  helperText="Enter the current odometer reading"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Number of Litres"
+                  type="number"
+                  placeholder="e.g., 150.5"
+                  helperText="Enter the number of litres purchased"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Price per Litre (£)"
+                  type="number"
+                  step="0.01"
+                  placeholder="e.g., 1.85"
+                  helperText="Enter the price per litre"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Receipt Number"
+                  placeholder="e.g., REC-2024-001"
+                  helperText="Enter the receipt number from the fuel station"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Date"
+                  type="date"
+                  defaultValue={new Date().toISOString().split('T')[0]}
+                  InputLabelProps={{ shrink: true }}
+                  helperText="Date of fuel purchase"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<Receipt />}
+                  sx={{ height: 56 }}
+                >
+                  Capture Receipt
+                </Button>
+              </Grid>
+              <Grid item xs={12}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  sx={{ mt: 2 }}
+                >
+                  Submit Fuel Entry
+                </Button>
+              </Grid>
+            </Grid>
           </CardContent>
         </Card>
       </TabPanel>

@@ -66,6 +66,21 @@ import {
   School,
   Work,
   HealthAndSafety,
+  BeachAccess,
+  Block,
+  Archive,
+  DataUsage,
+  Storage,
+  Backup,
+  RestoreFromTrash,
+  DeleteForever,
+  Restore,
+  ArchiveOutlined,
+  Unarchive,
+  VisibilityOff,
+  AttachMoney,
+  AccountBalance,
+  Download,
 } from '@mui/icons-material';
 import { RootState } from '../store';
 
@@ -123,6 +138,41 @@ interface Driver {
     relationship: string;
     phone: string;
   };
+}
+
+interface DriverStatus {
+  id: string;
+  driverId: string;
+  driverName: string;
+  status: 'active' | 'holiday' | 'sick' | 'terminated' | 'suspended';
+  startDate: string;
+  endDate?: string;
+  reason?: string;
+  notes?: string;
+  isActive: boolean;
+}
+
+interface TerminatedDriverData {
+  id: string;
+  driverId: string;
+  driverName: string;
+  terminationDate: string;
+  reason: string;
+  finalPayDate: string;
+  dataRetentionUntil: string;
+  archivedData: {
+    wageSettings: any;
+    bankDetails: any;
+    jobHistory: any;
+    timesheets: any;
+    vehicleChecks: any;
+    incidentReports: any;
+  };
+  complianceNotes: string;
+  isArchived: boolean;
+  retentionPeriodExpired: boolean;
+  dataRetentionComplete: boolean;
+  complianceIssues: string[];
 }
 
 const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
@@ -225,6 +275,87 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
     },
   ]);
 
+  // Mock driver status data
+  const [driverStatuses] = useState<DriverStatus[]>([
+    {
+      id: '1',
+      driverId: '1',
+      driverName: 'John Driver',
+      status: 'active',
+      startDate: '2024-01-01',
+      isActive: true,
+    },
+    {
+      id: '2',
+      driverId: '2',
+      driverName: 'Jane Manager',
+      status: 'holiday',
+      startDate: '2024-01-15',
+      endDate: '2024-01-22',
+      reason: 'Annual Leave',
+      notes: 'Family vacation',
+      isActive: true,
+    },
+    {
+      id: '3',
+      driverId: '3',
+      driverName: 'Mike Wilson',
+      status: 'suspended',
+      startDate: '2024-01-10',
+      reason: 'Safety violations',
+      notes: 'Pending investigation',
+      isActive: true,
+    },
+  ]);
+
+  // Mock terminated drivers data
+  const [terminatedDrivers] = useState<TerminatedDriverData[]>([
+    {
+      id: '1',
+      driverId: '4',
+      driverName: 'David Smith',
+      terminationDate: '2023-06-15',
+      reason: 'Performance issues',
+      finalPayDate: '2023-06-30',
+      dataRetentionUntil: '2026-06-15',
+      archivedData: {
+        wageSettings: { hourlyRate: 12.50, overtimeRate: 18.75 },
+        bankDetails: { accountNumber: '****1234', sortCode: '12-34-56' },
+        jobHistory: [],
+        timesheets: [],
+        vehicleChecks: [],
+        incidentReports: [],
+      },
+      complianceNotes: 'All data archived as per GDPR requirements',
+      isArchived: true,
+      retentionPeriodExpired: false,
+      dataRetentionComplete: true,
+      complianceIssues: [],
+    },
+    {
+      id: '2',
+      driverId: '5',
+      driverName: 'Sarah Johnson',
+      terminationDate: '2023-03-20',
+      reason: 'Resignation',
+      finalPayDate: '2023-04-05',
+      dataRetentionUntil: '2026-03-20',
+      archivedData: {
+        wageSettings: { hourlyRate: 13.00, overtimeRate: 19.50 },
+        bankDetails: { accountNumber: '****5678', sortCode: '78-90-12' },
+        jobHistory: [],
+        timesheets: [],
+        vehicleChecks: [],
+        incidentReports: [],
+      },
+      complianceNotes: 'Data retention period active',
+      isArchived: true,
+      retentionPeriodExpired: false,
+      dataRetentionComplete: true,
+      complianceIssues: [],
+    },
+  ]);
+
   const [newDriver, setNewDriver] = useState({
     firstName: '',
     lastName: '',
@@ -321,6 +452,28 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
     if (score >= 85) return 'info';
     if (score >= 75) return 'warning';
     return 'error';
+  };
+
+  const getDriverStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'success';
+      case 'holiday': return 'info';
+      case 'sick': return 'warning';
+      case 'suspended': return 'error';
+      case 'terminated': return 'default';
+      default: return 'default';
+    }
+  };
+
+  const getDriverStatusIcon = (status: string) => {
+    switch (status) {
+      case 'active': return <CheckCircle />;
+      case 'holiday': return <BeachAccess />;
+      case 'sick': return <HealthAndSafety />;
+      case 'suspended': return <Block />;
+      case 'terminated': return <Archive />;
+      default: return <Circle />;
+    }
   };
 
   const handleAddDriver = () => {
@@ -494,12 +647,26 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
+        <Tabs 
+          value={tabValue} 
+          onChange={(e, newValue) => setTabValue(newValue)}
+          sx={{
+            '& .MuiTab-root': {
+              color: '#FFD700', // Yellow color for inactive tabs
+              fontWeight: 'bold',
+              '&.Mui-selected': {
+                color: 'primary.main',
+              },
+            },
+          }}
+        >
           <Tab label="All Drivers" />
           <Tab label="Active Drivers" />
           <Tab label="Qualifications" />
           <Tab label="Performance" />
           <Tab label="Safety Records" />
+          <Tab label="Driver Status" />
+          <Tab label="Terminated Drivers" />
         </Tabs>
       </Box>
 

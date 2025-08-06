@@ -24,6 +24,8 @@ import {
   CheckCircle,
   ArrowBack,
   AttachMoney,
+  Assessment,
+  AccountBalance,
 } from '@mui/icons-material';
 import { logout } from '../store/slices/authSlice';
 import { AppDispatch } from '../store';
@@ -37,6 +39,9 @@ import JobAssignment from './JobAssignment';
 import RoutePlanning from './RoutePlanning';
 import DailyPlanner from './DailyPlanner';
 import DriverDashboard from './DriverDashboard';
+import FuelManagement from './FuelManagement';
+import Reports from './Reports';
+import BookKeeping from './BookKeeping';
 
 interface User {
   id: string;
@@ -62,6 +67,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [showRoutePlanning, setShowRoutePlanning] = useState(false);
   const [showDailyPlanner, setShowDailyPlanner] = useState(false);
   const [showDriverDashboard, setShowDriverDashboard] = useState(false);
+  const [showFuelManagement, setShowFuelManagement] = useState(false);
+  const [showReports, setShowReports] = useState(false);
+  const [showBookKeeping, setShowBookKeeping] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -263,6 +271,33 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     );
   }
 
+  // Show fuel management if requested
+  if (showFuelManagement) {
+    return (
+      <Box sx={{ py: 2 }}>
+        <FuelManagement onClose={() => setShowFuelManagement(false)} />
+      </Box>
+    );
+  }
+
+  // Show reports if requested
+  if (showReports) {
+    return (
+      <Box sx={{ py: 2 }}>
+        <Reports onClose={() => setShowReports(false)} />
+      </Box>
+    );
+  }
+
+  // Show book keeping if requested
+  if (showBookKeeping) {
+    return (
+      <Box sx={{ py: 2 }}>
+        <BookKeeping onClose={() => setShowBookKeeping(false)} />
+      </Box>
+    );
+  }
+
   // Show driver dashboard if requested
   if (showDriverDashboard) {
     return (
@@ -342,20 +377,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Card>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <LocalGasStation sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
-                  <Typography variant="h6">Fuel Monitoring</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Track fuel consumption
-                  </Typography>
-                  <Button variant="contained" color="warning" sx={{ mt: 2 }}>
-                    View Fuel
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
+
 
             <Grid item xs={12} md={6} lg={4}>
               <Card>
@@ -599,6 +621,66 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     onClick={() => setShowDailyPlanner(true)}
                   >
                     View Schedule
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6} lg={4}>
+              <Card>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <LocalGasStation sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
+                  <Typography variant="h6">Fuel Management</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Track fuel consumption & costs
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="warning" 
+                    sx={{ mt: 2 }}
+                    onClick={() => setShowFuelManagement(true)}
+                  >
+                    Manage Fuel
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6} lg={4}>
+              <Card>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Assessment sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
+                  <Typography variant="h6">Reports</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Generate wage slips & fuel reports
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="secondary" 
+                    sx={{ mt: 2 }}
+                    onClick={() => setShowReports(true)}
+                  >
+                    View Reports
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6} lg={4}>
+              <Card>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <AccountBalance sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
+                  <Typography variant="h6">Books</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Manage assets, liabilities & VAT
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="info" 
+                    sx={{ mt: 2 }}
+                    onClick={() => setShowBookKeeping(true)}
+                  >
+                    Manage Books
                   </Button>
                 </CardContent>
               </Card>
