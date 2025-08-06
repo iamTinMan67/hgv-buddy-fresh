@@ -397,7 +397,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <Card>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <LocalShipping sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-                  <Typography variant="h6">Fleet Management</Typography>
+                  <Typography variant="h6">Manage Fleet</Typography>
                   <Typography variant="body2" color="text.secondary">
                     Monitor all vehicles
                   </Typography>
@@ -416,7 +416,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <Card>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Person sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
-                  <Typography variant="h6">Staff Hub</Typography>
+                  <Typography variant="h6">Staff Data</Typography>
                   <Typography variant="body2" color="text.secondary">
                     Manage staff and wages
                   </Typography>
@@ -490,7 +490,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     sx={{ mt: 2 }}
                     onClick={() => setShowReportsHub(true)}
                   >
-                    Reports Hub
+                    PrintOut Hub
                   </Button>
                 </CardContent>
               </Card>
@@ -500,7 +500,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <Card>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <AccountBalance sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
-                  <Typography variant="h6">Accounting</Typography>
+                  <Typography variant="h6">Financial</Typography>
                   <Typography variant="body2" color="text.secondary">
                     Books, Invoices, Purchase Orders & Print
                   </Typography>
@@ -510,7 +510,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     sx={{ mt: 2 }}
                     onClick={() => setShowAccountingHub(true)}
                   >
-                    Accounting Hub
+                    Finance Hub
                   </Button>
                 </CardContent>
               </Card>
