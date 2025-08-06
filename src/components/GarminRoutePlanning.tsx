@@ -80,14 +80,12 @@ interface RoutePlan {
 }
 
 const GarminRoutePlanning: React.FC<GarminRoutePlanningProps> = ({ onClose }) => {
-  const [currentView, setCurrentView] = useState<'main' | 'planning' | 'active' | 'history'>('main');
-
   const [isLoading, setIsLoading] = useState(false);
   const [showRouteDialog, setShowRouteDialog] = useState(false);
   const [garminConnected, setGarminConnected] = useState(false);
+  const [currentView, setCurrentView] = useState<'main' | 'planning' | 'active' | 'history'>('main');
 
-  // Mock route data
-  const [routes, setRoutes] = useState<RoutePlan[]>([
+  const [routes] = useState<RoutePlan[]>([
     {
       id: '1',
       name: 'London to Manchester Delivery',
@@ -160,43 +158,6 @@ const GarminRoutePlanning: React.FC<GarminRoutePlanningProps> = ({ onClose }) =>
     } catch (error) {
       console.error('Failed to sync with Garmin:', error);
       return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const calculateOptimalRoute = async (start: RoutePoint, end: RoutePoint, waypoints: RoutePoint[]) => {
-    setIsLoading(true);
-    try {
-      // Mock Garmin route calculation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const newRoute: RoutePlan = {
-        id: Date.now().toString(),
-        name: `${start.name} to ${end.name}`,
-        vehicleId: 'TRK001',
-        driverId: 'DRV001',
-        startPoint: start,
-        endPoint: end,
-        waypoints: waypoints,
-        totalDistance: Math.floor(Math.random() * 500) + 100,
-        totalTime: `${Math.floor(Math.random() * 8) + 2}h ${Math.floor(Math.random() * 60)}m`,
-        fuelStops: [],
-        restStops: [],
-        trafficConditions: 'Good',
-        weatherConditions: 'Clear',
-        restrictions: ['Height: 4.2m', 'Weight: 44t'],
-        status: 'draft',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      setRoutes([...routes, newRoute]);
-      // Route created successfully
-      return newRoute;
-    } catch (error) {
-      console.error('Failed to calculate route:', error);
-      return null;
     } finally {
       setIsLoading(false);
     }

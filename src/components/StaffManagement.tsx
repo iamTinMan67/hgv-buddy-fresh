@@ -48,8 +48,6 @@ import {
   Group,
   SupervisorAccount,
   Engineering,
-  DirectionsCar,
-  LocalShipping,
   AdminPanelSettings,
   CleaningServices,
   PhoneAndroid,

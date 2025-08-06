@@ -1,91 +1,59 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
 import {
   Box,
-  Typography,
-  Grid,
   Card,
   CardContent,
+  Typography,
+  Grid,
+  Chip,
+  IconButton,
   Button,
-  TextField,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  IconButton,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  Paper,
+  Avatar,
+  Tooltip,
+  Alert,
+  Tabs,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Chip,
-  Alert,
-  Tabs,
-  Tab,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Avatar,
-  Tooltip,
-  Divider,
-
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from '@mui/material';
 import {
   Add,
   Edit,
   Delete,
-  Work,
-  BeachAccess,
-  Block,
-  Home,
-  Warning,
-  CheckCircle,
-  Error,
-  Info,
   Visibility,
-  ExpandMore,
-  AccountCircle,
-  VpnKey,
-  VerifiedUser,
-  Gavel,
-  Policy,
-  DataUsage,
-  Storage,
-  Backup,
-  RestoreFromTrash,
-  DeleteForever,
-  Restore,
-  ArchiveOutlined,
-  Unarchive,
-  VisibilityOff,
-  PhoneAndroid,
-  AlternateEmail,
-  Group,
-  SupervisorAccount,
-  Engineering,
-  DirectionsCar,
-  LocalShipping,
-  AdminPanelSettings,
-  CleaningServices,
-  Schedule,
-  Receipt,
-  Security,
-  Save,
+  CheckCircle,
+  Warning,
+  Home,
+  Error as ErrorIcon,
   Circle,
   HealthAndSafety,
   Archive,
   AttachMoney,
   AccountBalance,
   Download,
+  Schedule,
+  Work,
+  DirectionsCar as DirectionsCarIcon,
 } from '@mui/icons-material';
-import { AppDispatch } from '../store';
 
 interface DriverManagementProps {
   onClose: () => void;
@@ -179,7 +147,6 @@ interface TerminatedDriverData {
 }
 
 const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
-  const dispatch = useDispatch<AppDispatch>();
 
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -408,7 +375,7 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
       case 'suspended':
         return <Warning />;
       case 'terminated':
-        return <Error />;
+        return <ErrorIcon />;
       default:
         return <Circle />;
     }
@@ -472,9 +439,9 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
   const getDriverStatusIcon = (status: string) => {
     switch (status) {
       case 'active': return <CheckCircle />;
-      case 'holiday': return <BeachAccess />;
+              case 'holiday': return <DirectionsCarIcon />;
       case 'sick': return <HealthAndSafety />;
-      case 'suspended': return <Block />;
+      case 'suspended': return <Archive />;
       case 'terminated': return <Archive />;
       default: return <Circle />;
     }
@@ -996,7 +963,7 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
                           ) : driver.safetyScore >= 75 ? (
                             <Warning color="warning" />
                           ) : (
-                            <Error color="error" />
+                            <ErrorIcon color="error" />
                           )}
                         </ListItemIcon>
                         <ListItemText
