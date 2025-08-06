@@ -65,6 +65,7 @@ import {
   CalendarToday,
   Today,
   NextWeek,
+  Home,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import {
@@ -282,12 +283,12 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
               Create Schedule
             </Button>
           )}
-          <Button
-            startIcon={<ArrowBack />}
+          <IconButton
             onClick={onClose}
+            sx={{ color: 'yellow', fontSize: '1.5rem' }}
           >
-            Back to Dashboard
-          </Button>
+            <Home />
+          </IconButton>
         </Box>
       </Box>
 

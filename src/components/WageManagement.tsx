@@ -44,6 +44,9 @@ import {
   ListItemSecondaryAction,
 } from '@mui/material';
 import {
+  Autocomplete,
+} from '@mui/material';
+import {
   Add,
   Edit,
   Delete,
@@ -98,6 +101,7 @@ import {
   Unarchive,
   VisibilityOff,
   ExpandMore,
+  Home,
   Warning,
   CheckCircle,
   Error,
@@ -134,6 +138,13 @@ function TabPanel(props: TabPanelProps) {
 }
 
 // Extended interfaces for new features
+interface Employee {
+  id: string;
+  name: string;
+  role: 'driver' | 'manager' | 'admin' | 'mechanic' | 'dispatcher';
+  isActive: boolean;
+}
+
 interface BankDetails {
   id: string;
   driverId: string;
@@ -195,6 +206,18 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
     standardEndTime: '16:00',
     isActive: true,
   });
+
+  // Mock employee data
+  const [employees] = useState<Employee[]>([
+    { id: '1', name: 'John Driver', role: 'driver', isActive: true },
+    { id: '2', name: 'Jane Manager', role: 'manager', isActive: true },
+    { id: '3', name: 'Mike Mechanic', role: 'mechanic', isActive: true },
+    { id: '4', name: 'Sarah Dispatcher', role: 'dispatcher', isActive: true },
+    { id: '5', name: 'Tom Admin', role: 'admin', isActive: true },
+    { id: '6', name: 'Lisa Driver', role: 'driver', isActive: true },
+    { id: '7', name: 'Bob Manager', role: 'manager', isActive: true },
+    { id: '8', name: 'Alice Mechanic', role: 'mechanic', isActive: true },
+  ]);
 
   // Mock data for new features
   const [bankDetails, setBankDetails] = useState<BankDetails[]>([
@@ -270,6 +293,9 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
     isActive: true,
   });
 
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [employeeError, setEmployeeError] = useState<string>('');
+
   const [currentDriverStatus, setCurrentDriverStatus] = useState({
     status: 'active' as DriverStatus['status'],
     startDate: new Date().toISOString().split('T')[0],
@@ -339,10 +365,17 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
   };
 
   const handleAddBankDetails = () => {
+    // Validate that an employee is selected
+    if (!selectedEmployee) {
+      setEmployeeError('Please select an employee from the list');
+      return;
+    }
+
     const newBankDetails = {
       id: Date.now().toString(),
-      driverId: Date.now().toString(),
+      driverId: selectedEmployee.id,
       ...currentBankDetails,
+      accountName: selectedEmployee.name,
       lastUpdated: new Date().toISOString(),
     };
     setBankDetails([...bankDetails, newBankDetails]);
@@ -353,7 +386,17 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
       bankName: '',
       isActive: true,
     });
+    setSelectedEmployee(null);
+    setEmployeeError('');
     setShowBankDialog(false);
+  };
+
+  const handleEmployeeSelection = (employee: Employee | null) => {
+    setSelectedEmployee(employee);
+    setEmployeeError('');
+    if (employee) {
+      setCurrentBankDetails({ ...currentBankDetails, accountName: employee.name });
+    }
   };
 
   const handleAddDriverStatus = () => {
@@ -411,12 +454,12 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
           <AttachMoney sx={{ mr: 1, verticalAlign: 'middle' }} />
           Wage Management
         </Typography>
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={onClose}
-        >
-          Back to Dashboard
-        </Button>
+                                     <IconButton
+             onClick={onClose}
+             sx={{ color: 'yellow', fontSize: '1.5rem' }}
+           >
+             <Home />
+           </IconButton>
       </Box>
 
       {/* Summary Cards */}
@@ -724,18 +767,59 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
       </Dialog>
 
       {/* Add Bank Details Dialog */}
-      <Dialog open={showBankDialog} onClose={() => setShowBankDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog open={showBankDialog} onClose={() => {
+        setShowBankDialog(false);
+        setSelectedEmployee(null);
+        setEmployeeError('');
+        setCurrentBankDetails({
+          accountName: '',
+          accountNumber: '',
+          sortCode: '',
+          bankName: '',
+          isActive: true,
+        });
+      }} maxWidth="sm" fullWidth>
         <DialogTitle>Add Bank Details</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Account Holder Name"
-                value={currentBankDetails.accountName}
-                onChange={(e) => setCurrentBankDetails({ ...currentBankDetails, accountName: e.target.value })}
+              <Autocomplete
+                options={employees.filter(emp => emp.isActive)}
+                getOptionLabel={(option) => option.name}
+                value={selectedEmployee}
+                onChange={(event, newValue) => handleEmployeeSelection(newValue)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Account Holder Name *"
+                    error={!!employeeError}
+                    helperText={employeeError || "Select an employee from the list"}
+                    required
+                  />
+                )}
+                renderOption={(props, option) => (
+                  <Box component="li" {...props}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                      <Person sx={{ mr: 1, fontSize: 20 }} />
+                      <Box>
+                        <Typography variant="body1">{option.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option.role.charAt(0).toUpperCase() + option.role.slice(1)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                )}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
               />
             </Grid>
+            {employeeError && (
+              <Grid item xs={12}>
+                <Alert severity="error">
+                  {employeeError} - Add New Employee or Find Employee
+                </Alert>
+              </Grid>
+            )}
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -784,7 +868,18 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowBankDialog(false)}>
+          <Button onClick={() => {
+            setShowBankDialog(false);
+            setSelectedEmployee(null);
+            setEmployeeError('');
+            setCurrentBankDetails({
+              accountName: '',
+              accountNumber: '',
+              sortCode: '',
+              bankName: '',
+              isActive: true,
+            });
+          }}>
             Cancel
           </Button>
           <Button

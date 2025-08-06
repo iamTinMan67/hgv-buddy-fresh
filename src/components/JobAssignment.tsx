@@ -60,6 +60,8 @@ import {
   CalendarToday,
   AccessTime,
   DirectionsCar,
+  Home,
+  Business,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import {
@@ -82,6 +84,19 @@ interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
+}
+
+interface ClientContact {
+  id: string;
+  type: 'company' | 'individual';
+  companyName?: string;
+  firstName?: string;
+  lastName?: string;
+  contact: {
+    phone: string;
+    mobile: string;
+    email: string;
+  };
 }
 
 function TabPanel(props: TabPanelProps) {
@@ -110,6 +125,52 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobAssignmentType | null>(null);
+  const [selectedContact, setSelectedContact] = useState<ClientContact | null>(null);
+
+  // Mock contacts data
+  const [contacts] = useState<ClientContact[]>([
+    {
+      id: '1',
+      type: 'company',
+      companyName: 'ABC Logistics Ltd',
+      contact: {
+        phone: '0161 123 4567',
+        mobile: '07700 900123',
+        email: 'info@abclogistics.co.uk',
+      },
+    },
+    {
+      id: '2',
+      type: 'company',
+      companyName: 'XYZ Transport Solutions',
+      contact: {
+        phone: '020 123 4567',
+        mobile: '07700 900124',
+        email: 'info@xyztransport.co.uk',
+      },
+    },
+    {
+      id: '3',
+      type: 'individual',
+      firstName: 'John',
+      lastName: 'Smith',
+      contact: {
+        phone: '0151 123 4567',
+        mobile: '07700 900125',
+        email: 'john.smith@email.com',
+      },
+    },
+    {
+      id: '4',
+      type: 'company',
+      companyName: 'DEF Haulage Ltd',
+      contact: {
+        phone: '0113 123 4567',
+        mobile: '07700 900126',
+        email: 'info@defhaulage.co.uk',
+      },
+    },
+  ]);
 
   const [newJob, setNewJob] = useState({
     jobNumber: '',
@@ -184,6 +245,20 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
     }
   };
 
+  const handleContactSelection = (contact: ClientContact) => {
+    setSelectedContact(contact);
+    const contactName = contact.type === 'company' 
+      ? contact.companyName 
+      : `${contact.firstName} ${contact.lastName}`;
+    
+    setNewJob({
+      ...newJob,
+      customerName: contactName || '',
+      customerPhone: contact.contact.phone,
+      customerEmail: contact.contact.email,
+    });
+  };
+
   const handleAddJob = () => {
     const job: JobAssignmentType = {
       id: Date.now().toString(),
@@ -195,6 +270,7 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
     };
     dispatch(addJob(job));
     setShowAddDialog(false);
+    setSelectedContact(null);
     setNewJob({
       jobNumber: '',
       title: '',
@@ -269,12 +345,12 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
           >
             Add New Job
           </Button>
-          <Button
-            startIcon={<ArrowBack />}
+          <IconButton
             onClick={onClose}
+            sx={{ color: 'yellow', fontSize: '1.5rem' }}
           >
-            Back to Dashboard
-          </Button>
+            <Home />
+          </IconButton>
         </Box>
       </Box>
 
@@ -554,14 +630,61 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
         <DialogTitle>Add New Job</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
+            {/* Customer Name - Moved to top */}
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Customer Name</InputLabel>
+                <Select
+                  value={selectedContact?.id || ''}
+                  onChange={(e) => {
+                    const contact = contacts.find(c => c.id === e.target.value);
+                    if (contact) {
+                      handleContactSelection(contact);
+                    }
+                  }}
+                  label="Customer Name"
+                >
+                  <MenuItem disabled>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Business sx={{ fontSize: 16 }} />
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                        Companies
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                  {contacts.filter(c => c.type === 'company').map((contact) => (
+                    <MenuItem key={contact.id} value={contact.id} sx={{ pl: 4 }}>
+                      {contact.companyName}
+                    </MenuItem>
+                  ))}
+                  <MenuItem disabled>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Person sx={{ fontSize: 16 }} />
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                        Individuals
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                  {contacts.filter(c => c.type === 'individual').map((contact) => (
+                    <MenuItem key={contact.id} value={contact.id} sx={{ pl: 4 }}>
+                      {contact.firstName} {contact.lastName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* Job Title - Reduced by 50% */}
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Job Number"
-                value={newJob.jobNumber}
-                onChange={(e) => setNewJob({ ...newJob, jobNumber: e.target.value })}
+                label="Job Title"
+                value={newJob.title}
+                onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
               />
             </Grid>
+
+            {/* Priority - Reduced by 50% */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
                 <InputLabel>Priority</InputLabel>
@@ -577,14 +700,8 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Job Title"
-                value={newJob.title}
-                onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
-              />
-            </Grid>
+
+            {/* Description */}
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -595,31 +712,8 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
                 onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Customer Name"
-                value={newJob.customerName}
-                onChange={(e) => setNewJob({ ...newJob, customerName: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Customer Phone"
-                value={newJob.customerPhone}
-                onChange={(e) => setNewJob({ ...newJob, customerPhone: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Customer Email"
-                type="email"
-                value={newJob.customerEmail}
-                onChange={(e) => setNewJob({ ...newJob, customerEmail: e.target.value })}
-              />
-            </Grid>
+
+            {/* Scheduled Date - Reduced by 50% */}
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
@@ -630,6 +724,8 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
+
+            {/* Scheduled Time - Reduced by 50% */}
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth

@@ -81,6 +81,7 @@ import {
   AttachMoney,
   AccountBalance,
   Download,
+  Home,
 } from '@mui/icons-material';
 import { RootState } from '../store';
 
@@ -551,12 +552,12 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
           >
             Add Driver
           </Button>
-          <Button
-            startIcon={<ArrowBack />}
+          <IconButton
             onClick={onClose}
+            sx={{ color: 'yellow', fontSize: '1.5rem' }}
           >
-            Back to Dashboard
-          </Button>
+            <Home />
+          </IconButton>
         </Box>
       </Box>
 

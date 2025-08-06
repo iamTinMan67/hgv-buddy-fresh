@@ -28,6 +28,7 @@ import {
   CheckCircle,
   ArrowBack,
   Edit,
+  Home,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import { addDefectReport } from '../store/slices/vehicleSlice';
@@ -222,13 +223,12 @@ const VehicleCheckSheet: React.FC<VehicleCheckSheetProps> = ({ onClose }) => {
           Vehicle Defect Report
         </Typography>
         <Box>
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={onClose}
-            sx={{ mr: 2 }}
-          >
-            Back to Dashboard
-          </Button>
+                     <IconButton
+             onClick={onClose}
+             sx={{ mr: 2, color: 'yellow', fontSize: '1.5rem' }}
+           >
+             <Home />
+           </IconButton>
           <Button
             variant="contained"
             startIcon={<Send />}

@@ -30,18 +30,15 @@ import {
 import { logout } from '../store/slices/authSlice';
 import { AppDispatch } from '../store';
 import Timesheet from './Timesheet';
-import WageManagement from './WageManagement';
 import VehicleCheckSheet from './VehicleCheckSheet';
-import FleetManagement from './FleetManagement';
-import ComplianceTracking from './ComplianceTracking';
-import DriverManagement from './DriverManagement';
-import JobAssignment from './JobAssignment';
-import RoutePlanning from './RoutePlanning';
-import DailyPlanner from './DailyPlanner';
+import FleetManagementHub from './FleetManagementHub';
+import PlanningHub from './PlanningHub';
+import LegalHub from './LegalHub';
+import DriverHub from './DriverHub';
+
 import DriverDashboard from './DriverDashboard';
-import FuelManagement from './FuelManagement';
-import Reports from './Reports';
-import BookKeeping from './BookKeeping';
+import ReportsHub from './ReportsHub';
+import AccountingHub from './AccountingHub';
 
 interface User {
   id: string;
@@ -58,18 +55,16 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [showTimesheet, setShowTimesheet] = useState(false);
-  const [showWageManagement, setShowWageManagement] = useState(false);
   const [showVehicleCheck, setShowVehicleCheck] = useState(false);
   const [showFleetManagement, setShowFleetManagement] = useState(false);
-  const [showComplianceTracking, setShowComplianceTracking] = useState(false);
-  const [showDriverManagement, setShowDriverManagement] = useState(false);
-  const [showJobAssignment, setShowJobAssignment] = useState(false);
-  const [showRoutePlanning, setShowRoutePlanning] = useState(false);
-  const [showDailyPlanner, setShowDailyPlanner] = useState(false);
+  const [showLegalHub, setShowLegalHub] = useState(false);
+  const [showDriverHub, setShowDriverHub] = useState(false);
+  const [showPlanningHub, setShowPlanningHub] = useState(false);
+  const [showReportsHub, setShowReportsHub] = useState(false);
   const [showDriverDashboard, setShowDriverDashboard] = useState(false);
-  const [showFuelManagement, setShowFuelManagement] = useState(false);
-  const [showReports, setShowReports] = useState(false);
-  const [showBookKeeping, setShowBookKeeping] = useState(false);
+
+
+  const [showAccountingHub, setShowAccountingHub] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -117,7 +112,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           <Button
             startIcon={<ArrowBack />}
             onClick={() => setShowTimesheet(false)}
-            sx={{ mr: 2 }}
+            sx={{ mr: 2, color: 'yellow' }}
           >
             Back to Dashboard
           </Button>
@@ -127,23 +122,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     );
   }
 
-  // Show wage management if requested
-  if (showWageManagement) {
-    return (
-      <Box sx={{ py: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={() => setShowWageManagement(false)}
-            sx={{ mr: 2 }}
-          >
-            Back to Dashboard
-          </Button>
-        </Box>
-        <WageManagement onClose={() => setShowWageManagement(false)} />
-      </Box>
-    );
-  }
+
 
   // Show vehicle check if requested
   if (showVehicleCheck) {
@@ -153,7 +132,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           <Button
             startIcon={<ArrowBack />}
             onClick={() => setShowVehicleCheck(false)}
-            sx={{ mr: 2 }}
+            sx={{ mr: 2, color: 'yellow' }}
           >
             Back to Dashboard
           </Button>
@@ -167,133 +146,63 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   if (showFleetManagement) {
     return (
       <Box sx={{ py: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={() => setShowFleetManagement(false)}
-            sx={{ mr: 2 }}
-          >
-            Back to Dashboard
-          </Button>
-        </Box>
-        <FleetManagement onClose={() => setShowFleetManagement(false)} />
+        <FleetManagementHub onClose={() => setShowFleetManagement(false)} />
       </Box>
     );
   }
 
-  // Show compliance tracking if requested
-  if (showComplianceTracking) {
+  // Show legal hub if requested
+  if (showLegalHub) {
+    return (
+      <Box sx={{ py: 2 }}>
+        <LegalHub onClose={() => setShowLegalHub(false)} />
+      </Box>
+    );
+  }
+
+  // Show driver hub if requested
+  if (showDriverHub) {
+    return (
+      <Box sx={{ py: 2 }}>
+        <DriverHub onClose={() => setShowDriverHub(false)} />
+      </Box>
+    );
+  }
+
+  // Show planning hub if requested
+  if (showPlanningHub) {
     return (
       <Box sx={{ py: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <Button
             startIcon={<ArrowBack />}
-            onClick={() => setShowComplianceTracking(false)}
-            sx={{ mr: 2 }}
+            onClick={() => setShowPlanningHub(false)}
+            sx={{ mr: 2, color: 'yellow' }}
           >
             Back to Dashboard
           </Button>
         </Box>
-        <ComplianceTracking onClose={() => setShowComplianceTracking(false)} />
+        <PlanningHub onClose={() => setShowPlanningHub(false)} />
       </Box>
     );
   }
 
-  // Show driver management if requested
-  if (showDriverManagement) {
+
+
+  // Show reports hub if requested
+  if (showReportsHub) {
     return (
       <Box sx={{ py: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={() => setShowDriverManagement(false)}
-            sx={{ mr: 2 }}
-          >
-            Back to Dashboard
-          </Button>
-        </Box>
-        <DriverManagement onClose={() => setShowDriverManagement(false)} />
+        <ReportsHub onClose={() => setShowReportsHub(false)} />
       </Box>
     );
   }
 
-  // Show job assignment if requested
-  if (showJobAssignment) {
+  // Show accounting hub if requested
+  if (showAccountingHub) {
     return (
       <Box sx={{ py: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={() => setShowJobAssignment(false)}
-            sx={{ mr: 2 }}
-          >
-            Back to Dashboard
-          </Button>
-        </Box>
-        <JobAssignment onClose={() => setShowJobAssignment(false)} />
-      </Box>
-    );
-  }
-
-  // Show route planning if requested
-  if (showRoutePlanning) {
-    return (
-      <Box sx={{ py: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={() => setShowRoutePlanning(false)}
-            sx={{ mr: 2 }}
-          >
-            Back to Dashboard
-          </Button>
-        </Box>
-        <RoutePlanning onClose={() => setShowRoutePlanning(false)} />
-      </Box>
-    );
-  }
-
-  // Show daily planner if requested
-  if (showDailyPlanner) {
-    return (
-      <Box sx={{ py: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={() => setShowDailyPlanner(false)}
-            sx={{ mr: 2 }}
-          >
-            Back to Dashboard
-          </Button>
-        </Box>
-        <DailyPlanner onClose={() => setShowDailyPlanner(false)} />
-      </Box>
-    );
-  }
-
-  // Show fuel management if requested
-  if (showFuelManagement) {
-    return (
-      <Box sx={{ py: 2 }}>
-        <FuelManagement onClose={() => setShowFuelManagement(false)} />
-      </Box>
-    );
-  }
-
-  // Show reports if requested
-  if (showReports) {
-    return (
-      <Box sx={{ py: 2 }}>
-        <Reports onClose={() => setShowReports(false)} />
-      </Box>
-    );
-  }
-
-  // Show book keeping if requested
-  if (showBookKeeping) {
-    return (
-      <Box sx={{ py: 2 }}>
-        <BookKeeping onClose={() => setShowBookKeeping(false)} />
+        <AccountingHub onClose={() => setShowAccountingHub(false)} />
       </Box>
     );
   }
@@ -500,7 +409,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     sx={{ mt: 2 }}
                     onClick={() => setShowFleetManagement(true)}
                   >
-                    View Fleet
+                    Fleet Hub
                   </Button>
                 </CardContent>
               </Card>
@@ -510,17 +419,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <Card>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Person sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
-                  <Typography variant="h6">Driver Management</Typography>
+                  <Typography variant="h6">Staff Hub</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Manage driver accounts
+                    Manage staff and wages
                   </Typography>
                   <Button 
                     variant="contained" 
                     color="secondary" 
                     sx={{ mt: 2 }}
-                    onClick={() => setShowDriverManagement(true)}
+                    onClick={() => setShowDriverHub(true)}
                   >
-                    Manage Drivers
+                    Staff Hub
                   </Button>
                 </CardContent>
               </Card>
@@ -529,138 +438,62 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <Grid item xs={12} md={6} lg={4}>
               <Card>
                 <CardContent sx={{ textAlign: 'center' }}>
-                  <Assignment sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-                  <Typography variant="h6">Compliance Tracking</Typography>
+                  <Assessment sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
+                  <Typography variant="h6">Legal Hub</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Monitor safety compliance
+                    Legal compliance and regulations
                   </Typography>
                   <Button 
                     variant="contained" 
                     color="success" 
                     sx={{ mt: 2 }}
-                    onClick={() => setShowComplianceTracking(true)}
+                    onClick={() => setShowLegalHub(true)}
                   >
-                    View Reports
+                    Legal Hub
                   </Button>
                 </CardContent>
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Card>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <AttachMoney sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
-                  <Typography variant="h6">Wage Management</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Set driver rates & view payroll
-                  </Typography>
-                  <Button 
-                    variant="contained" 
-                    color="warning" 
-                    sx={{ mt: 2 }}
-                    onClick={() => setShowWageManagement(true)}
-                  >
-                    Manage Wages
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
+
 
             <Grid item xs={12} md={6} lg={4}>
               <Card>
                 <CardContent sx={{ textAlign: 'center' }}>
-                  <Assignment sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
-                  <Typography variant="h6">Job Assignment</Typography>
+                  <Schedule sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
+                  <Typography variant="h6">Planning Hub</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Create and assign jobs
+                    Daily planning, routes & job assignment
                   </Typography>
                   <Button 
                     variant="contained" 
                     color="info" 
                     sx={{ mt: 2 }}
-                    onClick={() => setShowJobAssignment(true)}
+                    onClick={() => setShowPlanningHub(true)}
                   >
-                    Manage Jobs
+                    Planning Hub
                   </Button>
                 </CardContent>
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Card>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Route sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-                  <Typography variant="h6">Route Planning</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Optimize vehicle routes
-                  </Typography>
-                  <Button 
-                    variant="contained" 
-                    color="success" 
-                    sx={{ mt: 2 }}
-                    onClick={() => setShowRoutePlanning(true)}
-                  >
-                    Plan Routes
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Card>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Schedule sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-                  <Typography variant="h6">Daily Planner</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Schedule and track daily operations
-                  </Typography>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    sx={{ mt: 2 }}
-                    onClick={() => setShowDailyPlanner(true)}
-                  >
-                    View Schedule
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={6} lg={4}>
-              <Card>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <LocalGasStation sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
-                  <Typography variant="h6">Fuel Management</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Track fuel consumption & costs
-                  </Typography>
-                  <Button 
-                    variant="contained" 
-                    color="warning" 
-                    sx={{ mt: 2 }}
-                    onClick={() => setShowFuelManagement(true)}
-                  >
-                    Manage Fuel
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
 
             <Grid item xs={12} md={6} lg={4}>
               <Card>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Assessment sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
-                  <Typography variant="h6">Reports</Typography>
+                  <Typography variant="h6">Reports Hub</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Generate wage slips & fuel reports
+                    Wage slips, fuel, purchase orders & invoices
                   </Typography>
                   <Button 
                     variant="contained" 
                     color="secondary" 
                     sx={{ mt: 2 }}
-                    onClick={() => setShowReports(true)}
+                    onClick={() => setShowReportsHub(true)}
                   >
-                    View Reports
+                    Reports Hub
                   </Button>
                 </CardContent>
               </Card>
@@ -670,17 +503,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <Card>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <AccountBalance sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
-                  <Typography variant="h6">Books</Typography>
+                  <Typography variant="h6">Accounting</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Manage assets, liabilities & VAT
+                    Books, Invoices, Purchase Orders & Print
                   </Typography>
                   <Button 
                     variant="contained" 
                     color="info" 
                     sx={{ mt: 2 }}
-                    onClick={() => setShowBookKeeping(true)}
+                    onClick={() => setShowAccountingHub(true)}
                   >
-                    Manage Books
+                    Accounting Hub
                   </Button>
                 </CardContent>
               </Card>

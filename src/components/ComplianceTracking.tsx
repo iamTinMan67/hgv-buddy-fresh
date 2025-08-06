@@ -55,6 +55,7 @@ import {
   Report,
   Build,
   Speed,
+  Home,
 } from '@mui/icons-material';
 import { RootState } from '../store';
 
@@ -284,12 +285,12 @@ const ComplianceTracking: React.FC<ComplianceTrackingProps> = ({ onClose }) => {
           >
             Add Compliance Item
           </Button>
-          <Button
-            startIcon={<ArrowBack />}
+          <IconButton
             onClick={onClose}
+            sx={{ color: 'yellow', fontSize: '1.5rem' }}
           >
-            Back to Dashboard
-          </Button>
+            <Home />
+          </IconButton>
         </Box>
       </Box>
 
