@@ -25,7 +25,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert,
   Tabs,
   Tab,
   Tooltip,
@@ -38,43 +37,26 @@ import {
 
 } from '@mui/material';
 import {
-  Schedule,
   Add,
   Edit,
   Delete,
   Visibility,
-  ArrowBack,
-  LocalShipping,
   Person,
-  LocationOn,
-  AccessTime,
   DirectionsCar,
   CheckCircle,
   Pending,
   PlayArrow,
   Stop,
   Warning,
-  TrendingUp,
-  Map,
-  Timeline as TimelineIcon,
-  Speed,
   Assignment,
   Update,
-  Report,
   Refresh,
-  CalendarToday,
-  Today,
-  NextWeek,
   Home,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import {
   DailySchedule,
-  JobAssignment,
   JobStatus,
-  addDailySchedule,
-  updateDailySchedule,
-  deleteDailySchedule,
   updateScheduleJobStatus,
   updateJobStatus,
 } from '../store/slices/jobSlice';
@@ -107,25 +89,12 @@ function TabPanel(props: TabPanelProps) {
 const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { dailySchedules, jobs } = useSelector((state: RootState) => state.job);
-  const { vehicles } = useSelector((state: RootState) => state.vehicle);
   const { user } = useSelector((state: RootState) => state.auth);
-
   const [tabValue, setTabValue] = useState(0);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<DailySchedule | null>(null);
   const [selectedJob, setSelectedJob] = useState<{ scheduleId: string; jobId: string } | null>(null);
-
-  const [newSchedule, setNewSchedule] = useState({
-    vehicleId: '',
-    driverId: '',
-    date: new Date().toISOString().split('T')[0],
-    routePlanId: '',
-    jobs: [] as { jobId: string; scheduledTime: string; estimatedDuration: number; status: JobStatus }[],
-    notes: '',
-  });
 
   const [statusUpdate, setStatusUpdate] = useState({
     status: 'in_progress' as JobStatus,
@@ -182,33 +151,10 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
     }
   };
 
-  const handleAddSchedule = () => {
-    const schedule: DailySchedule = {
-      id: Date.now().toString(),
-      ...newSchedule,
-      totalJobs: newSchedule.jobs.length,
-      completedJobs: 0,
-      totalDistance: 0,
-      totalDuration: newSchedule.jobs.reduce((sum, job) => sum + job.estimatedDuration, 0),
-      status: 'scheduled',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    dispatch(addDailySchedule(schedule));
-    setShowAddDialog(false);
-    setNewSchedule({
-      vehicleId: '',
-      driverId: '',
-      date: new Date().toISOString().split('T')[0],
-      routePlanId: '',
-      jobs: [],
-      notes: '',
-    });
-  };
+
 
   const openEditDialog = (schedule: DailySchedule) => {
     setSelectedSchedule(schedule);
-    setShowEditDialog(true);
   };
 
   const openViewDialog = (schedule: DailySchedule) => {
@@ -277,7 +223,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
             <Button
               startIcon={<Add />}
               variant="contained"
-              onClick={() => setShowAddDialog(true)}
+              onClick={() => {}}
               sx={{ mr: 2 }}
             >
               Create Schedule
@@ -377,7 +323,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs 
           value={tabValue} 
-          onChange={(e, newValue) => setTabValue(newValue)}
+          onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
               color: '#FFD700', // Yellow color for inactive tabs

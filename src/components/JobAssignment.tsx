@@ -34,60 +34,16 @@ import {
   Edit,
   Delete,
   Visibility,
-  DirectionsCar,
   CheckCircle,
   Pending,
   PlayArrow,
   Stop,
-  Warning,
-  TrendingUp,
-  Map,
-  Speed,
-  AccessTime,
-  LocalGasStation,
-  Home,
-  Person,
-  LocationOn,
-  Phone,
-  Email,
-  CalendarToday,
-  Work,
-  Timer,
-  Payment,
-  Receipt,
-  TrendingDown,
-  Report,
-  Build,
-  School,
-  AccountCircle,
-  VpnKey,
-  VerifiedUser,
-  Gavel,
-  Policy,
-  DataUsage,
-  Storage,
-  Backup,
-  RestoreFromTrash,
-  DeleteForever,
-  Restore,
-  ArchiveOutlined,
-  Unarchive,
-  VisibilityOff,
-  ExpandMore,
-  Error,
-  Info,
-  PhoneAndroid,
-  AlternateEmail,
-  Group,
-  SupervisorAccount,
-  Engineering,
-  AdminPanelSettings,
-  CleaningServices,
-  Circle,
-  LocalShipping,
   Assignment,
   Refresh,
+  Home,
+  Error as ErrorIcon,
   Business,
+  Person,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import {
@@ -138,7 +94,6 @@ function TabPanel(props: TabPanelProps) {
 const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { jobs } = useSelector((state: RootState) => state.job);
-  const { user } = useSelector((state: RootState) => state.auth);
 
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -244,10 +199,10 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
       case 'pending': return <Pending />;
       case 'assigned': return <Assignment />;
       case 'in_progress': return <PlayArrow />;
-      case 'attempted': return <Warning />;
+      case 'attempted': return <ErrorIcon />; // Changed from Warning to ErrorIcon
       case 'rescheduled': return <Refresh />;
       case 'completed': return <CheckCircle />;
-      case 'failed': return <Error />;
+      case 'failed': return <ErrorIcon />; // Changed from Error to ErrorIcon
       case 'cancelled': return <Stop />;
       default: return <Pending />;
     }

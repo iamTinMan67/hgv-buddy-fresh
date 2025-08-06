@@ -27,9 +27,6 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  Avatar,
-  Tooltip,
-  Divider,
   FormControl,
   InputLabel,
   Select,
@@ -39,60 +36,21 @@ import {
 import {
   Add,
   Edit,
-  Delete,
-  Visibility,
-  DirectionsCar,
-  CheckCircle,
-  Pending,
-  PlayArrow,
-  Stop,
-  Warning,
-  Map,
-  AccessTime,
-  LocalGasStation,
   Home,
   Person,
-  LocationOn,
-  Phone,
-  Email,
-  CalendarToday,
-  Work,
-  Timer,
-  Payment,
-  Receipt,
-  School,
-  AccountCircle,
-  VpnKey,
-  VerifiedUser,
-  Gavel,
-  Policy,
-  DataUsage,
-  Storage,
-  Backup,
-  RestoreFromTrash,
-  DeleteForever,
-  Restore,
-  ArchiveOutlined,
-  Unarchive,
-  VisibilityOff,
-  ExpandMore,
+  Description,
+  Security,
+  CheckCircle,
+  Warning,
   Error,
-  Info,
-  PhoneAndroid,
-  AlternateEmail,
-  Group,
-  SupervisorAccount,
-  Engineering,
-  AdminPanelSettings,
-  CleaningServices,
   Circle,
   LocalShipping,
   Assignment,
-  Refresh,
-  Business,
-  Description,
-  Security,
+  Visibility,
 } from '@mui/icons-material';
+import {
+  Tooltip,
+} from '@mui/material';
 
 interface ComplianceTrackingProps {
   onClose: () => void;
@@ -137,8 +95,6 @@ interface ComplianceItem {
 const ComplianceTracking: React.FC<ComplianceTrackingProps> = ({ onClose }) => {
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showViewDialog, setShowViewDialog] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<ComplianceItem | null>(null);
 
   // Mock compliance data
   const [complianceItems] = useState<ComplianceItem[]>([

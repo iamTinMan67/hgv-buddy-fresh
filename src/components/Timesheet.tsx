@@ -200,18 +200,6 @@ const Timesheet: React.FC<TimesheetProps> = () => {
     return { standardPay, overtimePay, totalPay };
   };
 
-  // Get current week entries
-  const getCurrentWeekEntries = (): TimeEntry[] => {
-    const today = new Date();
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    
-    return entries.filter(entry => {
-      const entryDate = new Date(entry.date);
-      return entryDate >= startOfWeek && entryDate <= today;
-    });
-  };
-
   const handleAddEntry = () => {
     const totalHours = calculateDailyHours(currentEntry);
     const newEntry: TimeEntry = {

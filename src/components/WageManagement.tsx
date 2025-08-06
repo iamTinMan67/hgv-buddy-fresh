@@ -26,7 +26,6 @@ import {
   Alert,
   Tabs,
   Tab,
-  Tooltip,
   FormControl,
   InputLabel,
   Select,
@@ -103,26 +102,6 @@ interface DriverStatus {
   isActive: boolean;
 }
 
-interface TerminatedDriverData {
-  id: string;
-  driverId: string;
-  driverName: string;
-  terminationDate: string;
-  reason: string;
-  finalPayDate: string;
-  dataRetentionUntil: string;
-  archivedData: {
-    wageSettings: any;
-    bankDetails: any;
-    jobHistory: any;
-    timesheets: any;
-    vehicleChecks: any;
-    incidentReports: any;
-  };
-  complianceNotes: string;
-  isArchived: boolean;
-}
-
 const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { wageSettings } = useSelector((state: RootState) => state.wage);
@@ -196,28 +175,6 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
       reason: 'Annual Leave',
       notes: 'Family vacation',
       isActive: true,
-    },
-  ]);
-
-  const [terminatedDrivers] = useState<TerminatedDriverData[]>([
-    {
-      id: '1',
-      driverId: '3',
-      driverName: 'Mike Smith',
-      terminationDate: '2023-12-15',
-      reason: 'Resigned - Personal reasons',
-      finalPayDate: '2023-12-31',
-      dataRetentionUntil: '2026-12-15',
-      archivedData: {
-        wageSettings: { hourlyRate: 16.00, overtimeRate: 24.00 },
-        bankDetails: { accountNumber: '11111111', sortCode: '11-11-11' },
-        jobHistory: [],
-        timesheets: [],
-        vehicleChecks: [],
-        incidentReports: [],
-      },
-      complianceNotes: 'All data archived for 3-year retention period as per GDPR requirements',
-      isArchived: true,
     },
   ]);
 
