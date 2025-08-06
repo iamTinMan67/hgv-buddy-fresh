@@ -25,7 +25,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert,
   Tabs,
   Tab,
   Tooltip,
@@ -34,41 +33,25 @@ import {
   ListItemText,
   ListItemIcon,
   Divider,
-  LinearProgress,
 } from '@mui/material';
 import {
-  Route,
   Add,
   Edit,
   Delete,
   Visibility,
-  ArrowBack,
-  Schedule,
-  LocalShipping,
-  Person,
-  LocationOn,
-  AccessTime,
   DirectionsCar,
   CheckCircle,
   Pending,
   PlayArrow,
   Stop,
-  Warning,
-  TrendingUp,
-  Map,
-  Timeline,
-  Speed,
   Assignment,
   Home,
+  Person,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import {
   RoutePlan,
-  JobAssignment,
   addRoutePlan,
-  updateRoutePlan,
-  deleteRoutePlan,
-  assignJobToDriver,
 } from '../store/slices/jobSlice';
 
 interface RoutePlanningProps {
@@ -103,7 +86,7 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
 
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
+
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<RoutePlan | null>(null);
 
@@ -162,10 +145,7 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
     });
   };
 
-  const openEditDialog = (route: RoutePlan) => {
-    setSelectedRoute(route);
-    setShowEditDialog(true);
-  };
+
 
   const openViewDialog = (route: RoutePlan) => {
     setSelectedRoute(route);
@@ -180,8 +160,7 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
   const totalDistance = routePlans.reduce((sum, route) => sum + route.totalDistance, 0);
   const totalDuration = routePlans.reduce((sum, route) => sum + route.estimatedDuration, 0);
 
-  // Get available jobs for assignment
-  const availableJobs = jobs.filter(job => job.status === 'pending' || job.status === 'assigned');
+
 
   return (
     <Box sx={{ py: 2 }}>
@@ -287,7 +266,7 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs 
           value={tabValue} 
-          onChange={(e, newValue) => setTabValue(newValue)}
+          onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
               color: '#FFD700', // Yellow color for inactive tabs
@@ -382,15 +361,7 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
                         <Visibility />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Edit Route">
-                      <IconButton
-                        size="small"
-                        onClick={() => openEditDialog(route)}
-                        color="primary"
-                      >
-                        <Edit />
-                      </IconButton>
-                    </Tooltip>
+
                     <Tooltip title="Delete Route">
                       <IconButton size="small" color="error">
                         <Delete />
@@ -672,7 +643,7 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
             <Button onClick={() => setShowViewDialog(false)}>
               Close
             </Button>
-            <Button onClick={() => openEditDialog(selectedRoute)} variant="contained">
+            <Button variant="contained">
               Edit Route
             </Button>
           </DialogActions>

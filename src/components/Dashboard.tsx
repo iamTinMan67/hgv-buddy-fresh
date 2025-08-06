@@ -8,13 +8,11 @@ import {
   CardContent,
   Button,
   Chip,
-  Avatar,
+
 } from '@mui/material';
 import {
   LocalShipping,
   Assignment,
-  Speed,
-  LocalGasStation,
   Logout,
   Person,
   Upload,
@@ -23,7 +21,6 @@ import {
   Report,
   CheckCircle,
   ArrowBack,
-  AttachMoney,
   Assessment,
   AccountBalance,
 } from '@mui/icons-material';
@@ -278,7 +275,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     variant="contained" 
                     color="secondary" 
                     sx={{ mt: 2 }}
-                    onClick={() => setShowDailyPlanner(true)}
+                    onClick={() => {/* Daily planner functionality removed */}}
                   >
                     View Jobs
                   </Button>
@@ -330,7 +327,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     variant="contained" 
                     color="info" 
                     sx={{ mt: 2 }}
-                    onClick={() => setShowDailyPlanner(true)}
+                    onClick={() => {/* Daily planner functionality removed */}}
                   >
                     View Schedule
                   </Button>

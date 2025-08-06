@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import {
   Box,
   Typography,
@@ -7,24 +7,20 @@ import {
   Card,
   CardContent,
   Button,
-  Paper,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Paper,
   Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   Tabs,
   Tab,
@@ -35,40 +31,31 @@ import {
   Avatar,
   Tooltip,
   Divider,
-  Switch,
-  FormControlLabel,
+
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
-  Person,
   Add,
   Edit,
   Delete,
-  Visibility,
-  ArrowBack,
-  Assignment,
-  Schedule,
+  Work,
+  BeachAccess,
+  Block,
+  Home,
   Warning,
   CheckCircle,
   Error,
-  LocalShipping,
-  Security,
-  Description,
-  Phone,
-  Email,
-  LocationOn,
-  CalendarToday,
-  Speed,
-  TrendingUp,
-  TrendingDown,
-  Circle,
-  Report,
-  Build,
-  School,
-  Work,
-  HealthAndSafety,
-  BeachAccess,
-  Block,
-  Archive,
+  Info,
+  Visibility,
+  ExpandMore,
+  AccountCircle,
+  VpnKey,
+  VerifiedUser,
+  Gavel,
+  Policy,
   DataUsage,
   Storage,
   Backup,
@@ -78,12 +65,27 @@ import {
   ArchiveOutlined,
   Unarchive,
   VisibilityOff,
+  PhoneAndroid,
+  AlternateEmail,
+  Group,
+  SupervisorAccount,
+  Engineering,
+  DirectionsCar,
+  LocalShipping,
+  AdminPanelSettings,
+  CleaningServices,
+  Schedule,
+  Receipt,
+  Security,
+  Save,
+  Circle,
+  HealthAndSafety,
+  Archive,
   AttachMoney,
   AccountBalance,
   Download,
-  Home,
 } from '@mui/icons-material';
-import { RootState } from '../store';
+import { AppDispatch } from '../store';
 
 interface DriverManagementProps {
   onClose: () => void;
@@ -177,9 +179,10 @@ interface TerminatedDriverData {
 }
 
 const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
+  const dispatch = useDispatch<AppDispatch>();
+
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
 
@@ -508,7 +511,7 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
 
   const openEditDialog = (driver: Driver) => {
     setSelectedDriver(driver);
-    setShowEditDialog(true);
+    // Edit dialog functionality removed
   };
 
   const openViewDialog = (driver: Driver) => {
@@ -650,7 +653,7 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs 
           value={tabValue} 
-          onChange={(e, newValue) => setTabValue(newValue)}
+          onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
               color: '#FFD700', // Yellow color for inactive tabs

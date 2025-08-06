@@ -11,7 +11,6 @@ import {
   Checkbox,
   Button,
   Paper,
-  Divider,
   Alert,
   Dialog,
   DialogTitle,
@@ -21,12 +20,7 @@ import {
   IconButton,
 } from '@mui/material';
 import {
-  Save,
   Send,
-  Print,
-  Warning,
-  CheckCircle,
-  ArrowBack,
   Edit,
   Home,
 } from '@mui/icons-material';
@@ -144,18 +138,7 @@ const VehicleCheckSheet: React.FC<VehicleCheckSheetProps> = ({ onClose }) => {
     setSelectedItem(null);
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'articulated':
-        return '🚛';
-      case 'pcv':
-        return '🚌';
-      case 'fors':
-        return '🏆';
-      default:
-        return '✅';
-    }
-  };
+
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -202,7 +185,7 @@ const VehicleCheckSheet: React.FC<VehicleCheckSheetProps> = ({ onClose }) => {
       submittedBy: user?.id || '',
       submittedAt: new Date().toISOString(),
       status: 'pending' as const,
-      priority: failedChecks.length > 3 ? 'high' : failedChecks.length > 0 ? 'medium' : 'low',
+      priority: (failedChecks.length > 3 ? 'high' : failedChecks.length > 0 ? 'medium' : 'low') as 'low' | 'medium' | 'high' | 'critical',
     };
 
     // Dispatch to vehicle store

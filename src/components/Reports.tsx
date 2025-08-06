@@ -28,17 +28,12 @@ import {
   DialogActions,
   Alert,
   Divider,
-  Badge,
   Tooltip,
   InputAdornment,
 } from '@mui/material';
 import {
   Print,
-  Search,
-  Download,
   Visibility,
-  FilterList,
-  Refresh,
   TrendingUp,
   LocalGasStation,
   AttachMoney,
@@ -424,7 +419,7 @@ const Reports: React.FC<ReportsProps> = ({ onClose }) => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs 
           value={tabValue} 
-          onChange={(e, newValue) => setTabValue(newValue)}
+          onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
               color: '#FFD700',

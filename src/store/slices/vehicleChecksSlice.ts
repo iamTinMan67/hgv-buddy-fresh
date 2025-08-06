@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 interface VehicleCheck {
   id: string;
@@ -25,7 +25,7 @@ const initialState: VehicleChecksState = {
 
 export const fetchVehicleChecks = createAsyncThunk(
   'vehicleChecks/fetchVehicleChecks',
-  async (_, { rejectWithValue }) => {
+  async () => {
     // TODO: Replace with real API call
     return initialState.checks;
   }
@@ -33,7 +33,7 @@ export const fetchVehicleChecks = createAsyncThunk(
 
 export const submitVehicleCheck = createAsyncThunk(
   'vehicleChecks/submitVehicleCheck',
-  async (check: Omit<VehicleCheck, 'id'>, { rejectWithValue }) => {
+  async (check: Omit<VehicleCheck, 'id'>) => {
     // TODO: Replace with real API call
     return { ...check, id: Date.now().toString() };
   }

@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 interface Job {
   id: string;
@@ -101,7 +101,7 @@ const initialState: JobsState = {
 
 export const fetchJobs = createAsyncThunk(
   'jobs/fetchJobs',
-  async (_, { rejectWithValue }) => {
+  async () => {
     // TODO: Replace with real API call
     return initialState.jobs;
   }
@@ -121,7 +121,7 @@ export const fetchJobById = createAsyncThunk(
 
 export const createJob = createAsyncThunk(
   'jobs/createJob',
-  async (jobData: Omit<Job, 'id' | 'createdAt'>, { rejectWithValue }) => {
+  async (jobData: Omit<Job, 'id' | 'createdAt'>) => {
     // TODO: Replace with real API call
     const newJob: Job = {
       ...jobData,
@@ -158,7 +158,7 @@ export const assignJob = createAsyncThunk(
 
 export const updateJobStatus = createAsyncThunk(
   'jobs/updateJobStatus',
-  async ({ jobId, status, notes }: { jobId: string; status: string; notes?: string }, { rejectWithValue }) => {
+  async ({ jobId, status }: { jobId: string; status: string; notes?: string }) => {
     // TODO: Replace with real API call
     const updateData: any = { jobId, status };
     

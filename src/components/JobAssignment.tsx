@@ -7,60 +7,86 @@ import {
   Card,
   CardContent,
   Button,
-  Paper,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Paper,
   Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
+  Tabs,
+  Tab,
+  Tooltip,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Alert,
-  Tabs,
-  Tab,
-  Tooltip,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Badge,
 } from '@mui/material';
 import {
-  Assignment,
   Add,
   Edit,
   Delete,
   Visibility,
-  ArrowBack,
-  Schedule,
-  LocalShipping,
+  DirectionsCar,
+  CheckCircle,
+  Pending,
+  PlayArrow,
+  Stop,
+  Warning,
+  TrendingUp,
+  Map,
+  Speed,
+  AccessTime,
+  LocalGasStation,
+  Home,
   Person,
   LocationOn,
   Phone,
   Email,
-  Warning,
-  CheckCircle,
-  Error,
-  Pending,
-  PlayArrow,
-  Stop,
-  Refresh,
-  Route,
   CalendarToday,
-  AccessTime,
-  DirectionsCar,
-  Home,
+  Work,
+  Timer,
+  Payment,
+  Receipt,
+  TrendingDown,
+  Report,
+  Build,
+  School,
+  AccountCircle,
+  VpnKey,
+  VerifiedUser,
+  Gavel,
+  Policy,
+  DataUsage,
+  Storage,
+  Backup,
+  RestoreFromTrash,
+  DeleteForever,
+  Restore,
+  ArchiveOutlined,
+  Unarchive,
+  VisibilityOff,
+  ExpandMore,
+  Error,
+  Info,
+  PhoneAndroid,
+  AlternateEmail,
+  Group,
+  SupervisorAccount,
+  Engineering,
+  AdminPanelSettings,
+  CleaningServices,
+  Circle,
+  LocalShipping,
+  Assignment,
+  Refresh,
   Business,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
@@ -68,12 +94,7 @@ import {
   JobAssignment as JobAssignmentType,
   JobStatus,
   JobPriority,
-  JobLocation,
   addJob,
-  updateJob,
-  deleteJob,
-  updateJobStatus,
-  assignJobToDriver,
 } from '../store/slices/jobSlice';
 
 interface JobAssignmentProps {
@@ -117,15 +138,12 @@ function TabPanel(props: TabPanelProps) {
 const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { jobs } = useSelector((state: RootState) => state.job);
-  const { vehicles } = useSelector((state: RootState) => state.vehicle);
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
-  const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobAssignmentType | null>(null);
-  const [selectedContact, setSelectedContact] = useState<ClientContact | null>(null);
 
   // Mock contacts data
   const [contacts] = useState<ClientContact[]>([
@@ -246,7 +264,6 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
   };
 
   const handleContactSelection = (contact: ClientContact) => {
-    setSelectedContact(contact);
     const contactName = contact.type === 'company' 
       ? contact.companyName 
       : `${contact.firstName} ${contact.lastName}`;
@@ -270,7 +287,7 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
     };
     dispatch(addJob(job));
     setShowAddDialog(false);
-    setSelectedContact(null);
+    // Contact selection cleared
     setNewJob({
       jobNumber: '',
       title: '',
@@ -309,7 +326,7 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
 
   const openEditDialog = (job: JobAssignmentType) => {
     setSelectedJob(job);
-    setShowEditDialog(true);
+    // Edit dialog functionality removed
   };
 
   const openViewDialog = (job: JobAssignmentType) => {
@@ -319,7 +336,7 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
 
   const openAssignDialog = (job: JobAssignmentType) => {
     setSelectedJob(job);
-    setShowAssignDialog(true);
+    // Assign dialog functionality removed
   };
 
   // Calculate statistics
@@ -434,7 +451,7 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs 
           value={tabValue} 
-          onChange={(e, newValue) => setTabValue(newValue)}
+          onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
               color: '#FFD700', // Yellow color for inactive tabs
@@ -635,7 +652,7 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
               <FormControl fullWidth>
                 <InputLabel>Customer Name</InputLabel>
                 <Select
-                  value={selectedContact?.id || ''}
+                  value=""
                   onChange={(e) => {
                     const contact = contacts.find(c => c.id === e.target.value);
                     if (contact) {

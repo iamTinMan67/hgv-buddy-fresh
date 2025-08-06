@@ -13,7 +13,6 @@ import {
   MenuItem,
   IconButton,
   Chip,
-  Alert,
   Table,
   TableBody,
   TableCell,
@@ -21,12 +20,10 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Divider,
 } from '@mui/material';
 import {
   Receipt,
   FilterList,
-  Download,
   PictureAsPdf,
   TableChart,
   GridOn,
@@ -36,7 +33,6 @@ import {
   TrendingUp,
   AttachMoney,
   Person,
-  CalendarToday,
 } from '@mui/icons-material';
 
 interface WageSlipsReportProps {

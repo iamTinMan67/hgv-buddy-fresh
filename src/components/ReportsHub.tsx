@@ -5,7 +5,6 @@ import {
   Grid,
   Card,
   CardContent,
-  Button,
   Avatar,
   Divider,
   Chip,
@@ -20,8 +19,6 @@ import {
   TrendingUp,
   Analytics,
   Report,
-  Settings,
-  Assignment,
   Home,
 } from '@mui/icons-material';
 

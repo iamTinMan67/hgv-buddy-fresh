@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   Box,
@@ -28,12 +28,10 @@ import {
   Delete,
   Edit,
   Save,
-  Cancel,
-  AccessTime,
   TrendingUp,
   AttachMoney,
 } from '@mui/icons-material';
-import { format, parse, differenceInMinutes, addMinutes, isWeekend } from 'date-fns';
+import { format, parse, differenceInMinutes, isWeekend } from 'date-fns';
 import { RootState, AppDispatch } from '../store';
 import { updateWageCalculation } from '../store/slices/wageSlice';
 
@@ -52,10 +50,10 @@ interface TimesheetProps {
   onClose: () => void;
 }
 
-const Timesheet: React.FC<TimesheetProps> = ({ onClose }) => {
+const Timesheet: React.FC<TimesheetProps> = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { wageSettings, wageCalculations } = useSelector((state: RootState) => state.wage);
+  const { wageSettings } = useSelector((state: RootState) => state.wage);
   
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [currentEntry, setCurrentEntry] = useState<Partial<TimeEntry>>({
@@ -312,7 +310,7 @@ const Timesheet: React.FC<TimesheetProps> = ({ onClose }) => {
     return `${hours}h ${mins}m`;
   };
 
-  const weeklyEntries = getCurrentWeekEntries();
+
   const weeklyTotal = calculateWeeklyTotal();
   const weeklyWage = calculateWeeklyWage();
 

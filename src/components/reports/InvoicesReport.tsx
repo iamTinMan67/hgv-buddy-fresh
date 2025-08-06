@@ -35,7 +35,6 @@ import {
   Clear,
   TrendingUp,
   AttachMoney,
-  Business,
   Payment,
 } from '@mui/icons-material';
 

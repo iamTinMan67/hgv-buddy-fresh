@@ -25,74 +25,26 @@ import {
   Alert,
   Tabs,
   Tab,
-  Divider,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
-  Badge,
   Avatar,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Tooltip,
+
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  ListItemSecondaryAction,
 } from '@mui/material';
 import {
   Add,
   Edit,
   Delete,
-  Save,
-  Cancel,
   Person,
   Business,
   Work,
-  Settings,
-  Assignment,
   Phone,
-  Email,
-  LocationOn,
-  AccountCircle,
-  VpnKey,
-  VerifiedUser,
-  Gavel,
-  Policy,
-  DataUsage,
-  Storage,
-  Backup,
-  RestoreFromTrash,
-  DeleteForever,
-  Restore,
-  ArchiveOutlined,
-  Unarchive,
-  VisibilityOff,
-  ExpandMore,
   Home,
-  Warning,
-  CheckCircle,
-  Error,
-  Info,
-  Visibility,
-  ArrowBack,
-  FamilyRestroom,
-  ContactPhone,
-  ContactMail,
-  HomeWork,
-  Badge as BadgeIcon,
-  Security,
-  Receipt,
-  Payment,
-  Schedule,
-  EventNote,
-  LocationCity,
-  LocalPhone,
-  PhoneAndroid,
-  AlternateEmail,
-  PersonAdd,
   Group,
   SupervisorAccount,
   Engineering,
@@ -100,6 +52,12 @@ import {
   LocalShipping,
   AdminPanelSettings,
   CleaningServices,
+  PhoneAndroid,
+  AlternateEmail,
+  Schedule,
+  Receipt,
+  Security,
+  Save,
 } from '@mui/icons-material';
 
 interface StaffManagementProps {
@@ -288,8 +246,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
 
   const handleAddStaff = () => {
     const newStaff: StaffMember = {
-      id: Date.now().toString(),
       ...currentStaff as StaffMember,
+      id: Date.now().toString(),
       lastUpdated: new Date().toISOString(),
     };
     setStaffMembers([...staffMembers, newStaff]);
@@ -430,7 +388,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs 
           value={tabValue} 
-          onChange={(e, newValue) => setTabValue(newValue)}
+          onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
               color: 'text.secondary',

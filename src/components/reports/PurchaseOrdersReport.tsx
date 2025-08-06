@@ -13,7 +13,6 @@ import {
   MenuItem,
   IconButton,
   Chip,
-  Alert,
   Table,
   TableBody,
   TableCell,
@@ -21,12 +20,10 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Divider,
 } from '@mui/material';
 import {
   ShoppingCart,
   FilterList,
-  Download,
   PictureAsPdf,
   TableChart,
   GridOn,
@@ -35,8 +32,6 @@ import {
   Clear,
   TrendingUp,
   AttachMoney,
-  Business,
-  Inventory,
 } from '@mui/icons-material';
 
 interface PurchaseOrdersReportProps {

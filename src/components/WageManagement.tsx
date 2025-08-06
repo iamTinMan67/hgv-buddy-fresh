@@ -26,22 +26,11 @@ import {
   Alert,
   Tabs,
   Tab,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Badge,
-  Avatar,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Tooltip,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  ListItemSecondaryAction,
 } from '@mui/material';
 import {
   Autocomplete,
@@ -50,64 +39,11 @@ import {
   Add,
   Edit,
   Delete,
-  Save,
-  Cancel,
   AttachMoney,
-  TrendingUp,
   Person,
-  AccessTime,
-  AccountBalance,
-  AccountBalanceWallet,
-  CreditCard,
-  CalendarToday,
-  Work,
-  BeachAccess,
-  Block,
-  Archive,
-  Security,
-  Receipt,
-  Payment,
-  Schedule,
-  EventNote,
-  Business,
-  LocationOn,
-  Phone,
-  Email,
-  Lock,
-  Download,
-  Print,
-  Share,
-  Notifications,
-  Settings,
-  Help,
-  Star,
-  StarBorder,
-  StarHalf,
-  TrendingDown,
-  TrendingUp as TrendingUpIcon,
-  MonetizationOn,
-  AccountCircle,
-  VpnKey,
-  VerifiedUser,
-  Gavel,
-  Policy,
-  DataUsage,
-  Storage,
-  Backup,
-  RestoreFromTrash,
-  DeleteForever,
-  Restore,
-  ArchiveOutlined,
-  Unarchive,
-  VisibilityOff,
-  ExpandMore,
   Home,
-  Warning,
-  CheckCircle,
-  Error,
-  Info,
-  Visibility,
-  ArrowBack,
+  AccountBalance,
+  Save,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import { addWageSetting, updateWageSetting, deleteWageSetting } from '../store/slices/wageSlice';
@@ -189,13 +125,13 @@ interface TerminatedDriverData {
 
 const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { wageSettings, wageCalculations } = useSelector((state: RootState) => state.wage);
+  const { wageSettings } = useSelector((state: RootState) => state.wage);
   
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showBankDialog, setShowBankDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [showTerminatedDialog, setShowTerminatedDialog] = useState(false);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [currentSetting, setCurrentSetting] = useState({
     driverName: '',
@@ -263,7 +199,7 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
     },
   ]);
 
-  const [terminatedDrivers, setTerminatedDrivers] = useState<TerminatedDriverData[]>([
+  const [terminatedDrivers] = useState<TerminatedDriverData[]>([
     {
       id: '1',
       driverId: '3',
@@ -421,31 +357,7 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
     return hourlyRate * 1.5;
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'success';
-      case 'holiday': return 'info';
-      case 'sick': return 'warning';
-      case 'terminated': return 'error';
-      case 'suspended': return 'default';
-      default: return 'default';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active': return <Work />;
-      case 'holiday': return <BeachAccess />;
-      case 'sick': return <Warning />;
-      case 'terminated': return <Block />;
-      case 'suspended': return <Block />;
-      default: return <Person />;
-    }
-  };
-
   const activeDrivers = wageSettings.filter(s => s.isActive).length;
-  const driversOnHoliday = driverStatuses.filter(s => s.status === 'holiday' && s.isActive).length;
-  const terminatedDriversCount = terminatedDrivers.length;
 
   return (
     <Box sx={{ py: 2 }}>
@@ -503,7 +415,7 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs 
           value={tabValue} 
-          onChange={(e, newValue) => setTabValue(newValue)}
+          onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
               color: '#FFD700', // Yellow color for inactive tabs
@@ -787,7 +699,7 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
                 options={employees.filter(emp => emp.isActive)}
                 getOptionLabel={(option) => option.name}
                 value={selectedEmployee}
-                onChange={(event, newValue) => handleEmployeeSelection(newValue)}
+                onChange={(_, newValue) => handleEmployeeSelection(newValue)}
                 renderInput={(params) => (
                   <TextField
                     {...params}

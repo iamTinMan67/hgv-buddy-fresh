@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
 import {
   Box,
   Typography,
@@ -7,24 +6,20 @@ import {
   Card,
   CardContent,
   Button,
-  Paper,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Paper,
   Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   Tabs,
   Tab,
@@ -32,32 +27,72 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  LinearProgress,
+  Avatar,
   Tooltip,
+  Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  LinearProgress,
 } from '@mui/material';
 import {
-  Assignment,
-  Warning,
-  CheckCircle,
-  Error,
-  ArrowBack,
   Add,
   Edit,
+  Delete,
   Visibility,
-  Schedule,
-  Person,
-  LocalShipping,
-  Security,
-  Description,
-  TrendingUp,
-  TrendingDown,
-  Circle,
-  Report,
-  Build,
-  Speed,
+  DirectionsCar,
+  CheckCircle,
+  Pending,
+  PlayArrow,
+  Stop,
+  Warning,
+  Map,
+  AccessTime,
+  LocalGasStation,
   Home,
+  Person,
+  LocationOn,
+  Phone,
+  Email,
+  CalendarToday,
+  Work,
+  Timer,
+  Payment,
+  Receipt,
+  School,
+  AccountCircle,
+  VpnKey,
+  VerifiedUser,
+  Gavel,
+  Policy,
+  DataUsage,
+  Storage,
+  Backup,
+  RestoreFromTrash,
+  DeleteForever,
+  Restore,
+  ArchiveOutlined,
+  Unarchive,
+  VisibilityOff,
+  ExpandMore,
+  Error,
+  Info,
+  PhoneAndroid,
+  AlternateEmail,
+  Group,
+  SupervisorAccount,
+  Engineering,
+  AdminPanelSettings,
+  CleaningServices,
+  Circle,
+  LocalShipping,
+  Assignment,
+  Refresh,
+  Business,
+  Description,
+  Security,
 } from '@mui/icons-material';
-import { RootState } from '../store';
 
 interface ComplianceTrackingProps {
   onClose: () => void;
@@ -102,6 +137,7 @@ interface ComplianceItem {
 const ComplianceTracking: React.FC<ComplianceTrackingProps> = ({ onClose }) => {
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ComplianceItem | null>(null);
 
   // Mock compliance data
@@ -389,7 +425,7 @@ const ComplianceTracking: React.FC<ComplianceTrackingProps> = ({ onClose }) => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs 
           value={tabValue} 
-          onChange={(e, newValue) => setTabValue(newValue)}
+          onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
               color: '#FFD700', // Yellow color for inactive tabs

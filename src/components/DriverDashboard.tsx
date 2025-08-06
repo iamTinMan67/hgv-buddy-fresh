@@ -7,7 +7,6 @@ import {
   Card,
   CardContent,
   Button,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -21,14 +20,9 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   Tabs,
   Tab,
-  Tooltip,
   List,
   ListItem,
   ListItemText,
@@ -36,80 +30,30 @@ import {
   Divider,
   LinearProgress,
   Avatar,
-  Badge,
-  Switch,
-  FormControlLabel,
 } from '@mui/material';
 import {
-  Schedule,
   Add,
-  Edit,
-  Delete,
-  Visibility,
-  ArrowBack,
-  LocalShipping,
-  Person,
-  LocationOn,
-  AccessTime,
-  DirectionsCar,
-  CheckCircle,
   Pending,
   PlayArrow,
   Stop,
   Warning,
-  TrendingUp,
-  Map,
-  Timeline as TimelineIcon,
-  Speed,
   Assignment,
   Update,
-  Report,
   Refresh,
-  CalendarToday,
-  Today,
-  NextWeek,
-  AttachMoney,
   Work,
   Timer,
   Payment,
   Receipt,
-  TrendingDown,
-  TrendingUp as TrendingUpIcon,
-  CheckCircleOutline,
-  ErrorOutline,
-  Info,
-  Star,
-  StarBorder,
-  StarHalf,
   AccountBalance,
-  AccountBalanceWallet,
-  MonetizationOn,
-  AccessTimeFilled,
-  ScheduleSend,
-  EventNote,
-  ViewWeek,
-  ViewDay,
-  ViewModule,
-  FilterList,
-  Sort,
-  Download,
-  Print,
-  Share,
-  Notifications,
-  Settings,
-  Help,
   Home,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import {
-  DailySchedule,
-  JobAssignment,
   JobStatus,
   updateScheduleJobStatus,
   updateJobStatus,
 } from '../store/slices/jobSlice';
-import { WageSettings, WageCalculation } from '../store/slices/wageSlice';
-import { format, parse, differenceInMinutes, addMinutes, isWeekend } from 'date-fns';
+import { parse, differenceInMinutes, isWeekend } from 'date-fns';
 
 interface DriverDashboardProps {
   onClose: () => void;
@@ -139,9 +83,8 @@ function TabPanel(props: TabPanelProps) {
 const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { dailySchedules, jobs } = useSelector((state: RootState) => state.job);
-  const { vehicles } = useSelector((state: RootState) => state.vehicle);
   const { user } = useSelector((state: RootState) => state.auth);
-  const { wageSettings, wageCalculations } = useSelector((state: RootState) => state.wage);
+  const { wageSettings } = useSelector((state: RootState) => state.wage);
 
   const [tabValue, setTabValue] = useState(0);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
@@ -174,7 +117,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
     switch (status) {
       case 'scheduled': return <Pending />;
       case 'in_progress': return <PlayArrow />;
-      case 'completed': return <CheckCircle />;
+      case 'completed': return <Stop />;
       case 'cancelled': return <Stop />;
       default: return <Pending />;
     }
@@ -201,7 +144,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
       case 'in_progress': return <PlayArrow />;
       case 'attempted': return <Warning />;
       case 'rescheduled': return <Refresh />;
-      case 'completed': return <CheckCircle />;
+      case 'completed': return <Stop />;
       case 'failed': return <Stop />;
       case 'cancelled': return <Stop />;
       default: return <Pending />;
@@ -425,7 +368,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs 
           value={tabValue} 
-          onChange={(e, newValue) => setTabValue(newValue)}
+          onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
               color: '#FFD700', // Yellow color for inactive tabs
@@ -578,7 +521,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
                       Standard Hours
                     </Typography>
                     <Typography variant="h6" color="primary">
-                      {Math.round(calculateDailyWage(selectedDate).standardMinutes / 60)}h {calculateDailyWage(selectedDate).standardMinutes % 60}m
+                      {Math.round((calculateDailyWage(selectedDate)?.standardMinutes || 0) / 60)}h {(calculateDailyWage(selectedDate)?.standardMinutes || 0) % 60}m
                     </Typography>
                   </Grid>
                   <Grid item xs={6}>
@@ -586,7 +529,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
                       Overtime Hours
                     </Typography>
                     <Typography variant="h6" color="warning.main">
-                      {Math.round(calculateDailyWage(selectedDate).overtimeMinutes / 60)}h {calculateDailyWage(selectedDate).overtimeMinutes % 60}m
+                      {Math.round((calculateDailyWage(selectedDate)?.overtimeMinutes || 0) / 60)}h {(calculateDailyWage(selectedDate)?.overtimeMinutes || 0) % 60}m
                     </Typography>
                   </Grid>
                   <Grid item xs={6}>
@@ -594,7 +537,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
                       Total Pay
                     </Typography>
                     <Typography variant="h6" color="success.main">
-                      £{calculateDailyWage(selectedDate).totalPay.toFixed(2)}
+                      £{(calculateDailyWage(selectedDate)?.totalPay || 0).toFixed(2)}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -623,12 +566,12 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
                     Standard Pay
                   </Typography>
                   <Typography variant="h6" color="primary">
-                    £{calculateDailyWage(selectedDate).standardPay.toFixed(2)}
+                    £{(calculateDailyWage(selectedDate)?.standardPay || 0).toFixed(2)}
                   </Typography>
                   <LinearProgress
                     variant="determinate"
-                    value={calculateDailyWage(selectedDate).totalPay > 0 ? 
-                          (calculateDailyWage(selectedDate).standardPay / calculateDailyWage(selectedDate).totalPay) * 100 : 0}
+                                        value={(calculateDailyWage(selectedDate)?.totalPay || 0) > 0 ?
+                          ((calculateDailyWage(selectedDate)?.standardPay || 0) / (calculateDailyWage(selectedDate)?.totalPay || 1)) * 100 : 0}
                     sx={{ mt: 1 }}
                   />
                 </Box>
@@ -637,12 +580,12 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
                     Overtime Pay
                   </Typography>
                   <Typography variant="h6" color="warning.main">
-                    £{calculateDailyWage(selectedDate).overtimePay.toFixed(2)}
+                    £{(calculateDailyWage(selectedDate)?.overtimePay || 0).toFixed(2)}
                   </Typography>
                   <LinearProgress
                     variant="determinate"
-                    value={calculateDailyWage(selectedDate).totalPay > 0 ? 
-                          (calculateDailyWage(selectedDate).overtimePay / calculateDailyWage(selectedDate).totalPay) * 100 : 0}
+                    value={(calculateDailyWage(selectedDate)?.totalPay || 0) > 0 ? 
+                          ((calculateDailyWage(selectedDate)?.overtimePay || 0) / (calculateDailyWage(selectedDate)?.totalPay || 1)) * 100 : 0}
                     sx={{ mt: 1 }}
                     color="warning"
                   />
@@ -650,7 +593,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
                 <Divider sx={{ my: 2 }} />
                 <Box>
                   <Typography variant="h6" color="success.main">
-                    Total: £{calculateDailyWage(selectedDate).totalPay.toFixed(2)}
+                    Total: £{(calculateDailyWage(selectedDate)?.totalPay || 0).toFixed(2)}
                   </Typography>
                 </Box>
               </CardContent>
@@ -848,7 +791,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
                   fullWidth
                   label="Price per Litre (£)"
                   type="number"
-                  step="0.01"
+                  inputProps={{ step: 0.01 }}
                   placeholder="e.g., 1.85"
                   helperText="Enter the price per litre"
                 />
@@ -939,7 +882,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
                 fullWidth
                 variant="contained"
                 color="success"
-                startIcon={<CheckCircle />}
+                startIcon={<Stop />}
                 onClick={() => handleStatusUpdate('completed')}
                 sx={{ mb: 1 }}
               >

@@ -272,8 +272,8 @@ const ClientInvoices: React.FC<ClientInvoicesProps> = ({ onClose }) => {
 
   const handleAddInvoice = () => {
     const newInvoice: ClientInvoice = {
-      id: Date.now().toString(),
       ...currentInvoice as ClientInvoice,
+      id: Date.now().toString(),
       createdAt: new Date().toISOString(),
       lastUpdated: new Date().toISOString(),
     };
@@ -431,7 +431,7 @@ const ClientInvoices: React.FC<ClientInvoicesProps> = ({ onClose }) => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs 
           value={tabValue} 
-          onChange={(e, newValue) => setTabValue(newValue)}
+          onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
               color: 'text.secondary',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -13,14 +13,12 @@ import {
   MenuItem,
   Chip,
   IconButton,
-  Paper,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
   Divider,
   Alert,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -30,9 +28,6 @@ import {
   Map,
   Directions,
   LocalShipping,
-  GasStation,
-  Restaurant,
-  Hotel,
   Warning,
   Traffic,
   Speed,
@@ -40,16 +35,14 @@ import {
   Straighten,
   LocalGasStation,
   Home,
-  Save,
   Share,
-  Print,
-  Download,
   Settings,
   Refresh,
   MyLocation,
   LocationOn,
   Route,
   Navigation,
+  Download,
 } from '@mui/icons-material';
 
 interface GarminRoutePlanningProps {
@@ -88,7 +81,7 @@ interface RoutePlan {
 
 const GarminRoutePlanning: React.FC<GarminRoutePlanningProps> = ({ onClose }) => {
   const [currentView, setCurrentView] = useState<'main' | 'planning' | 'active' | 'history'>('main');
-  const [selectedRoute, setSelectedRoute] = useState<RoutePlan | null>(null);
+
   const [isLoading, setIsLoading] = useState(false);
   const [showRouteDialog, setShowRouteDialog] = useState(false);
   const [garminConnected, setGarminConnected] = useState(false);
@@ -172,25 +165,6 @@ const GarminRoutePlanning: React.FC<GarminRoutePlanningProps> = ({ onClose }) =>
     }
   };
 
-  const getRealTimeTraffic = async () => {
-    // Mock real-time traffic data from Garmin
-    return {
-      conditions: 'Moderate',
-      delays: ['M6 Junction 8-10: 15min delay'],
-      alternativeRoutes: ['M40 via Oxford', 'A1 via Peterborough']
-    };
-  };
-
-  const getWeatherConditions = async () => {
-    // Mock weather data from Garmin
-    return {
-      current: 'Clear',
-      forecast: 'Light rain expected in 2 hours',
-      visibility: 'Good',
-      windSpeed: '15 mph'
-    };
-  };
-
   const calculateOptimalRoute = async (start: RoutePoint, end: RoutePoint, waypoints: RoutePoint[]) => {
     setIsLoading(true);
     try {
@@ -218,7 +192,7 @@ const GarminRoutePlanning: React.FC<GarminRoutePlanningProps> = ({ onClose }) =>
       };
 
       setRoutes([...routes, newRoute]);
-      setSelectedRoute(newRoute);
+      // Route created successfully
       return newRoute;
     } catch (error) {
       console.error('Failed to calculate route:', error);

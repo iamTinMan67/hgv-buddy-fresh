@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
   Box,
   Typography,
@@ -6,44 +7,40 @@ import {
   Card,
   CardContent,
   Button,
-  Paper,
-  Chip,
-  IconButton,
-  Tooltip,
-  Tabs,
-  Tab,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  IconButton,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Paper,
+  Chip,
   Alert,
+  Tabs,
+  Tab,
+  Tooltip,
 } from '@mui/material';
 import {
-  LocalShipping,
-  Build,
-  Warning,
-  CheckCircle,
-  Error,
-  ArrowBack,
-  Speed,
-  Assignment,
-  DirectionsCar,
-  Settings,
   Add,
   Edit,
   Visibility,
-  Circle,
+  DirectionsCar,
+  CheckCircle,
+  Warning,
+  LocalShipping,
   Home,
+  Circle,
+  Build,
+  Error,
+  Speed,
 } from '@mui/icons-material';
-import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { Vehicle, VehicleDefectReport, VehicleStatus } from '../store/slices/vehicleSlice';
+
 
 interface FleetManagementProps {
   onClose: () => void;
@@ -236,7 +233,7 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs 
           value={tabValue} 
-          onChange={(e, newValue) => setTabValue(newValue)}
+          onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
               color: '#FFD700', // Yellow color for inactive tabs

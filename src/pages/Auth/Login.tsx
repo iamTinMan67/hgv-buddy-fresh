@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import {
   Box,
-  Card,
-  CardContent,
   TextField,
   Button,
   Typography,
@@ -40,9 +38,6 @@ const Login: React.FC = () => {
       // Simulate API call - replace with actual authentication
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Check if using default credentials or any credentials for testing
-      const isDefaultCredentials = email === DEFAULT_CREDENTIALS.email && password === DEFAULT_CREDENTIALS.password;
-      
       // Mock successful login for driver (allow any credentials for testing)
       const mockUser = {
         id: '1',
@@ -73,9 +68,6 @@ const Login: React.FC = () => {
     try {
       // Simulate API call - replace with actual authentication
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Check if using default credentials or any credentials for testing
-      const isDefaultCredentials = email === DEFAULT_CREDENTIALS.email && password === DEFAULT_CREDENTIALS.password;
       
       // Mock successful login for management (allow any credentials for testing)
       const mockUser = {
