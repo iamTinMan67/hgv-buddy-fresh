@@ -263,25 +263,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Card>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Assignment sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
-                  <Typography variant="h6">Job Assignment & Tracking</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Real-time job updates
-                  </Typography>
-                  <Button 
-                    variant="contained" 
-                    color="secondary" 
-                    sx={{ mt: 2 }}
-                    onClick={() => {/* Daily planner functionality removed */}}
-                  >
-                    View Jobs
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
+
 
 
 
