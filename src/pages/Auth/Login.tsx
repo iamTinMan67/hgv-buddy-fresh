@@ -69,17 +69,17 @@ const Login: React.FC = () => {
       // Simulate API call - replace with actual authentication
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Mock successful login for management (allow any credentials for testing)
+      // Mock successful login for admin (allow any credentials for testing)
       const mockUser = {
         id: '2',
         email: email,
         firstName: 'Jane',
-        lastName: 'Manager',
-        role: 'management' as const,
+        lastName: 'Admin',
+        role: 'admin' as const,
       };
       
       dispatch(setUser(mockUser));
-      console.log('Management logged in successfully:', mockUser);
+      console.log('Admin logged in successfully:', mockUser);
     } catch (err) {
       setError('Login failed. Please try again.');
     } finally {
@@ -87,7 +87,7 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleQuickLogin = (role: 'driver' | 'management') => {
+  const handleQuickLogin = (role: 'driver' | 'admin') => {
     setEmail(DEFAULT_CREDENTIALS.email);
     setPassword(DEFAULT_CREDENTIALS.password);
     
@@ -168,7 +168,7 @@ const Login: React.FC = () => {
           <Paper elevation={3} sx={{ p: 3, textAlign: 'center' }}>
             <Computer sx={{ fontSize: 60, color: 'secondary.main', mb: 2 }} />
             <Typography variant="h5" gutterBottom>
-              Management Portal
+              Admin Portal
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Monitor fleet, manage drivers, and track compliance
@@ -197,16 +197,16 @@ const Login: React.FC = () => {
               onClick={handleManagementLogin}
               sx={{ mb: 2 }}
             >
-              Management Login
+              Admin Login
             </Button>
             <Button
               variant="outlined"
               color="secondary"
               size="small"
               fullWidth
-              onClick={() => handleQuickLogin('management')}
+              onClick={() => handleQuickLogin('admin')}
             >
-              Quick Management Login
+              Quick Admin Login
             </Button>
           </Paper>
         </Grid>

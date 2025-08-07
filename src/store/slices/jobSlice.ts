@@ -37,6 +37,8 @@ export interface JobAssignment {
   actualEndTime?: string;
   pickupLocation: JobLocation;
   deliveryLocation: JobLocation;
+  useDifferentDeliveryAddress: boolean;
+  deliveryAddress?: string;
   cargoType: string;
   cargoWeight: number;
   specialRequirements?: string;
@@ -46,6 +48,21 @@ export interface JobAssignment {
   createdAt: string;
   updatedAt: string;
   createdBy: string;
+  authorizedBy: string;
+  // New load dimension fields
+  loadDimensions: {
+    length: number; // cm
+    width: number; // cm
+    height: number; // cm
+    weight: number; // kg
+    volume: number; // cubic meters (calculated)
+    isOversized: boolean;
+    isProtruding: boolean;
+    isBalanced: boolean;
+    isFragile: boolean;
+    plotAllocation?: string; // Plot ID for trailer positioning
+    loadNotes?: string;
+  };
 }
 
 export interface RoutePlan {

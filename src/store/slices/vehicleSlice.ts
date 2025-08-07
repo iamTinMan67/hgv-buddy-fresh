@@ -42,6 +42,7 @@ export interface Vehicle {
   year: number;
   type: 'HGV' | 'Articulated' | 'PCV' | 'PSV' | 'Van' | 'Car';
   status: VehicleStatus;
+  capacity: number; // in tons
   lastInspection: string;
   nextMOT: string;
   nextService: string;
@@ -81,6 +82,7 @@ const initialState: VehicleState = {
       year: 2022,
       type: 'HGV',
       status: 'Available',
+      capacity: 26,
       lastInspection: '2024-01-15',
       nextMOT: '2024-07-15',
       nextService: '2024-03-15',
@@ -99,6 +101,7 @@ const initialState: VehicleState = {
       year: 2021,
       type: 'Articulated',
       status: 'Service',
+      capacity: 44,
       lastInspection: '2024-01-10',
       nextMOT: '2024-06-10',
       nextService: '2024-02-10',
@@ -118,6 +121,7 @@ const initialState: VehicleState = {
       year: 2023,
       type: 'HGV',
       status: 'V.O.R',
+      capacity: 26,
       lastInspection: '2024-01-05',
       nextMOT: '2024-08-05',
       nextService: '2024-04-05',

@@ -219,7 +219,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
           Daily Planner
         </Typography>
         <Box>
-          {user?.role === 'management' && (
+          {(user?.role === 'admin' || user?.role === 'owner') && (
             <Button
               startIcon={<Add />}
               variant="contained"
@@ -489,7 +489,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                         <Visibility />
                       </IconButton>
                     </Tooltip>
-                    {user?.role === 'management' && (
+                    {(user?.role === 'admin' || user?.role === 'owner') && (
                       <>
                         <Tooltip title="Edit Schedule">
                           <IconButton

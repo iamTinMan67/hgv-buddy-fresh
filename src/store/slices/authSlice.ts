@@ -5,7 +5,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'driver' | 'management' | 'admin';
+  role: 'driver' | 'admin' | 'owner';
 }
 
 interface AuthState {

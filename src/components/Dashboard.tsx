@@ -71,9 +71,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     switch (role) {
       case 'driver':
         return 'primary';
-      case 'management':
-        return 'secondary';
       case 'admin':
+        return 'secondary';
+      case 'owner':
         return 'error';
       default:
         return 'default';
@@ -84,9 +84,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     switch (role) {
       case 'driver':
         return <LocalShipping />;
-      case 'management':
-        return <Person />;
       case 'admin':
+        return <Person />;
+      case 'owner':
         return <Person />;
       default:
         return <Person />;
@@ -391,7 +391,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </Grid>
           </>
         ) : (
-          // Management Dashboard
+          // Admin Dashboard (Admin & Owner)
           <>
             <Grid item xs={12} md={6} lg={4}>
               <Card>
@@ -436,7 +436,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <Card>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Assessment sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-                  <Typography variant="h6">Legal Hub</Typography>
+                  <Typography variant="h6">Legal</Typography>
                   <Typography variant="body2" color="text.secondary">
                     Legal compliance and regulations
                   </Typography>
@@ -458,7 +458,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <Card>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Schedule sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
-                  <Typography variant="h6">Planning Hub</Typography>
+                  <Typography variant="h6">Jobs & Planning</Typography>
                   <Typography variant="body2" color="text.secondary">
                     Daily planning, routes & job assignment
                   </Typography>
@@ -480,7 +480,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               <Card>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Assessment sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
-                  <Typography variant="h6">Reports Hub</Typography>
+                  <Typography variant="h6">Print Screen</Typography>
                   <Typography variant="body2" color="text.secondary">
                     Wage slips, fuel, purchase orders & invoices
                   </Typography>

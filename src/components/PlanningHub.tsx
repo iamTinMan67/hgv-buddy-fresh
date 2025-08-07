@@ -26,25 +26,34 @@ import {
   Traffic,
   Speed,
   Warning,
+  ViewInAr,
+  Scale,
+  Storage,
+  LocalShipping,
+  Edit,
 } from '@mui/icons-material';
 
 import DailyPlanner from './DailyPlanner';
 import RoutePlanning from './RoutePlanning';
 import GarminRoutePlanning from './GarminRoutePlanning';
 import JobAssignment from './JobAssignment';
+import TrailerPlanner from './TrailerPlanner';
+import LoadMap from './LoadMap';
 
 interface PlanningHubProps {
   onClose: () => void;
 }
 
 const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
-  const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'job'>('main');
+  const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'job' | 'trailer' | 'loadmap'>('main');
 
 
   const handleNavigateToDaily = () => setCurrentView('daily');
   const handleNavigateToRoute = () => setCurrentView('route');
   const handleNavigateToGarmin = () => setCurrentView('garmin');
   const handleNavigateToJob = () => setCurrentView('job');
+  const handleNavigateToTrailer = () => setCurrentView('trailer');
+  const handleNavigateToLoadMap = () => setCurrentView('loadmap');
   const handleBackToMain = () => setCurrentView('main');
 
   if (currentView === 'daily') {
@@ -61,6 +70,14 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
 
   if (currentView === 'job') {
     return <JobAssignment onClose={handleBackToMain} />;
+  }
+
+  if (currentView === 'trailer') {
+    return <TrailerPlanner onClose={handleBackToMain} />;
+  }
+
+  if (currentView === 'loadmap') {
+    return <LoadMap onClose={handleBackToMain} />;
   }
 
   // Main Planning Hub
@@ -84,7 +101,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
       {/* Sub-Portal Navigation */}
       <Grid container spacing={3}>
         {/* Daily Planner Card */}
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
@@ -140,7 +157,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
         </Grid>
 
         {/* Route Planning Card */}
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
@@ -195,8 +212,116 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
+        {/* Load Map Card */}
+        <Grid item xs={12} md={6} lg={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={handleNavigateToLoadMap}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'error.main', mr: 2 }}>
+                  <LocalShipping />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Load Map
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Delivery sequence and positioning
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<Map />} 
+                  label="Delivery Sequence" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<DirectionsCar />} 
+                  label="Tail to Bulkhead" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Edit />} 
+                  label="Driver Flexibility" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Trailer Planner Card */}
+        <Grid item xs={12} md={6} lg={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={handleNavigateToTrailer}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
+                  <ViewInAr />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Trailer Planner
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Cubage calculation and cargo layout
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<Scale />} 
+                  label="Cubage Calculator" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Storage />} 
+                  label="Cargo Layout" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<ViewInAr />} 
+                  label="3D Visualization" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Garmin Route Planning Card */}
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
@@ -250,7 +375,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
         </Grid>
 
         {/* Job Assignment Card */}
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
