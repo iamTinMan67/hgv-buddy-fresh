@@ -36,6 +36,7 @@ import DriverHub from './DriverHub';
 import DriverDashboard from './DriverDashboard';
 import ReportsHub from './ReportsHub';
 import AccountingHub from './AccountingHub';
+import InvoiceUpload from './InvoiceUpload';
 
 interface User {
   id: string;
@@ -62,6 +63,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
 
   const [showAccountingHub, setShowAccountingHub] = useState(false);
+  const [showInvoiceUpload, setShowInvoiceUpload] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -204,6 +206,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     );
   }
 
+  // Show invoice upload if requested
+  if (showInvoiceUpload) {
+    return (
+      <Box sx={{ py: 2 }}>
+        <InvoiceUpload onClose={() => setShowInvoiceUpload(false)} />
+      </Box>
+    );
+  }
+
   // Show driver dashboard if requested
   if (showDriverDashboard) {
     return (
@@ -273,10 +284,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   <Upload sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
                   <Typography variant="h6">Invoice Upload</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Document management
+                    OCR document processing
                   </Typography>
-                  <Button variant="contained" color="info" sx={{ mt: 2 }}>
-                    Upload Invoice
+                  <Button 
+                    variant="contained" 
+                    color="info" 
+                    sx={{ mt: 2 }}
+                    onClick={() => setShowInvoiceUpload(true)}
+                  >
+                    Upload & Process
                   </Button>
                 </CardContent>
               </Card>
