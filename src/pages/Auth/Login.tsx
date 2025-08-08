@@ -19,6 +19,9 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  // 🛠️ DEVELOPMENT MODE: Login screen is bypassed with auto-login
+  // This component is only shown if auto-login fails
+
   // Default credentials for testing
   const DEFAULT_CREDENTIALS = {
     email: 'Owner',

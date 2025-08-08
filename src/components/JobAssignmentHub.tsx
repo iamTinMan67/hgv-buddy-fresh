@@ -6,54 +6,76 @@ import {
   Card,
   CardContent,
   Avatar,
-  Chip,
   Divider,
+  Chip,
   IconButton,
 } from '@mui/material';
 import {
-  Business,
-  History,
+  Assignment,
+  Notes,
+  Schedule,
+  TrendingUp,
+  Assessment,
   Receipt,
   Home,
   Person,
-  Assignment,
+  Route,
+  Map,
+  Timeline,
+  DirectionsCar,
   LocalShipping,
-  Assessment,
-  TrendingUp,
-  AttachMoney,
+  ViewInAr,
+  Edit,
+  Description,
 } from '@mui/icons-material';
 
-import ClientContacts from './ClientContacts';
+import JobAllocationForm from './JobAllocationForm';
+import PlanningHub from './PlanningHub';
+import ReportsHub from './ReportsHub';
 
-interface ClientHubProps {
+interface JobAssignmentHubProps {
   onClose: () => void;
 }
 
-const ClientHub: React.FC<ClientHubProps> = ({ onClose }) => {
-  const [showClientContacts, setShowClientContacts] = useState(false);
+const JobAssignmentHub: React.FC<JobAssignmentHubProps> = ({ onClose }) => {
+  const [currentView, setCurrentView] = useState<'main' | 'jobAllocation' | 'planning' | 'reports'>('main');
 
-  // Show Client Contacts if requested
-  if (showClientContacts) {
-    return <ClientContacts onClose={() => setShowClientContacts(false)} />;
+  const handleNavigateToJobAllocation = () => setCurrentView('jobAllocation');
+  const handleNavigateToPlanning = () => setCurrentView('planning');
+  const handleNavigateToReports = () => setCurrentView('reports');
+  const handleBackToMain = () => setCurrentView('main');
+
+  if (currentView === 'jobAllocation') {
+    return <JobAllocationForm onClose={handleBackToMain} />;
   }
 
-  // Main Client Hub
+  if (currentView === 'planning') {
+    return <PlanningHub onClose={handleBackToMain} />;
+  }
+
+  if (currentView === 'reports') {
+    return <ReportsHub onClose={handleBackToMain} />;
+  }
+
+  // Main Job Assignment Hub
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          Client Hub
+        <Typography variant="h4" component="h1" sx={{ color: 'white' }}>
+          <Assignment sx={{ mr: 1, verticalAlign: 'middle' }} />
+          Job Assignment Hub
         </Typography>
         <IconButton
           onClick={onClose}
-          sx={{ color: 'yellow', fontSize: '1.5rem' }}
+          sx={{ color: 'yellow' }}
         >
           <Home />
         </IconButton>
       </Box>
 
+      {/* Sub-Portal Navigation */}
       <Grid container spacing={3}>
-        {/* Contacts Card */}
+        {/* Job Allocation Card */}
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
@@ -64,19 +86,19 @@ const ClientHub: React.FC<ClientHubProps> = ({ onClose }) => {
                 boxShadow: 4,
               }
             }}
-            onClick={() => setShowClientContacts(true)}
+            onClick={handleNavigateToJobAllocation}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                  <Person />
+                  <Assignment />
                 </Avatar>
                 <Box>
                   <Typography variant="h5" component="div">
-                    Contacts
+                    Job Allocation
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Manage client relationships
+                    Create and manage job assignments
                   </Typography>
                 </Box>
               </Box>
@@ -84,75 +106,21 @@ const ClientHub: React.FC<ClientHubProps> = ({ onClose }) => {
               <Divider sx={{ my: 2 }} />
               
               <Box sx={{ mt: 2, minHeight: '60px' }}>
-                <Chip 
-                  icon={<Business />} 
-                  label="Client Database" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                />
                 <Chip 
                   icon={<Person />} 
-                  label="Contact Info" 
+                  label="Driver Assignment" 
                   size="small" 
                   sx={{ mr: 1, mb: 1 }}
                 />
                 <Chip 
-                  icon={<Assessment />} 
-                  label="Client History" 
-                  size="small" 
-                  sx={{ mb: 1 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Order History Card */}
-        <Grid item xs={12} md={4}>
-          <Card 
-            sx={{ 
-              cursor: 'pointer', 
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: 4,
-              }
-            }}
-            onClick={() => {/* Order History functionality to be implemented */}}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-                  <History />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" component="div">
-                    Order History
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Track and manage order records
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
-                <Chip 
-                  icon={<Assignment />} 
-                  label="Order Tracking" 
+                  icon={<Route />} 
+                  label="Route Planning" 
                   size="small" 
                   sx={{ mr: 1, mb: 1 }}
                 />
                 <Chip 
                   icon={<LocalShipping />} 
-                  label="Delivery History" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                />
-                <Chip 
-                  icon={<TrendingUp />} 
-                  label="Order Analytics" 
+                  label="Cargo Details" 
                   size="small" 
                   sx={{ mb: 1 }}
                 />
@@ -161,7 +129,7 @@ const ClientHub: React.FC<ClientHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
-        {/* Invoices History Card */}
+        {/* Consignment Notes Card */}
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
@@ -172,19 +140,19 @@ const ClientHub: React.FC<ClientHubProps> = ({ onClose }) => {
                 boxShadow: 4,
               }
             }}
-            onClick={() => {/* Invoices History functionality to be implemented */}}
+            onClick={handleNavigateToReports}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'error.main', mr: 2 }}>
-                  <Receipt />
+                <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
+                  <Notes />
                 </Avatar>
                 <Box>
                   <Typography variant="h5" component="div">
-                    Invoices History
+                    Consignment Notes
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Access and manage invoice records
+                    Delivery notes and instructions
                   </Typography>
                 </Box>
               </Box>
@@ -193,20 +161,74 @@ const ClientHub: React.FC<ClientHubProps> = ({ onClose }) => {
               
               <Box sx={{ mt: 2, minHeight: '60px' }}>
                 <Chip 
-                  icon={<AttachMoney />} 
-                  label="Invoice Tracking" 
+                  icon={<Description />} 
+                  label="Delivery Notes" 
                   size="small" 
                   sx={{ mr: 1, mb: 1 }}
                 />
                 <Chip 
-                  icon={<Receipt />} 
-                  label="Payment History" 
+                  icon={<Edit />} 
+                  label="Instructions" 
                   size="small" 
                   sx={{ mr: 1, mb: 1 }}
                 />
                 <Chip 
-                  icon={<Assessment />} 
-                  label="Financial Reports" 
+                  icon={<ViewInAr />} 
+                  label="Layout Details" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Scheduling Card */}
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={handleNavigateToPlanning}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
+                  <Schedule />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Scheduling
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Planning and scheduling tools
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<Timeline />} 
+                  label="Daily Planner" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Map />} 
+                  label="Route Planning" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<DirectionsCar />} 
+                  label="Vehicle Planning" 
                   size="small" 
                   sx={{ mb: 1 }}
                 />
@@ -219,4 +241,4 @@ const ClientHub: React.FC<ClientHubProps> = ({ onClose }) => {
   );
 };
 
-export default ClientHub;
+export default JobAssignmentHub;

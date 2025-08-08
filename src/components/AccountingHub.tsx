@@ -21,320 +21,76 @@ import {
   AttachMoney,
   TrendingUp,
   TrendingDown,
-  Add,
-  Download,
-  Print,
-  Warning,
-  ArrowBack,
+  Home,
   Book,
+  Assessment,
+  LocalShipping,
+  Payment,
 } from '@mui/icons-material';
 
 import BookKeeping from './BookKeeping';
+import ReportsHub from './ReportsHub';
+import FuelManagement from './FuelManagement';
+import WageManagement from './WageManagement';
 
 interface AccountingHubProps {
   onClose: () => void;
 }
 
-interface AccountingRecord {
-  id: string;
-  type: 'income' | 'expense' | 'asset' | 'liability';
-  category: string;
-  description: string;
-  amount: number;
-  date: string;
-  status: 'pending' | 'completed' | 'cancelled';
-  reference?: string;
-  notes?: string;
-}
+
 
 const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<AccountingRecord | null>(null);
   const [showBookKeeping, setShowBookKeeping] = useState(false);
+  const [showReportsHub, setShowReportsHub] = useState(false);
+  const [showFuelHub, setShowFuelHub] = useState(false);
+  const [showWagesHub, setShowWagesHub] = useState(false);
 
-  // Mock accounting data
-  const [accountingRecords] = useState<AccountingRecord[]>([
-    {
-      id: '1',
-      type: 'income',
-      category: 'Transport Services',
-      description: 'Freight delivery payment',
-      amount: 2500.00,
-      date: '2024-01-15',
-      status: 'completed',
-      reference: 'INV-001',
-      notes: 'On-time delivery bonus included'
-    },
-    {
-      id: '2',
-      type: 'expense',
-      category: 'Fuel',
-      description: 'Diesel fuel purchase',
-      amount: 450.00,
-      date: '2024-01-14',
-      status: 'completed',
-      reference: 'FUEL-001',
-      notes: 'Standard fleet refueling'
-    },
-    {
-      id: '3',
-      type: 'expense',
-      category: 'Maintenance',
-      description: 'Vehicle service and repairs',
-      amount: 800.00,
-      date: '2024-01-13',
-      status: 'pending',
-      reference: 'MAINT-001',
-      notes: 'Scheduled maintenance'
-    },
-    {
-      id: '4',
-      type: 'income',
-      category: 'Transport Services',
-      description: 'Express delivery service',
-      amount: 1800.00,
-      date: '2024-01-12',
-      status: 'completed',
-      reference: 'INV-002',
-      notes: 'Premium service charge applied'
-    },
-    {
-      id: '5',
-      type: 'expense',
-      category: 'Insurance',
-      description: 'Fleet insurance premium',
-      amount: 1200.00,
-      date: '2024-01-10',
-      status: 'completed',
-      reference: 'INS-001',
-      notes: 'Quarterly premium payment'
-    }
-  ]);
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'income': return <TrendingUp color="success" />;
-      case 'expense': return <TrendingDown color="error" />;
-      case 'asset': return <AccountBalance color="primary" />;
-      case 'liability': return <Warning color="warning" />;
-      default: return <Receipt />;
-    }
-  };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'income': return 'success';
-      case 'expense': return 'error';
-      case 'asset': return 'primary';
-      case 'liability': return 'warning';
-      default: return 'default';
-    }
-  };
+  // Conditional rendering for child components
+  if (showBookKeeping) {
+    return <BookKeeping onClose={() => setShowBookKeeping(false)} />;
+  }
 
-  const closeViewDialog = () => {
-    setSelectedRecord(null);
-  };
+  if (showReportsHub) {
+    return <ReportsHub onClose={() => setShowReportsHub(false)} />;
+  }
 
-  const getTotalIncome = () => {
-    return accountingRecords
-      .filter(record => record.type === 'income' && record.status === 'completed')
-      .reduce((sum, record) => sum + record.amount, 0);
-  };
+  if (showFuelHub) {
+    return <FuelManagement onClose={() => setShowFuelHub(false)} />;
+  }
 
-  const getTotalExpenses = () => {
-    return accountingRecords
-      .filter(record => record.type === 'expense' && record.status === 'completed')
-      .reduce((sum, record) => sum + record.amount, 0);
-  };
-
-  const getNetProfit = () => {
-    return getTotalIncome() - getTotalExpenses();
-  };
-
-  const getPendingAmount = () => {
-    return accountingRecords
-      .filter(record => record.status === 'pending')
-      .reduce((sum, record) => sum + record.amount, 0);
-  };
+  if (showWagesHub) {
+    return <WageManagement onClose={() => setShowWagesHub(false)} />;
+  }
 
   // Main Accounting Hub
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={onClose} sx={{ mr: 2 }}>
-          <ArrowBack />
-        </IconButton>
-        <Typography variant="h4" component="h1">
+    <Box sx={{ py: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          <Receipt sx={{ mr: 1, verticalAlign: 'middle' }} />
           Accounting Hub
         </Typography>
+        <IconButton
+          onClick={onClose}
+          sx={{ color: 'yellow', fontSize: '1.5rem' }}
+        >
+          <Home />
+        </IconButton>
       </Box>
 
+      {/* Sub-Portal Navigation */}
       <Grid container spacing={3}>
-        {/* Financial Overview Card */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ transform: 'scale(0.6)' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-                  <TrendingUp />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" component="div">
-                    Financial Overview
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Current financial status
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="h6" color="success.main">
-                    £{getTotalIncome().toFixed(2)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Income
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="h6" color="error.main">
-                    £{getTotalExpenses().toFixed(2)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Expenses
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="h6" color={getNetProfit() >= 0 ? 'success.main' : 'error.main'}>
-                    £{getNetProfit().toFixed(2)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Net Profit
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="h6" color="warning.main">
-                    £{getPendingAmount().toFixed(2)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Pending Amount
-                  </Typography>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Recent Transactions Card */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ transform: 'scale(0.6)' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
-                  <Receipt />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" component="div">
-                    Recent Transactions
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Latest accounting records
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
-                {accountingRecords.slice(0, 5).map((record) => (
-                  <Box key={record.id} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Box sx={{ mr: 1 }}>
-                      {getTypeIcon(record.type)}
-                    </Box>
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Typography variant="body2">
-                        {record.description}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {record.date}
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" color={getTypeColor(record.type) as any}>
-                      £{record.amount.toFixed(2)}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Records Management Card */}
+        {/* Book-Keeping Card */}
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
-              transform: 'scale(0.6)',
+              transform: 'scale(0.94)',
               '&:hover': {
-                transform: 'translateY(-4px) scale(0.6)',
-                boxShadow: 4,
-              }
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                  <Receipt />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" component="div">
-                    Records
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Manage accounting records
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
-                <Chip 
-                  icon={<TrendingUp />} 
-                  label="Income" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                />
-                <Chip 
-                  icon={<TrendingDown />} 
-                  label="Expenses" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                />
-                <Chip 
-                  icon={<AccountBalance />} 
-                  label="Assets" 
-                  size="small" 
-                  sx={{ mb: 1 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Books Card */}
-        <Grid item xs={12} md={4}>
-          <Card 
-            sx={{ 
-              cursor: 'pointer', 
-              transition: 'all 0.3s ease',
-              transform: 'scale(0.6)',
-              '&:hover': {
-                transform: 'translateY(-4px) scale(0.6)',
+                transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
               }
             }}
@@ -347,10 +103,10 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
                 </Avatar>
                 <Box>
                   <Typography variant="h5" component="div">
-                    Books
+                    Book-Keeping
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Bookkeeping & ledgers
+                    Data entry & ledgers
                   </Typography>
                 </Box>
               </Box>
@@ -381,23 +137,136 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
+        {/* Wages Card */}
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
+              '&:hover': {
+                transform: 'translateY(-4px) scale(0.94)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={() => setShowWagesHub(true)}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
+                  <Payment />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Wages
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Payroll management
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<Payment />} 
+                  label="Payroll" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<TrendingUp />} 
+                  label="Overtime" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<AccountBalance />} 
+                  label="Tax" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Fuel Card */}
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
+              '&:hover': {
+                transform: 'translateY(-4px) scale(0.94)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={() => setShowFuelHub(true)}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'error.main', mr: 2 }}>
+                  <LocalShipping />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Fuel
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Fuel expense tracking
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<LocalShipping />} 
+                  label="Diesel" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<TrendingDown />} 
+                  label="Expenses" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Receipt />} 
+                  label="Receipts" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+
+
         {/* Reports Card */}
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
-              transform: 'scale(0.6)',
+              transform: 'scale(0.94)',
               '&:hover': {
-                transform: 'translateY(-4px) scale(0.6)',
+                transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
               }
             }}
+            onClick={() => setShowReportsHub(true)}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-                  <AttachMoney />
+                  <Assessment />
                 </Avatar>
                 <Box>
                   <Typography variant="h5" component="div">
@@ -435,114 +304,122 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
-        {/* Quick Actions Card */}
+
+
+        {/* Coming Soon Card 1 */}
         <Grid item xs={12} md={4}>
-          <Card sx={{ transform: 'scale(0.6)' }}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
+              '&:hover': {
+                transform: 'translateY(-4px) scale(0.94)',
+                boxShadow: 4,
+              }
+            }}
+          >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
-                  <Add />
+                <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
+                  <AccountBalance />
                 </Avatar>
                 <Box>
                   <Typography variant="h5" component="div">
-                    Quick Actions
+                    Coming Soon
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Common accounting tasks
+                    New feature in development
                   </Typography>
                 </Box>
               </Box>
               
               <Divider sx={{ my: 2 }} />
               
-              <Box sx={{ mt: 2 }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<Add />}
-                  fullWidth
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<TrendingUp />} 
+                  label="Feature 1" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<TrendingDown />} 
+                  label="Feature 2" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<AccountBalance />} 
+                  label="Feature 3" 
+                  size="small" 
                   sx={{ mb: 1 }}
-                  onClick={() => setShowAddDialog(true)}
-                >
-                  Add Record
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<Download />}
-                  fullWidth
-                  sx={{ mb: 1 }}
-                >
-                  Export Data
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<Print />}
-                  fullWidth
-                >
-                  Print Report
-                </Button>
+                />
               </Box>
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Coming Soon Card 2 */}
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
+              '&:hover': {
+                transform: 'translateY(-4px) scale(0.94)',
+                boxShadow: 4,
+              }
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'grey.600', mr: 2 }}>
+                  <Receipt />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Coming Soon
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    New feature in development
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<TrendingUp />} 
+                  label="Feature 1" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<TrendingDown />} 
+                  label="Feature 2" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<AccountBalance />} 
+                  label="Feature 3" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
       </Grid>
 
-      {/* Add Record Dialog */}
-      <Dialog open={showAddDialog} onClose={() => setShowAddDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Add Accounting Record</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            Add new accounting record functionality would go here.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowAddDialog(false)}>Cancel</Button>
-          <Button variant="contained">Add Record</Button>
-        </DialogActions>
-      </Dialog>
 
-      {/* View Record Dialog */}
-      <Dialog open={!!selectedRecord} onClose={closeViewDialog} maxWidth="md" fullWidth>
-        <DialogTitle>Record Details</DialogTitle>
-        <DialogContent>
-          {selectedRecord && (
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                {selectedRecord.description}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Category: {selectedRecord.category}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Amount: £{selectedRecord.amount.toFixed(2)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Date: {selectedRecord.date}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Status: {selectedRecord.status}
-              </Typography>
-              {selectedRecord.reference && (
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Reference: {selectedRecord.reference}
-                </Typography>
-              )}
-              {selectedRecord.notes && (
-                <Typography variant="body2" color="text.secondary">
-                  Notes: {selectedRecord.notes}
-                </Typography>
-              )}
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeViewDialog}>Close</Button>
-        </DialogActions>
-      </Dialog>
 
-      {/* BookKeeping Component */}
-      {showBookKeeping && (
-        <BookKeeping onClose={() => setShowBookKeeping(false)} />
-      )}
+
+
     </Box>
   );
 };

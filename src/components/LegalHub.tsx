@@ -40,15 +40,15 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
 
   // Main Legal Hub
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ p: 3, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h4" component="h1" sx={{ color: 'white' }}>
           <Gavel sx={{ mr: 1, verticalAlign: 'middle' }} />
           Legal Hub
         </Typography>
         <IconButton
           onClick={onClose}
-          sx={{ color: 'yellow', fontSize: '1.5rem' }}
+          sx={{ color: 'yellow' }}
         >
           <Home />
         </IconButton>
@@ -57,7 +57,7 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
       {/* Sub-Portal Navigation */}
       <Grid container spacing={3}>
         {/* Compliance Tracking Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
@@ -110,22 +110,25 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
-        {/* Placeholder Card for consistent layout */}
-        <Grid item xs={12} md={6}>
+        {/* Coming Soon Card 1 */}
+        <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
-              opacity: 0.3,
-              cursor: 'default',
+              cursor: 'pointer', 
               transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
             }}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'grey.400', mr: 2 }}>
+                <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
                   <Gavel />
                 </Avatar>
                 <Box>
-                  <Typography variant="h5" component="div" sx={{ color: 'grey.500' }}>
+                  <Typography variant="h5" component="div">
                     Coming Soon
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -139,21 +142,74 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
               <Box sx={{ mt: 2, minHeight: '60px' }}>
                 <Chip 
                   icon={<TrendingUp />} 
-                  label="Future" 
+                  label="Feature 1" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
+                  sx={{ mr: 1, mb: 1 }}
                 />
                 <Chip 
                   icon={<Analytics />} 
-                  label="Features" 
+                  label="Feature 2" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
+                  sx={{ mr: 1, mb: 1 }}
                 />
                 <Chip 
                   icon={<Report />} 
-                  label="Reports" 
+                  label="Feature 3" 
                   size="small" 
-                  sx={{ mb: 1, opacity: 0.5 }}
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Coming Soon Card 2 */}
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'grey.600', mr: 2 }}>
+                  <Gavel />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Coming Soon
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Relevant Legislation
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<TrendingUp />} 
+                  label="Feature 1" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Analytics />} 
+                  label="Feature 2" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Report />} 
+                  label="Feature 3" 
+                  size="small" 
+                  sx={{ mb: 1 }}
                 />
               </Box>
             </CardContent>

@@ -305,67 +305,16 @@ const DriverPlanner: React.FC<DriverPlannerProps> = ({ onClose }) => {
             }
             label="Show Optimized Route"
           />
-          <Button variant="outlined" onClick={onClose} sx={{ ml: 2 }}>
-            Close
-          </Button>
+          <IconButton
+            onClick={onClose}
+            sx={{ color: 'yellow', fontSize: '1.5rem' }}
+          >
+            <Home />
+          </IconButton>
         </Box>
       </Box>
 
-      {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Schedule sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-              <Typography variant="h4" component="div">
-                {totalJobs}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Jobs
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <CheckCircle sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-              <Typography variant="h4" component="div">
-                {completedJobs}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Completed
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Pending sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
-              <Typography variant="h4" component="div">
-                {pendingJobs}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Pending
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Route sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
-              <Typography variant="h4" component="div">
-                {totalDistance.toFixed(1)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Volume (m³)
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+
 
       {/* Date Selection and Controls */}
       <Box sx={{ mb: 3 }}>
@@ -424,11 +373,17 @@ const DriverPlanner: React.FC<DriverPlannerProps> = ({ onClose }) => {
           onChange={(e, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
-              color: '#FFD700',
+              color: 'white',
               '&.Mui-selected': {
-                color: 'primary.main',
+                color: 'yellow',
               },
+              '&:hover': {
+                color: 'yellow',
+              }
             },
+            '& .MuiTabs-indicator': {
+              backgroundColor: 'yellow',
+            }
           }}
         >
           <Tab label="Schedule Report" />
@@ -538,38 +493,7 @@ const DriverPlanner: React.FC<DriverPlannerProps> = ({ onClose }) => {
             </Card>
           </Grid>
 
-          {/* Route Summary */}
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Route Summary
-                </Typography>
-                <List>
-                  {currentJobs.map((job, index) => (
-                    <ListItem key={job.id} dense>
-                      <ListItemIcon>
-                        <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem' }}>
-                          {index + 1}
-                        </Avatar>
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={job.deliveryLocation.name}
-                        secondary={`${job.scheduleJob.scheduledTime} - ${job.jobNumber}`}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="body2" color="text.secondary">
-                  Total Distance: {totalDistance.toFixed(1)} m³
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Estimated Duration: {currentJobs.reduce((sum, job) => sum + job.estimatedDuration, 0)} min
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+
         </Grid>
       </TabPanel>
 

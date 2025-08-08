@@ -49,6 +49,7 @@ import {
   Save,
   Undo,
   Redo,
+  Home,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import {
@@ -270,9 +271,12 @@ const TrailerPlan: React.FC<TrailerPlanProps> = ({ onClose, selectedJobs = [] })
             }
             label="Driver Mode"
           />
-          <Button variant="outlined" onClick={onClose} sx={{ ml: 2 }}>
-            Close
-          </Button>
+          <IconButton
+            onClick={onClose}
+            sx={{ color: 'yellow', fontSize: '1.5rem' }}
+          >
+            <Home />
+          </IconButton>
         </Box>
       </Box>
 

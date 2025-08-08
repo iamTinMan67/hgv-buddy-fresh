@@ -20,6 +20,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  IconButton,
 } from '@mui/material';
 import {
   Add,
@@ -32,6 +33,7 @@ import {
   Contacts,
   PhoneAndroid,
   AlternateEmail,
+  Home,
 } from '@mui/icons-material';
 
 interface ClientContactsProps {
@@ -168,7 +170,8 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
       notes: 'Large fleet operator',
       createdAt: '2024-01-08T11:00:00Z',
       lastUpdated: '2024-01-16T15:45:00Z'
-    }
+    },
+
   ]);
 
   const getStatusColor = (status: string) => {
@@ -275,13 +278,16 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Button onClick={onClose} sx={{ mr: 2 }}>
-          ← Back
-        </Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1">
           Client Contacts
         </Typography>
+        <IconButton
+          onClick={onClose}
+          sx={{ color: 'yellow', fontSize: '1.5rem' }}
+        >
+          <Home />
+        </IconButton>
       </Box>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -293,6 +299,16 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
               minHeight: 48,
               textTransform: 'none',
               fontSize: '1rem',
+              color: 'white',
+              '&.Mui-selected': {
+                color: 'yellow',
+              },
+              '&:hover': {
+                color: 'yellow',
+              }
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: 'yellow',
             }
           }}
         >

@@ -303,69 +303,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
         </Box>
       </Box>
 
-      {/* Driver Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Avatar sx={{ bgcolor: 'primary.main', mx: 'auto', mb: 1 }}>
-                <Work />
-              </Avatar>
-              <Typography variant="h4" color="primary">
-                {todaySchedules.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Today's Jobs
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Avatar sx={{ bgcolor: 'success.main', mx: 'auto', mb: 1 }}>
-                <Timer />
-              </Avatar>
-              <Typography variant="h4" color="success.main">
-                {Math.round(calculateDailyHours(selectedDate) / 60)}h
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Hours Today
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Avatar sx={{ bgcolor: 'warning.main', mx: 'auto', mb: 1 }}>
-                <Payment />
-              </Avatar>
-              <Typography variant="h4" color="warning.main">
-                £{calculateDailyWage(selectedDate).totalPay.toFixed(2)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Today's Pay
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Avatar sx={{ bgcolor: 'info.main', mx: 'auto', mb: 1 }}>
-                <AccountBalance />
-              </Avatar>
-              <Typography variant="h4" color="info.main">
-                £{driverWageSetting?.hourlyRate || 0}/hr
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Standard Rate
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -384,7 +322,6 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
         >
           <Tab label="Today's Jobs" />
           <Tab label="Hours & Pay" />
-          <Tab label="Weekly Summary" />
           <Tab label="Job History" />
           <Tab label="Fuel" />
         </Tabs>
@@ -605,91 +542,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
         </Grid>
       </TabPanel>
 
-      {/* Weekly Summary Tab */}
-      <TabPanel value={tabValue} index={2}>
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Last 7 Days Summary
-            </Typography>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Jobs</TableCell>
-                    <TableCell>Hours</TableCell>
-                    <TableCell>Standard Pay</TableCell>
-                    <TableCell>Overtime Pay</TableCell>
-                    <TableCell>Total Pay</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {last7Days.map(date => {
-                    const daySchedules = driverSchedules.filter(schedule => schedule.date === date);
-                    const dayWage = calculateDailyWage(date);
-                    return (
-                      <TableRow key={date}>
-                        <TableCell>
-                          {new Date(date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
-                        </TableCell>
-                        <TableCell>
-                          {daySchedules.reduce((sum, schedule) => sum + schedule.totalJobs, 0)}
-                        </TableCell>
-                        <TableCell>
-                          {Math.round(calculateDailyHours(date) / 60)}h {calculateDailyHours(date) % 60}m
-                        </TableCell>
-                        <TableCell>£{dayWage.standardPay.toFixed(2)}</TableCell>
-                        <TableCell>£{dayWage.overtimePay.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <Typography variant="body2" fontWeight="bold" color="success.main">
-                            £{dayWage.totalPay.toFixed(2)}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            <Divider sx={{ my: 2 }} />
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={3}>
-                <Typography variant="body2" color="text.secondary">
-                  Total Hours This Week
-                </Typography>
-                <Typography variant="h6">
-                  {Math.round(last7Days.reduce((sum, date) => sum + calculateDailyHours(date), 0) / 60)}h
-                </Typography>
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <Typography variant="body2" color="text.secondary">
-                  Total Standard Pay
-                </Typography>
-                <Typography variant="h6" color="primary">
-                  £{last7Days.reduce((sum, date) => sum + calculateDailyWage(date).standardPay, 0).toFixed(2)}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <Typography variant="body2" color="text.secondary">
-                  Total Overtime Pay
-                </Typography>
-                <Typography variant="h6" color="warning.main">
-                  £{last7Days.reduce((sum, date) => sum + calculateDailyWage(date).overtimePay, 0).toFixed(2)}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <Typography variant="body2" color="text.secondary">
-                  Weekly Total
-                </Typography>
-                <Typography variant="h6" color="success.main">
-                  £{last7Days.reduce((sum, date) => sum + calculateDailyWage(date).totalPay, 0).toFixed(2)}
-                </Typography>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-      </TabPanel>
+
 
       {/* Job History Tab */}
       <TabPanel value={tabValue} index={3}>

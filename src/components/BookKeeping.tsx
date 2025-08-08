@@ -21,13 +21,19 @@ import {
   IconButton,
   Tabs,
   Tab,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText,
 } from '@mui/material';
 import {
   AccountBalance,
   Add,
   Visibility,
   CheckCircle,
-  ArrowBack,
+  Home,
   TrendingUp,
   TrendingDown,
 } from '@mui/icons-material';
@@ -48,10 +54,43 @@ interface BookRecord {
   notes?: string;
 }
 
+interface AssetRecord {
+  id: string;
+  name: string;
+  type: 'vehicle' | 'equipment' | 'property' | 'investment' | 'other';
+  description: string;
+  purchaseDate: string;
+  purchaseValue: number;
+  currentValue: number;
+  location: string;
+  condition: 'excellent' | 'good' | 'fair' | 'poor';
+  depreciationRate: number;
+  notes?: string;
+}
+
+interface LiabilityRecord {
+  id: string;
+  name: string;
+  type: 'loan' | 'mortgage' | 'credit' | 'tax' | 'insurance' | 'other';
+  description: string;
+  originalAmount: number;
+  currentBalance: number;
+  startDate: string;
+  dueDate: string;
+  interestRate: number;
+  monthlyPayment: number;
+  status: 'active' | 'paid' | 'overdue';
+  notes?: string;
+}
+
 const BookKeeping: React.FC<BookKeepingProps> = ({ onClose }) => {
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<BookRecord | null>(null);
+  const [showAssetForm, setShowAssetForm] = useState(false);
+  const [showLiabilityForm, setShowLiabilityForm] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState<AssetRecord | null>(null);
+  const [selectedLiability, setSelectedLiability] = useState<LiabilityRecord | null>(null);
 
   // Mock bookkeeping data
   const [bookRecords] = useState<BookRecord[]>([
@@ -109,6 +148,68 @@ const BookKeeping: React.FC<BookKeepingProps> = ({ onClose }) => {
       status: 'completed',
       reference: 'INS-001',
       notes: 'Quarterly premium payment'
+    }
+  ]);
+
+  // Mock asset data
+  const [assetRecords] = useState<AssetRecord[]>([
+    {
+      id: '1',
+      name: 'HGV Truck - Volvo FH16',
+      type: 'vehicle',
+      description: 'Primary delivery vehicle',
+      purchaseDate: '2023-01-15',
+      purchaseValue: 85000.00,
+      currentValue: 72000.00,
+      location: 'Main Depot',
+      condition: 'excellent',
+      depreciationRate: 15,
+      notes: 'Well maintained, low mileage'
+    },
+    {
+      id: '2',
+      name: 'Forklift - Toyota',
+      type: 'equipment',
+      description: 'Warehouse loading equipment',
+      purchaseDate: '2022-06-10',
+      purchaseValue: 25000.00,
+      currentValue: 18000.00,
+      location: 'Warehouse A',
+      condition: 'good',
+      depreciationRate: 20,
+      notes: 'Regular service schedule maintained'
+    }
+  ]);
+
+  // Mock liability data
+  const [liabilityRecords] = useState<LiabilityRecord[]>([
+    {
+      id: '1',
+      name: 'Business Loan',
+      type: 'loan',
+      description: 'Equipment financing loan',
+      originalAmount: 100000.00,
+      currentBalance: 75000.00,
+      startDate: '2023-03-01',
+      dueDate: '2028-03-01',
+      interestRate: 5.5,
+      monthlyPayment: 1200.00,
+      status: 'active',
+      notes: '5-year term loan for fleet expansion'
+    },
+    {
+      id: '2',
+      name: 'Commercial Property Mortgage',
+      type: 'mortgage',
+      description: 'Warehouse property mortgage',
+      originalAmount: 500000.00,
+      currentBalance: 420000.00,
+      startDate: '2022-01-15',
+      dueDate: '2032-01-15',
+      interestRate: 4.2,
+      monthlyPayment: 3500.00,
+      status: 'active',
+      notes: '10-year fixed rate mortgage'
     }
   ]);
 
@@ -172,14 +273,14 @@ const BookKeeping: React.FC<BookKeepingProps> = ({ onClose }) => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={onClose} sx={{ mr: 2 }}>
-          <ArrowBack />
-        </IconButton>
-        <Typography variant="h4" component="h1">
+    <Box sx={{ p: 3, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1" sx={{ color: 'white' }}>
           Book Keeping
         </Typography>
+        <IconButton onClick={onClose} sx={{ color: 'yellow' }}>
+          <Home />
+        </IconButton>
       </Box>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -191,10 +292,19 @@ const BookKeeping: React.FC<BookKeepingProps> = ({ onClose }) => {
               minHeight: 48,
               textTransform: 'none',
               fontSize: '1rem',
+              color: 'white',
+              '&.Mui-selected': {
+                color: 'yellow',
+              },
+              '&:hover': {
+                color: 'yellow',
+              }
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: 'yellow',
             }
           }}
         >
-          <Tab label="Overview" />
           <Tab label="Income" />
           <Tab label="Expenses" />
           <Tab label="Assets" />
@@ -202,94 +312,11 @@ const BookKeeping: React.FC<BookKeepingProps> = ({ onClose }) => {
         </Tabs>
       </Box>
 
-      {/* Overview Tab */}
+      {/* Income Tab */}
       {tabValue === 0 && (
         <Box sx={{ mt: 3 }}>
-          <Grid container spacing={3}>
-            {/* Financial Summary */}
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Financial Summary
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={6}>
-                      <Typography variant="h6" color="success.main">
-                        £{getTotalIncome().toFixed(2)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Total Income
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="h6" color="error.main">
-                        £{getTotalExpenses().toFixed(2)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Total Expenses
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="h6" color={getNetProfit() >= 0 ? 'success.main' : 'error.main'}>
-                        £{getNetProfit().toFixed(2)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Net Profit
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="h6" color="warning.main">
-                        £{getPendingAmount().toFixed(2)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Pending Amount
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Recent Transactions */}
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Recent Transactions
-                  </Typography>
-                  <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
-                    {bookRecords.slice(0, 5).map((record) => (
-                      <Box key={record.id} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Box sx={{ mr: 1 }}>
-                          {getTypeIcon(record.type)}
-                        </Box>
-                        <Box sx={{ flexGrow: 1 }}>
-                          <Typography variant="body2">
-                            {record.description}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {record.date}
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2" color={getTypeColor(record.type) as any}>
-                          £{record.amount.toFixed(2)}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </Box>
-      )}
-
-      {/* Income Tab */}
-      {tabValue === 1 && (
-        <Box sx={{ mt: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">Income Records</Typography>
+            <Typography variant="h6" sx={{ color: 'white' }}>Income Records</Typography>
             <Button
               variant="contained"
               startIcon={<Add />}
@@ -338,10 +365,10 @@ const BookKeeping: React.FC<BookKeepingProps> = ({ onClose }) => {
       )}
 
       {/* Expenses Tab */}
-      {tabValue === 2 && (
+      {tabValue === 1 && (
         <Box sx={{ mt: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">Expense Records</Typography>
+            <Typography variant="h6" sx={{ color: 'white' }}>Expense Records</Typography>
             <Button
               variant="contained"
               startIcon={<Add />}
@@ -390,24 +417,342 @@ const BookKeeping: React.FC<BookKeepingProps> = ({ onClose }) => {
       )}
 
       {/* Assets Tab */}
-      {tabValue === 3 && (
+      {tabValue === 2 && (
         <Box sx={{ mt: 3 }}>
-          <Typography variant="h6" gutterBottom>Assets</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Asset management functionality would be implemented here.
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" sx={{ color: 'white' }}>Asset Management</Typography>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => setShowAssetForm(true)}
+            >
+              Add Asset
+            </Button>
+          </Box>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Purchase Value</TableCell>
+                  <TableCell>Current Value</TableCell>
+                  <TableCell>Condition</TableCell>
+                  <TableCell>Location</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {assetRecords.map((asset) => (
+                  <TableRow key={asset.id}>
+                    <TableCell>{asset.name}</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={asset.type} 
+                        color="primary"
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>£{asset.purchaseValue.toFixed(2)}</TableCell>
+                    <TableCell>£{asset.currentValue.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={asset.condition} 
+                        color={asset.condition === 'excellent' ? 'success' : asset.condition === 'good' ? 'primary' : asset.condition === 'fair' ? 'warning' : 'error' as any}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>{asset.location}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => setSelectedAsset(asset)} size="small">
+                        <Visibility />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Box>
       )}
 
       {/* Liabilities Tab */}
-      {tabValue === 4 && (
+      {tabValue === 3 && (
         <Box sx={{ mt: 3 }}>
-          <Typography variant="h6" gutterBottom>Liabilities</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Liability management functionality would be implemented here.
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" sx={{ color: 'white' }}>Liability Management</Typography>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => setShowLiabilityForm(true)}
+            >
+              Add Liability
+            </Button>
+          </Box>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Original Amount</TableCell>
+                  <TableCell>Current Balance</TableCell>
+                  <TableCell>Monthly Payment</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {liabilityRecords.map((liability) => (
+                  <TableRow key={liability.id}>
+                    <TableCell>{liability.name}</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={liability.type} 
+                        color="secondary"
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>£{liability.originalAmount.toFixed(2)}</TableCell>
+                    <TableCell>£{liability.currentBalance.toFixed(2)}</TableCell>
+                    <TableCell>£{liability.monthlyPayment.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={liability.status} 
+                        color={liability.status === 'active' ? 'primary' : liability.status === 'paid' ? 'success' : 'error' as any}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => setSelectedLiability(liability)} size="small">
+                        <Visibility />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Box>
       )}
+
+      {/* Add Asset Dialog */}
+      <Dialog open={showAssetForm} onClose={() => setShowAssetForm(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Add New Asset</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Asset Name"
+                variant="outlined"
+                placeholder="e.g., HGV Truck - Volvo FH16"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Asset Type</InputLabel>
+                <Select label="Asset Type">
+                  <MenuItem value="vehicle">Vehicle</MenuItem>
+                  <MenuItem value="equipment">Equipment</MenuItem>
+                  <MenuItem value="property">Property</MenuItem>
+                  <MenuItem value="investment">Investment</MenuItem>
+                  <MenuItem value="other">Other</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Description"
+                variant="outlined"
+                multiline
+                rows={2}
+                placeholder="Brief description of the asset"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Purchase Date"
+                type="date"
+                variant="outlined"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Purchase Value (£)"
+                type="number"
+                variant="outlined"
+                placeholder="0.00"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Current Value (£)"
+                type="number"
+                variant="outlined"
+                placeholder="0.00"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Location"
+                variant="outlined"
+                placeholder="e.g., Main Depot"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Condition</InputLabel>
+                <Select label="Condition">
+                  <MenuItem value="excellent">Excellent</MenuItem>
+                  <MenuItem value="good">Good</MenuItem>
+                  <MenuItem value="fair">Fair</MenuItem>
+                  <MenuItem value="poor">Poor</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Depreciation Rate (%)"
+                type="number"
+                variant="outlined"
+                placeholder="0"
+                helperText="Annual depreciation percentage"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Notes"
+                variant="outlined"
+                multiline
+                rows={3}
+                placeholder="Additional notes about the asset"
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowAssetForm(false)}>Cancel</Button>
+          <Button variant="contained">Add Asset</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add Liability Dialog */}
+      <Dialog open={showLiabilityForm} onClose={() => setShowLiabilityForm(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Add New Liability</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Liability Name"
+                variant="outlined"
+                placeholder="e.g., Business Loan"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Liability Type</InputLabel>
+                <Select label="Liability Type">
+                  <MenuItem value="loan">Loan</MenuItem>
+                  <MenuItem value="mortgage">Mortgage</MenuItem>
+                  <MenuItem value="credit">Credit</MenuItem>
+                  <MenuItem value="tax">Tax</MenuItem>
+                  <MenuItem value="insurance">Insurance</MenuItem>
+                  <MenuItem value="other">Other</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Description"
+                variant="outlined"
+                multiline
+                rows={2}
+                placeholder="Brief description of the liability"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Original Amount (£)"
+                type="number"
+                variant="outlined"
+                placeholder="0.00"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Current Balance (£)"
+                type="number"
+                variant="outlined"
+                placeholder="0.00"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Start Date"
+                type="date"
+                variant="outlined"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Due Date"
+                type="date"
+                variant="outlined"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Interest Rate (%)"
+                type="number"
+                variant="outlined"
+                placeholder="0.00"
+                helperText="Annual interest rate"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Monthly Payment (£)"
+                type="number"
+                variant="outlined"
+                placeholder="0.00"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Notes"
+                variant="outlined"
+                multiline
+                rows={3}
+                placeholder="Additional notes about the liability"
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowLiabilityForm(false)}>Cancel</Button>
+          <Button variant="contained">Add Liability</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add Record Dialog */}
       <Dialog open={showAddDialog} onClose={() => setShowAddDialog(false)} maxWidth="md" fullWidth>
@@ -459,6 +804,101 @@ const BookKeeping: React.FC<BookKeepingProps> = ({ onClose }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={closeViewDialog}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* View Asset Dialog */}
+      <Dialog open={!!selectedAsset} onClose={() => setSelectedAsset(null)} maxWidth="md" fullWidth>
+        <DialogTitle>Asset Details</DialogTitle>
+        <DialogContent>
+          {selectedAsset && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                {selectedAsset.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Type: {selectedAsset.type}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Description: {selectedAsset.description}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Purchase Date: {selectedAsset.purchaseDate}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Purchase Value: £{selectedAsset.purchaseValue.toFixed(2)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Current Value: £{selectedAsset.currentValue.toFixed(2)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Location: {selectedAsset.location}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Condition: {selectedAsset.condition}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Depreciation Rate: {selectedAsset.depreciationRate}%
+              </Typography>
+              {selectedAsset.notes && (
+                <Typography variant="body2" color="text.secondary">
+                  Notes: {selectedAsset.notes}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedAsset(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* View Liability Dialog */}
+      <Dialog open={!!selectedLiability} onClose={() => setSelectedLiability(null)} maxWidth="md" fullWidth>
+        <DialogTitle>Liability Details</DialogTitle>
+        <DialogContent>
+          {selectedLiability && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                {selectedLiability.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Type: {selectedLiability.type}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Description: {selectedLiability.description}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Original Amount: £{selectedLiability.originalAmount.toFixed(2)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Current Balance: £{selectedLiability.currentBalance.toFixed(2)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Start Date: {selectedLiability.startDate}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Due Date: {selectedLiability.dueDate}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Interest Rate: {selectedLiability.interestRate}%
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Monthly Payment: £{selectedLiability.monthlyPayment.toFixed(2)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Status: {selectedLiability.status}
+              </Typography>
+              {selectedLiability.notes && (
+                <Typography variant="body2" color="text.secondary">
+                  Notes: {selectedLiability.notes}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedLiability(null)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>

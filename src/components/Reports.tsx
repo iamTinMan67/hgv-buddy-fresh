@@ -41,6 +41,7 @@ import {
   Receipt,
   Assessment,
   FileDownload,
+  Home,
 } from '@mui/icons-material';
 
 interface ReportsProps {
@@ -407,9 +408,12 @@ const Reports: React.FC<ReportsProps> = ({ onClose }) => {
         <Typography variant="h4" component="h1">
           Reports
         </Typography>
-        <Button variant="outlined" onClick={onClose}>
-          Close
-        </Button>
+        <IconButton
+          onClick={onClose}
+          sx={{ color: 'yellow', fontSize: '1.5rem' }}
+        >
+          <Home />
+        </IconButton>
       </Box>
 
       {/* Tabs */}
@@ -419,11 +423,17 @@ const Reports: React.FC<ReportsProps> = ({ onClose }) => {
           onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
-              color: '#FFD700',
+              color: 'white',
               '&.Mui-selected': {
-                color: 'primary.main',
+                color: 'yellow',
               },
+              '&:hover': {
+                color: 'yellow',
+              }
             },
+            '& .MuiTabs-indicator': {
+              backgroundColor: 'yellow',
+            }
           }}
         >
           <Tab label="Wage Slips" />

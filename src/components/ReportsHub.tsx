@@ -75,13 +75,14 @@ const ReportsHub: React.FC<ReportsHubProps> = ({ onClose }) => {
       {/* Sub-Portal Navigation */}
       <Grid container spacing={3}>
         {/* Wage Slips Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} lg={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
               '&:hover': {
-                transform: 'translateY(-4px)',
+                transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
               }
             }}
@@ -129,13 +130,14 @@ const ReportsHub: React.FC<ReportsHubProps> = ({ onClose }) => {
         </Grid>
 
         {/* Fuel Report Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} lg={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
               '&:hover': {
-                transform: 'translateY(-4px)',
+                transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
               }
             }}
@@ -183,13 +185,14 @@ const ReportsHub: React.FC<ReportsHubProps> = ({ onClose }) => {
         </Grid>
 
         {/* Purchase Orders Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} lg={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
               '&:hover': {
-                transform: 'translateY(-4px)',
+                transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
               }
             }}
@@ -237,13 +240,14 @@ const ReportsHub: React.FC<ReportsHubProps> = ({ onClose }) => {
         </Grid>
 
         {/* Invoices Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} lg={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
               '&:hover': {
-                transform: 'translateY(-4px)',
+                transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
               }
             }}
@@ -284,6 +288,108 @@ const ReportsHub: React.FC<ReportsHubProps> = ({ onClose }) => {
                   label="Collections" 
                   size="small" 
                   sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Coming Soon Card for consistent layout */}
+        <Grid item xs={12} md={6} lg={4}>
+          <Card 
+            sx={{ 
+              opacity: 0.3,
+              cursor: 'default',
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'grey.400', mr: 2 }}>
+                  <Assessment />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div" sx={{ color: 'grey.500' }}>
+                    Coming Soon
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Additional report features
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<TrendingUp />} 
+                  label="Future" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
+                />
+                <Chip 
+                  icon={<Analytics />} 
+                  label="Features" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
+                />
+                <Chip 
+                  icon={<Report />} 
+                  label="Reports" 
+                  size="small" 
+                  sx={{ mb: 1, opacity: 0.5 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Second Coming Soon Card for consistent layout */}
+        <Grid item xs={12} md={6} lg={4}>
+          <Card 
+            sx={{ 
+              opacity: 0.3,
+              cursor: 'default',
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'grey.400', mr: 2 }}>
+                  <Assessment />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div" sx={{ color: 'grey.500' }}>
+                    Coming Soon
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Advanced analytics
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<TrendingUp />} 
+                  label="Future" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
+                />
+                <Chip 
+                  icon={<Analytics />} 
+                  label="Features" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
+                />
+                <Chip 
+                  icon={<Report />} 
+                  label="Reports" 
+                  size="small" 
+                  sx={{ mb: 1, opacity: 0.5 }}
                 />
               </Box>
             </CardContent>

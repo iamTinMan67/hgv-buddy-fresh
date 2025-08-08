@@ -406,12 +406,18 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
           onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
-              color: '#FFD700',
+              color: 'white',
               fontWeight: 'bold',
               '&.Mui-selected': {
-                color: 'primary.main',
+                color: 'yellow',
               },
+              '&:hover': {
+                color: 'yellow',
+              }
             },
+            '& .MuiTabs-indicator': {
+              backgroundColor: 'yellow',
+            }
           }}
         >
           <Tab label="Trailer Layouts" />
@@ -843,43 +849,7 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
                 
                 <Divider sx={{ my: 2 }} />
                 
-                <Typography variant="h6" gutterBottom>
-                  Layout Summary
-                </Typography>
-                <Grid container spacing={1}>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Weight
-                    </Typography>
-                    <Typography variant="body2">
-                      {selectedLayout.totalWeight / 1000}t
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Volume
-                    </Typography>
-                    <Typography variant="body2">
-                      {Math.round(selectedLayout.totalVolume)}m³
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      Utilization
-                    </Typography>
-                    <Typography variant="body2">
-                      {Math.round(selectedLayout.utilizationPercentage)}%
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      Items
-                    </Typography>
-                    <Typography variant="body2">
-                      {selectedLayout.cargoItems.length}
-                    </Typography>
-                  </Grid>
-                </Grid>
+
               </Grid>
             </Grid>
           )}

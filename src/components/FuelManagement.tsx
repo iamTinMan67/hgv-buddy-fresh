@@ -50,6 +50,7 @@ import {
   Person,
   LocationOn,
   MoreVert,
+  Home,
 } from '@mui/icons-material';
 
 interface FuelManagementProps {
@@ -210,69 +211,16 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onClose }) => {
           >
             Add Fuel Record
           </Button>
-          <Button variant="outlined" onClick={onClose}>
-            Close
-          </Button>
+          <IconButton
+            onClick={onClose}
+            sx={{ color: 'yellow', fontSize: '1.5rem' }}
+          >
+            <Home />
+          </IconButton>
         </Box>
       </Box>
 
-      {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <LocalGasStation sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-              <Typography variant="h4" component="div">
-                {totalLitres.toFixed(1)}L
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Fuel Used
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <AttachMoney sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-              <Typography variant="h4" component="div">
-                £{totalFuelCost.toFixed(2)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Fuel Cost
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <TrendingUp sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
-              <Typography variant="h4" component="div">
-                £{averagePricePerLitre.toFixed(2)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Avg Price/Litre
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Badge badgeContent={pendingRecordsCount} color="warning">
-                <Warning sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
-              </Badge>
-              <Typography variant="h4" component="div">
-                {pendingRecordsCount}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Pending Approvals
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -281,11 +229,17 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onClose }) => {
           onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
-              color: '#FFD700',
+              color: 'white',
               '&.Mui-selected': {
-                color: 'primary.main',
+                color: 'yellow',
               },
+              '&:hover': {
+                color: 'yellow',
+              }
             },
+            '& .MuiTabs-indicator': {
+              backgroundColor: 'yellow',
+            }
           }}
         >
           <Tab label="All Records" />

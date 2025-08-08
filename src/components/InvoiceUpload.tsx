@@ -429,7 +429,24 @@ const InvoiceUpload: React.FC<InvoiceUploadProps> = ({ onClose }) => {
           <Card>
             <CardContent>
               <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-                <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
+                <Tabs 
+                  value={tabValue} 
+                  onChange={(_, newValue) => setTabValue(newValue)}
+                  sx={{
+                    '& .MuiTab-root': {
+                      color: 'white',
+                      '&.Mui-selected': {
+                        color: 'yellow',
+                      },
+                      '&:hover': {
+                        color: 'yellow',
+                      }
+                    },
+                    '& .MuiTabs-indicator': {
+                      backgroundColor: 'yellow',
+                    }
+                  }}
+                >
                   <Tab label="All Documents" />
                   <Tab label="Invoices" />
                   <Tab label="Fuel Receipts" />
