@@ -3,6 +3,7 @@ import authReducer from './slices/authSlice';
 import wageReducer from './slices/wageSlice';
 import vehicleReducer from './slices/vehicleSlice';
 import jobReducer from './slices/jobSlice';
+import fuelReducer from './slices/fuelSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     wage: wageReducer,
     vehicle: vehicleReducer,
     job: jobReducer,
+    fuel: fuelReducer,
   },
 });
 

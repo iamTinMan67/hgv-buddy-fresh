@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export type JobStatus = 'pending' | 'assigned' | 'in_progress' | 'attempted' | 'rescheduled' | 'completed' | 'failed' | 'cancelled';
+export type JobStatus = 'pending' | 'assigned' | 'in_progress' | 'attempted' | 'rescheduled' | 'completed' | 'failed' | 'refused' | 'cancelled';
 
 export type JobPriority = 'low' | 'medium' | 'high' | 'urgent';
 
@@ -62,6 +62,15 @@ export interface JobAssignment {
     isFragile: boolean;
     plotAllocation?: string; // Plot ID for trailer positioning
     loadNotes?: string;
+  };
+  // Delivery notes and route information
+  deliveryNotes?: string;
+  routeNotes?: string;
+  alternativeRoute?: {
+    waypoints: string[];
+    estimatedDistance: number;
+    estimatedDuration: number;
+    reason: string;
   };
 }
 
@@ -149,13 +158,27 @@ const initialState: JobState = {
         contactPhone: '+44 161 9876 5432',
         deliveryInstructions: 'Deliver to receiving bay 2, call 30 minutes before arrival'
       },
-      cargoType: 'Automotive Parts',
-      cargoWeight: 2500,
-      specialRequirements: 'Temperature controlled, fragile items',
-      notes: 'Customer requires delivery before 14:00',
-      createdAt: '2024-01-20T10:00:00Z',
-      updatedAt: '2024-01-20T10:00:00Z',
-      createdBy: 'management'
+             cargoType: 'Automotive Parts',
+       cargoWeight: 2500,
+       specialRequirements: 'Temperature controlled, fragile items',
+       notes: 'Customer requires delivery before 14:00',
+       deliveryNotes: 'Call 30 minutes before arrival. Deliver to receiving bay 2. Security pass required.',
+       routeNotes: 'Avoid M25 during rush hour. Use A1M alternative route.',
+       loadDimensions: {
+         length: 300,
+         width: 200,
+         height: 150,
+         weight: 2500,
+         volume: 9.0,
+         isOversized: false,
+         isProtruding: false,
+         isBalanced: true,
+         isFragile: true,
+         loadNotes: 'Handle with care - fragile automotive parts',
+       },
+       createdAt: '2024-01-20T10:00:00Z',
+       updatedAt: '2024-01-20T10:00:00Z',
+       createdBy: 'management'
     },
     {
       id: '2',
@@ -188,12 +211,26 @@ const initialState: JobState = {
         contactPhone: '+44 113 4567 8901',
         deliveryInstructions: 'Deliver to warehouse 3, unload with forklift'
       },
-      cargoType: 'Electronics',
-      cargoWeight: 1800,
-      specialRequirements: 'Handle with care, anti-static packaging',
-      createdAt: '2024-01-21T09:00:00Z',
-      updatedAt: '2024-01-21T09:00:00Z',
-      createdBy: 'management'
+             cargoType: 'Electronics',
+       cargoWeight: 1800,
+       specialRequirements: 'Handle with care, anti-static packaging',
+       deliveryNotes: 'Anti-static packaging required. Unload with forklift at warehouse 3.',
+       routeNotes: 'Direct route via M1. No special requirements.',
+       loadDimensions: {
+         length: 250,
+         width: 180,
+         height: 120,
+         weight: 1800,
+         volume: 5.4,
+         isOversized: false,
+         isProtruding: false,
+         isBalanced: true,
+         isFragile: false,
+         loadNotes: 'Electronics - standard handling',
+       },
+       createdAt: '2024-01-21T09:00:00Z',
+       updatedAt: '2024-01-21T09:00:00Z',
+       createdBy: 'management'
     },
     {
       id: '3',
@@ -226,11 +263,25 @@ const initialState: JobState = {
         contactPhone: '+44 117 5678 9012',
         deliveryInstructions: 'Deliver to back entrance, security code: 1234'
       },
-      cargoType: 'Textiles',
-      cargoWeight: 3200,
-      createdAt: '2024-01-22T11:00:00Z',
-      updatedAt: '2024-01-22T11:00:00Z',
-      createdBy: 'management'
+             cargoType: 'Textiles',
+       cargoWeight: 3200,
+       deliveryNotes: 'Deliver to back entrance. Security code: 1234. Standard textile handling.',
+       routeNotes: 'Via M6 and M5. Standard route.',
+       loadDimensions: {
+         length: 400,
+         width: 250,
+         height: 200,
+         weight: 3200,
+         volume: 20.0,
+         isOversized: true,
+         isProtruding: false,
+         isBalanced: true,
+         isFragile: false,
+         loadNotes: 'Large textile shipment - oversized load',
+       },
+       createdAt: '2024-01-22T11:00:00Z',
+       updatedAt: '2024-01-22T11:00:00Z',
+       createdBy: 'management'
     }
   ],
   routePlans: [

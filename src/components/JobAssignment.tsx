@@ -40,6 +40,12 @@ import {
   AccordionSummary,
   AccordionDetails,
   LinearProgress,
+  Stepper,
+  Step,
+  StepLabel,
+  StepContent,
+  Avatar,
+  Badge,
 } from '@mui/material';
 import {
   Add,
@@ -65,6 +71,32 @@ import {
   LocalShipping,
   ViewInAr,
   Calculate,
+  ErrorOutline,
+  ExpandMore,
+  ExpandLess,
+  Save,
+  Cancel,
+  Refresh,
+  Download,
+  Print,
+  Share,
+  Book,
+  Receipt,
+  AttachFile,
+  Description,
+  LocationOn,
+  Phone,
+  Email,
+  Schedule,
+  AccessTime,
+  DirectionsCar,
+  Inventory,
+  Category,
+  Notes,
+  PriorityHigh,
+  LowPriority,
+  TrendingUp,
+  TrendingDown,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import {
@@ -73,9 +105,77 @@ import {
   updateJob,
   deleteJob,
   assignJobToDriver,
+  updateJobStatus,
   JobStatus,
   JobPriority,
 } from '../store/slices/jobSlice';
+import InteractiveStatusChip, { StatusOption } from './InteractiveStatusChip';
+import TrailerPlan from './TrailerPlotter';
+
+// Enhanced interfaces for comprehensive consignment management
+interface ConsignmentItem {
+  id: string;
+  description: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  dimensions: {
+    length: number; // cm
+    width: number; // cm
+    height: number; // cm
+    weight: number; // kg
+    volume: number; // m³ (calculated)
+  };
+  specialRequirements: {
+    isOversized: boolean;
+    isProtruding: boolean;
+    isBalanced: boolean;
+    isFragile: boolean;
+    isTemperatureControlled: boolean;
+    isHazardous: boolean;
+  };
+  handlingNotes: string;
+  allocatedSpace?: {
+    trailerPosition: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+interface EnhancedJobAssignment extends Omit<JobAssignmentType, 'loadDimensions'> {
+  consignmentItems: ConsignmentItem[];
+  totalVolume: number;
+  totalWeight: number;
+  spaceRequirements: {
+    totalLength: number;
+    totalWidth: number;
+    totalHeight: number;
+    requiresOversizedVehicle: boolean;
+    requiresSpecialEquipment: boolean;
+  };
+  deliverySchedule: {
+    pickupDate: string;
+    pickupTime: string;
+    deliveryDate: string;
+    deliveryTime: string;
+    estimatedDuration: number; // minutes
+    bufferTime: number; // minutes
+  };
+  routeConstraints: {
+    maxHeight: number;
+    maxWidth: number;
+    restrictedRoutes: string[];
+    requiredPermits: string[];
+  };
+  costBreakdown: {
+    transportCost: number;
+    handlingCost: number;
+    specialRequirementsCost: number;
+    totalCost: number;
+  };
+}
 
 interface JobAssignmentProps {
   onClose: () => void;
@@ -105,15 +205,17 @@ function TabPanel(props: TabPanelProps) {
 const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { jobs } = useSelector((state: RootState) => state.job);
-  const { vehicles } = useSelector((state: RootState) => state.vehicle);
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
-  const [selectedJob, setSelectedJob] = useState<JobAssignmentType | null>(null);
+  const [selectedJob, setSelectedJob] = useState<EnhancedJobAssignment | null>(null);
+  const [showTrailerPlotter, setShowTrailerPlotter] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
 
-  const [newJob, setNewJob] = useState<Partial<JobAssignmentType>>({
+  // Enhanced new job state
+  const [newJob, setNewJob] = useState<Partial<EnhancedJobAssignment>>({
     jobNumber: '',
     title: '',
     description: '',
@@ -126,16 +228,16 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
     scheduledTime: '09:00',
     estimatedDuration: 120,
     pickupLocation: {
+      id: '',
+      name: '',
       address: '',
-      city: '',
       postcode: '',
-      coordinates: { lat: 0, lng: 0 },
     },
     deliveryLocation: {
+      id: '',
+      name: '',
       address: '',
-      city: '',
       postcode: '',
-      coordinates: { lat: 0, lng: 0 },
     },
     useDifferentDeliveryAddress: false,
     deliveryAddress: '',
@@ -143,53 +245,233 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
     cargoWeight: 0,
     specialRequirements: '',
     notes: '',
+    driverNotes: '',
+    managementNotes: '',
     createdBy: user?.id || '',
-    authorizedBy: user?.id || '',
-    loadDimensions: {
+    authorizedBy: '',
+    consignmentItems: [],
+    totalVolume: 0,
+    totalWeight: 0,
+    spaceRequirements: {
+      totalLength: 0,
+      totalWidth: 0,
+      totalHeight: 0,
+      requiresOversizedVehicle: false,
+      requiresSpecialEquipment: false,
+    },
+    deliverySchedule: {
+      pickupDate: new Date().toISOString().split('T')[0],
+      pickupTime: '09:00',
+      deliveryDate: new Date().toISOString().split('T')[0],
+      deliveryTime: '17:00',
+      estimatedDuration: 120,
+      bufferTime: 30,
+    },
+    routeConstraints: {
+      maxHeight: 4.2, // meters
+      maxWidth: 2.55, // meters
+      restrictedRoutes: [],
+      requiredPermits: [],
+    },
+    costBreakdown: {
+      transportCost: 0,
+      handlingCost: 0,
+      specialRequirementsCost: 0,
+      totalCost: 0,
+    },
+  });
+
+  // Consignment item state
+  const [newConsignmentItem, setNewConsignmentItem] = useState<Partial<ConsignmentItem>>({
+    description: '',
+    category: '',
+    quantity: 1,
+    unit: 'pieces',
+    dimensions: {
       length: 0,
       width: 0,
       height: 0,
       weight: 0,
       volume: 0,
+    },
+    specialRequirements: {
       isOversized: false,
       isProtruding: false,
-      isBalanced: false,
+      isBalanced: true,
       isFragile: false,
-      plotAllocation: '',
-      loadNotes: '',
+      isTemperatureControlled: false,
+      isHazardous: false,
     },
+    handlingNotes: '',
   });
 
-  // Filter jobs based on user role
-  const filteredJobs = user?.role === 'driver'
-    ? jobs.filter(job => job.assignedDriver === user.id)
-    : jobs;
-
   const calculateVolume = (length: number, width: number, height: number): number => {
-    return (length * width * height) / 1000000; // Convert to cubic meters
+    return (length * width * height) / 1000000; // Convert cm³ to m³
+  };
+
+  const calculateTotalVolume = (items: ConsignmentItem[]): number => {
+    return items.reduce((total, item) => total + (item.dimensions.volume * item.quantity), 0);
+  };
+
+  const calculateTotalWeight = (items: ConsignmentItem[]): number => {
+    return items.reduce((total, item) => total + (item.dimensions.weight * item.quantity), 0);
+  };
+
+  const updateSpaceRequirements = (items: ConsignmentItem[]) => {
+    const totalVolume = calculateTotalVolume(items);
+    const totalWeight = calculateTotalWeight(items);
+    
+    // Calculate space requirements based on items
+    const maxLength = Math.max(...items.map(item => item.dimensions.length), 0);
+    const maxWidth = Math.max(...items.map(item => item.dimensions.width), 0);
+    const maxHeight = Math.max(...items.map(item => item.dimensions.height), 0);
+    
+    const requiresOversizedVehicle = maxLength > 600 || maxWidth > 250 || maxHeight > 250;
+    const requiresSpecialEquipment = items.some(item => 
+      item.specialRequirements.isFragile || 
+      item.specialRequirements.isTemperatureControlled ||
+      item.specialRequirements.isHazardous
+    );
+
+    setNewJob(prev => ({
+      ...prev,
+      totalVolume,
+      totalWeight,
+      spaceRequirements: {
+        totalLength: maxLength,
+        totalWidth: maxWidth,
+        totalHeight: maxHeight,
+        requiresOversizedVehicle,
+        requiresSpecialEquipment,
+      },
+    }));
+  };
+
+  const handleAddConsignmentItem = () => {
+    if (!newConsignmentItem.description || !newConsignmentItem.category) return;
+
+    const volume = calculateVolume(
+      newConsignmentItem.dimensions?.length || 0,
+      newConsignmentItem.dimensions?.width || 0,
+      newConsignmentItem.dimensions?.height || 0
+    );
+
+    const item: ConsignmentItem = {
+      id: `item-${Date.now()}`,
+      description: newConsignmentItem.description || '',
+      category: newConsignmentItem.category || '',
+      quantity: newConsignmentItem.quantity || 1,
+      unit: newConsignmentItem.unit || 'pieces',
+      dimensions: {
+        length: newConsignmentItem.dimensions?.length || 0,
+        width: newConsignmentItem.dimensions?.width || 0,
+        height: newConsignmentItem.dimensions?.height || 0,
+        weight: newConsignmentItem.dimensions?.weight || 0,
+        volume,
+      },
+      specialRequirements: {
+        isOversized: newConsignmentItem.specialRequirements?.isOversized || false,
+        isProtruding: newConsignmentItem.specialRequirements?.isProtruding || false,
+        isBalanced: newConsignmentItem.specialRequirements?.isBalanced || true,
+        isFragile: newConsignmentItem.specialRequirements?.isFragile || false,
+        isTemperatureControlled: newConsignmentItem.specialRequirements?.isTemperatureControlled || false,
+        isHazardous: newConsignmentItem.specialRequirements?.isHazardous || false,
+      },
+      handlingNotes: newConsignmentItem.handlingNotes || '',
+    };
+
+    const updatedItems = [...(newJob.consignmentItems || []), item];
+    setNewJob(prev => ({ ...prev, consignmentItems: updatedItems }));
+    updateSpaceRequirements(updatedItems);
+
+    // Reset form
+    setNewConsignmentItem({
+      description: '',
+      category: '',
+      quantity: 1,
+      unit: 'pieces',
+      dimensions: { length: 0, width: 0, height: 0, weight: 0, volume: 0 },
+      specialRequirements: {
+        isOversized: false,
+        isProtruding: false,
+        isBalanced: true,
+        isFragile: false,
+        isTemperatureControlled: false,
+        isHazardous: false,
+      },
+      handlingNotes: '',
+    });
+  };
+
+  const handleRemoveConsignmentItem = (itemId: string) => {
+    const updatedItems = (newJob.consignmentItems || []).filter(item => item.id !== itemId);
+    setNewJob(prev => ({ ...prev, consignmentItems: updatedItems }));
+    updateSpaceRequirements(updatedItems);
   };
 
   const handleAddJob = () => {
-    if (!newJob.title || !newJob.customerName) return;
+    if (!newJob.jobNumber || !newJob.title || !newJob.customerName) return;
 
-    const volume = calculateVolume(
-      newJob.loadDimensions?.length || 0,
-      newJob.loadDimensions?.width || 0,
-      newJob.loadDimensions?.height || 0
-    );
-
-    const job: JobAssignmentType = {
-      id: Date.now().toString(),
-      ...newJob,
-      loadDimensions: {
-        ...newJob.loadDimensions!,
-        volume,
-      },
+    const job: EnhancedJobAssignment = {
+      id: `job-${Date.now()}`,
+      jobNumber: newJob.jobNumber || '',
+      title: newJob.title || '',
+      description: newJob.description || '',
+      customerName: newJob.customerName || '',
+      customerPhone: newJob.customerPhone || '',
+      customerEmail: newJob.customerEmail || '',
+      priority: newJob.priority || 'medium',
+      status: newJob.status || 'pending',
+      scheduledDate: newJob.scheduledDate || '',
+      scheduledTime: newJob.scheduledTime || '',
+      estimatedDuration: newJob.estimatedDuration || 120,
+      pickupLocation: newJob.pickupLocation || { id: '', name: '', address: '', postcode: '' },
+      deliveryLocation: newJob.deliveryLocation || { id: '', name: '', address: '', postcode: '' },
+      useDifferentDeliveryAddress: newJob.useDifferentDeliveryAddress || false,
+      deliveryAddress: newJob.deliveryAddress || '',
+      cargoType: newJob.cargoType || '',
+      cargoWeight: newJob.cargoWeight || 0,
+      specialRequirements: newJob.specialRequirements || '',
+      notes: newJob.notes || '',
+      driverNotes: newJob.driverNotes || '',
+      managementNotes: newJob.managementNotes || '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    } as JobAssignmentType;
+      createdBy: newJob.createdBy || '',
+      authorizedBy: newJob.authorizedBy || '',
+      consignmentItems: newJob.consignmentItems || [],
+      totalVolume: newJob.totalVolume || 0,
+      totalWeight: newJob.totalWeight || 0,
+      spaceRequirements: newJob.spaceRequirements || {
+        totalLength: 0,
+        totalWidth: 0,
+        totalHeight: 0,
+        requiresOversizedVehicle: false,
+        requiresSpecialEquipment: false,
+      },
+      deliverySchedule: newJob.deliverySchedule || {
+        pickupDate: '',
+        pickupTime: '',
+        deliveryDate: '',
+        deliveryTime: '',
+        estimatedDuration: 120,
+        bufferTime: 30,
+      },
+      routeConstraints: newJob.routeConstraints || {
+        maxHeight: 4.2,
+        maxWidth: 2.55,
+        restrictedRoutes: [],
+        requiredPermits: [],
+      },
+      costBreakdown: newJob.costBreakdown || {
+        transportCost: 0,
+        handlingCost: 0,
+        specialRequirementsCost: 0,
+        totalCost: 0,
+      },
+    };
 
-    dispatch(addJob(job));
+    dispatch(addJob(job as any));
     setShowAddDialog(false);
     setNewJob({
       jobNumber: '',
@@ -203,157 +485,190 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
       scheduledDate: new Date().toISOString().split('T')[0],
       scheduledTime: '09:00',
       estimatedDuration: 120,
-      pickupLocation: {
-        address: '',
-        city: '',
-        postcode: '',
-        coordinates: { lat: 0, lng: 0 },
-      },
-      deliveryLocation: {
-        address: '',
-        city: '',
-        postcode: '',
-        coordinates: { lat: 0, lng: 0 },
-      },
+      pickupLocation: { id: '', name: '', address: '', postcode: '' },
+      deliveryLocation: { id: '', name: '', address: '', postcode: '' },
       useDifferentDeliveryAddress: false,
       deliveryAddress: '',
       cargoType: '',
       cargoWeight: 0,
       specialRequirements: '',
       notes: '',
+      driverNotes: '',
+      managementNotes: '',
       createdBy: user?.id || '',
-      authorizedBy: user?.id || '',
-      loadDimensions: {
-        length: 0,
-        width: 0,
-        height: 0,
-        weight: 0,
-        volume: 0,
-        isOversized: false,
-        isProtruding: false,
-        isBalanced: false,
-        isFragile: false,
-        plotAllocation: '',
-        loadNotes: '',
+      authorizedBy: '',
+      consignmentItems: [],
+      totalVolume: 0,
+      totalWeight: 0,
+      spaceRequirements: {
+        totalLength: 0,
+        totalWidth: 0,
+        totalHeight: 0,
+        requiresOversizedVehicle: false,
+        requiresSpecialEquipment: false,
+      },
+      deliverySchedule: {
+        pickupDate: new Date().toISOString().split('T')[0],
+        pickupTime: '09:00',
+        deliveryDate: new Date().toISOString().split('T')[0],
+        deliveryTime: '17:00',
+        estimatedDuration: 120,
+        bufferTime: 30,
+      },
+      routeConstraints: {
+        maxHeight: 4.2,
+        maxWidth: 2.55,
+        restrictedRoutes: [],
+        requiredPermits: [],
+      },
+      costBreakdown: {
+        transportCost: 0,
+        handlingCost: 0,
+        specialRequirementsCost: 0,
+        totalCost: 0,
       },
     });
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'warning';
+      case 'pending': return 'default';
       case 'assigned': return 'info';
       case 'in_progress': return 'primary';
+      case 'attempted': return 'warning';
+      case 'rescheduled': return 'secondary';
       case 'completed': return 'success';
+      case 'failed': return 'error';
+      case 'refused': return 'error';
       case 'cancelled': return 'error';
       default: return 'default';
     }
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending': return <Pending />;
+      case 'assigned': return <Assignment />;
+      case 'in_progress': return <PlayArrow />;
+      case 'attempted': return <Assignment />;
+      case 'failed': return <ErrorOutline />;
+      case 'refused': return <Stop />;
+      case 'completed': return <CheckCircle />;
+      case 'cancelled': return <Stop />;
+      default: return <Pending />;
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'error';
-      case 'medium': return 'warning';
-      case 'low': return 'success';
+      case 'urgent': return 'error';
+      case 'high': return 'warning';
+      case 'medium': return 'info';
+      case 'low': return 'default';
       default: return 'default';
     }
   };
 
-  const openViewDialog = (job: JobAssignmentType) => {
-    setSelectedJob(job);
-    setShowViewDialog(true);
-  };
-
-  // Calculate statistics
-  const totalJobs = filteredJobs.length;
-  const pendingJobs = filteredJobs.filter(job => job.status === 'pending').length;
-  const inProgressJobs = filteredJobs.filter(job => job.status === 'in_progress').length;
-  const completedJobs = filteredJobs.filter(job => job.status === 'completed').length;
-  const totalVolume = filteredJobs.reduce((sum, job) => sum + (job.loadDimensions?.volume || 0), 0);
-  const totalWeight = filteredJobs.reduce((sum, job) => sum + (job.loadDimensions?.weight || 0), 0);
-
-  // Field hints and checklists
-  const fieldHints = {
-    length: {
-      title: "Load Length Checklist",
-      items: [
-        "Is the load longer than standard trailer length?",
-        "Does it require special permits for oversized transport?",
-        "Will it fit within standard loading bays?",
-        "Are there any protruding elements?",
-        "Does it require escort vehicles?"
-      ]
-    },
-    width: {
-      title: "Load Width Checklist", 
-      items: [
-        "Is the load wider than standard trailer width?",
-        "Does it exceed lane width restrictions?",
-        "Are there any side protrusions?",
-        "Will it fit through standard gates/doors?",
-        "Does it require wide load signage?"
-      ]
-    },
-    height: {
-      title: "Load Height Checklist",
-      items: [
-        "Is the load taller than standard trailer height?",
-        "Does it exceed bridge/tunnel clearances?",
-        "Are there any top protrusions?",
-        "Will it fit under overhead obstacles?",
-        "Does it require height warning systems?"
-      ]
-    },
-    weight: {
-      title: "Load Weight Checklist",
-      items: [
-        "Is the load heavier than vehicle capacity?",
-        "Does it require special weight permits?",
-        "Is the weight evenly distributed?",
-        "Does it affect vehicle stability?",
-        "Are special handling procedures needed?"
-      ]
-    },
-    volume: {
-      title: "Load Volume Checklist",
-      items: [
-        "Does the volume exceed trailer capacity?",
-        "Is there sufficient space for other loads?",
-        "Are there any air gaps or voids?",
-        "Can the load be stacked efficiently?",
-        "Does it require special loading equipment?"
-      ]
+  const getJobStatusOptions = (): StatusOption[] => {
+    if (user?.role === 'driver') {
+      return [
+        { value: 'attempted', label: 'Attempted', icon: <Assignment />, color: 'warning' },
+        { value: 'failed', label: 'Failed', icon: <ErrorOutline />, color: 'error' },
+        { value: 'refused', label: 'Refused', icon: <Stop />, color: 'error' },
+        { value: 'completed', label: 'Completed', icon: <CheckCircle />, color: 'success' },
+      ];
+    } else {
+      return [
+        { value: 'pending', label: 'Pending', icon: <Pending />, color: 'default' },
+        { value: 'assigned', label: 'Assigned', icon: <Assignment />, color: 'info' },
+        { value: 'in_progress', label: 'In Progress', icon: <PlayArrow />, color: 'primary' },
+        { value: 'attempted', label: 'Attempted', icon: <Assignment />, color: 'warning' },
+        { value: 'failed', label: 'Failed', icon: <ErrorOutline />, color: 'error' },
+        { value: 'refused', label: 'Refused', icon: <Stop />, color: 'error' },
+        { value: 'completed', label: 'Completed', icon: <CheckCircle />, color: 'success' },
+        { value: 'cancelled', label: 'Cancelled', icon: <Stop />, color: 'error' },
+      ];
     }
   };
 
+  const openViewDialog = (job: JobAssignmentType) => {
+    // Convert basic job to enhanced job with default values
+    const enhancedJob: EnhancedJobAssignment = {
+      ...job,
+      consignmentItems: [],
+      totalVolume: 0,
+      totalWeight: 0,
+      spaceRequirements: {
+        totalLength: 0,
+        totalWidth: 0,
+        totalHeight: 0,
+        requiresOversizedVehicle: false,
+        requiresSpecialEquipment: false,
+      },
+      deliverySchedule: {
+        pickupDate: job.scheduledDate,
+        pickupTime: job.scheduledTime,
+        deliveryDate: job.scheduledDate,
+        deliveryTime: job.scheduledTime,
+        estimatedDuration: job.estimatedDuration,
+        bufferTime: 30,
+      },
+      routeConstraints: {
+        maxHeight: 4.2,
+        maxWidth: 2.55,
+        restrictedRoutes: [],
+        requiredPermits: [],
+      },
+      costBreakdown: {
+        transportCost: 0,
+        handlingCost: 0,
+        specialRequirementsCost: 0,
+        totalCost: 0,
+      },
+    };
+    setSelectedJob(enhancedJob);
+    setShowViewDialog(true);
+  };
+
+  const steps = [
+    'Basic Information',
+    'Customer Details',
+    'Consignment Items',
+    'Delivery Schedule',
+    'Route & Cost Analysis',
+    'Review & Submit'
+  ];
+
+  const handleNext = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+  };
+
+  const handleBack = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep - 1);
+  };
+
+  const handleReset = () => {
+    setActiveStep(0);
+  };
+
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ p: 3 }}>
+      {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Job Assignment
+        <Typography variant="h4" component="h1" sx={{ color: '#FFD700', fontWeight: 'bold' }}>
+          Job Assignment Management
         </Typography>
         <Box>
-          {(user?.role === 'admin' || user?.role === 'owner') ? (
+          {(user?.role === 'admin' || user?.role === 'owner') && (
             <Button
-              startIcon={<Add />}
               variant="contained"
+              startIcon={<Add />}
               onClick={() => setShowAddDialog(true)}
               sx={{ mr: 2 }}
             >
               Add New Job
             </Button>
-          ) : user?.role === 'driver' ? (
-            <Button
-              startIcon={<Add />}
-              variant="contained"
-              onClick={() => {
-                alert('Please call the Office');
-              }}
-              sx={{ mr: 2 }}
-            >
-              Add New Job
-            </Button>
-          ) : null}
+          )}
           <IconButton
             onClick={onClose}
             sx={{ color: 'yellow', fontSize: '1.5rem' }}
@@ -363,81 +678,33 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
         </Box>
       </Box>
 
-      {/* Job Statistics */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary">
-                {totalJobs}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Jobs
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main">
-                {pendingJobs}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Pending
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="info.main">
-                {inProgressJobs}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                In Progress
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main">
-                {completedJobs}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Completed
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="secondary.main">
-                {Math.round(totalVolume)}m³
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Volume
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="error.main">
-                {Math.round(totalWeight / 1000)}t
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Weight
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      {/* Trailer Plotter Button */}
+      <Box sx={{ mb: 3, textAlign: 'center' }}>
+        <Button
+          variant="contained"
+          color="secondary"
+          startIcon={<LocalShipping />}
+          size="large"
+          onClick={() => setShowTrailerPlotter(true)}
+          sx={{ 
+            px: 4, 
+            py: 1.5,
+            fontSize: '1.1rem',
+            fontWeight: 'bold',
+            boxShadow: 3,
+            '&:hover': {
+              boxShadow: 6,
+              transform: 'translateY(-2px)',
+              transition: 'all 0.3s ease-in-out',
+            }
+          }}
+        >
+          Open Trailer Plan
+        </Button>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          Load planning & trailer optimization with drag & drop functionality
+        </Typography>
+      </Box>
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -455,719 +722,601 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
           }}
         >
           <Tab label="All Jobs" />
-          <Tab label="Pending Jobs" />
+          <Tab label="Pending" />
+          <Tab label="In Progress" />
+          <Tab label="Completed" />
+          <Tab label="Consignment Analysis" />
         </Tabs>
       </Box>
 
-      {/* All Jobs Tab */}
+      {/* Tab Panels */}
       <TabPanel value={tabValue} index={0}>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Job #</TableCell>
-                <TableCell>Title</TableCell>
-                <TableCell>Customer</TableCell>
-                <TableCell>Priority</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Dimensions</TableCell>
-                <TableCell>Volume</TableCell>
-                <TableCell>Weight</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredJobs.map((job) => (
-                <TableRow key={job.id}>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="bold">
-                      {job.jobNumber}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {job.title}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {job.customerName}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={job.priority}
-                      color={getPriorityColor(job.priority) as any}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={job.status.replace('_', ' ')}
-                      color={getStatusColor(job.status) as any}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {job.loadDimensions?.length}×{job.loadDimensions?.width}×{job.loadDimensions?.height}cm
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {job.loadDimensions?.volume?.toFixed(2)}m³
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {job.loadDimensions?.weight}kg
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Tooltip title="View Details">
-                      <IconButton
-                        size="small"
-                        onClick={() => openViewDialog(job)}
-                        color="info"
-                      >
-                        <Visibility />
-                      </IconButton>
-                    </Tooltip>
-                    {(user?.role === 'admin' || user?.role === 'owner') && (
-                      <>
-                        <Tooltip title="Edit Job">
-                          <IconButton size="small" color="primary">
-                            <Edit />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete Job">
-                          <IconButton size="small" color="error">
-                            <Delete />
-                          </IconButton>
-                        </Tooltip>
-                      </>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <JobList jobs={jobs} onView={openViewDialog} />
       </TabPanel>
-
-      {/* Pending Jobs Tab */}
       <TabPanel value={tabValue} index={1}>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Job #</TableCell>
-                <TableCell>Title</TableCell>
-                <TableCell>Customer</TableCell>
-                <TableCell>Priority</TableCell>
-                <TableCell>Dimensions</TableCell>
-                <TableCell>Volume</TableCell>
-                <TableCell>Weight</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredJobs.filter(job => job.status === 'pending').map((job) => (
-                <TableRow key={job.id}>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="bold">
-                      {job.jobNumber}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {job.title}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {job.customerName}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={job.priority}
-                      color={getPriorityColor(job.priority) as any}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {job.loadDimensions?.length}×{job.loadDimensions?.width}×{job.loadDimensions?.height}cm
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {job.loadDimensions?.volume?.toFixed(2)}m³
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {job.loadDimensions?.weight}kg
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Tooltip title="View Details">
-                      <IconButton
-                        size="small"
-                        onClick={() => openViewDialog(job)}
-                        color="info"
-                      >
-                        <Visibility />
-                      </IconButton>
-                    </Tooltip>
-                    {(user?.role === 'admin' || user?.role === 'owner') ? (
-                      <Tooltip title="Assign Job">
-                        <IconButton size="small" color="primary">
-                          <Assignment />
-                        </IconButton>
-                      </Tooltip>
-                    ) : (
-                      <Tooltip title="Contact Office">
-                        <IconButton 
-                          size="small" 
-                          color="warning"
-                          onClick={() => alert('Contact Office')}
-                        >
-                          <Warning />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <JobList jobs={jobs.filter(job => job.status === 'pending')} onView={openViewDialog} />
+      </TabPanel>
+      <TabPanel value={tabValue} index={2}>
+        <JobList jobs={jobs.filter(job => job.status === 'in_progress' || job.status === 'assigned')} onView={openViewDialog} />
+      </TabPanel>
+      <TabPanel value={tabValue} index={3}>
+        <JobList jobs={jobs.filter(job => job.status === 'completed')} onView={openViewDialog} />
+      </TabPanel>
+      <TabPanel value={tabValue} index={4}>
+        <ConsignmentAnalysis jobs={jobs as EnhancedJobAssignment[]} />
       </TabPanel>
 
       {/* Add Job Dialog */}
       <Dialog open={showAddDialog} onClose={() => setShowAddDialog(false)} maxWidth="lg" fullWidth>
-        <DialogTitle>Add New Job</DialogTitle>
+        <DialogTitle>
+          <Typography variant="h5" component="div">
+            Create New Job Assignment
+          </Typography>
+        </DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            {/* Basic Job Information */}
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom>
-                Basic Information
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Job Number"
-                value={newJob.jobNumber}
-                onChange={(e) => setNewJob({ ...newJob, jobNumber: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Job Title"
-                value={newJob.title}
-                onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Description"
-                multiline
-                rows={2}
-                value={newJob.description}
-                onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
-              />
-            </Grid>
-
-            {/* Customer Information */}
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Customer Information
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Customer Name"
-                value={newJob.customerName}
-                onChange={(e) => setNewJob({ ...newJob, customerName: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Customer Phone"
-                value={newJob.customerPhone}
-                onChange={(e) => setNewJob({ ...newJob, customerPhone: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Customer Email"
-                value={newJob.customerEmail}
-                onChange={(e) => setNewJob({ ...newJob, customerEmail: e.target.value })}
-              />
-            </Grid>
-
-            {/* Load Dimensions */}
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Load Dimensions
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Tooltip
-                title={
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      {fieldHints.length.title}
-                    </Typography>
-                    <List dense>
-                      {fieldHints.length.items.map((item, index) => (
-                        <ListItem key={index} sx={{ py: 0 }}>
-                          <ListItemIcon sx={{ minWidth: 20 }}>
-                            <Typography variant="caption">•</Typography>
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary={<Typography variant="caption">{item}</Typography>} 
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Box>
-                }
-                arrow
-                placement="top"
-              >
-                <TextField
-                  fullWidth
-                  label="Length (cm)"
-                  type="number"
-                  value={newJob.loadDimensions?.length || ''}
-                  onChange={(e) => {
-                    const length = Number(e.target.value);
-                    const volume = calculateVolume(
-                      length,
-                      newJob.loadDimensions?.width || 0,
-                      newJob.loadDimensions?.height || 0
-                    );
-                    setNewJob({
-                      ...newJob,
-                      loadDimensions: {
-                        ...newJob.loadDimensions!,
-                        length,
-                        volume,
-                      }
-                    });
-                  }}
-                  InputProps={{
-                    startAdornment: <Straighten sx={{ mr: 1, color: 'action.active' }} />,
-                  }}
-                />
-              </Tooltip>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Tooltip
-                title={
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      {fieldHints.width.title}
-                    </Typography>
-                    <List dense>
-                      {fieldHints.width.items.map((item, index) => (
-                        <ListItem key={index} sx={{ py: 0 }}>
-                          <ListItemIcon sx={{ minWidth: 20 }}>
-                            <Typography variant="caption">•</Typography>
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary={<Typography variant="caption">{item}</Typography>} 
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Box>
-                }
-                arrow
-                placement="top"
-              >
-                <TextField
-                  fullWidth
-                  label="Width (cm)"
-                  type="number"
-                  value={newJob.loadDimensions?.width || ''}
-                  onChange={(e) => {
-                    const width = Number(e.target.value);
-                    const volume = calculateVolume(
-                      newJob.loadDimensions?.length || 0,
-                      width,
-                      newJob.loadDimensions?.height || 0
-                    );
-                    setNewJob({
-                      ...newJob,
-                      loadDimensions: {
-                        ...newJob.loadDimensions!,
-                        width,
-                        volume,
-                      }
-                    });
-                  }}
-                  InputProps={{
-                    startAdornment: <Width sx={{ mr: 1, color: 'action.active' }} />,
-                  }}
-                />
-              </Tooltip>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Tooltip
-                title={
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      {fieldHints.height.title}
-                    </Typography>
-                    <List dense>
-                      {fieldHints.height.items.map((item, index) => (
-                        <ListItem key={index} sx={{ py: 0 }}>
-                          <ListItemIcon sx={{ minWidth: 20 }}>
-                            <Typography variant="caption">•</Typography>
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary={<Typography variant="caption">{item}</Typography>} 
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Box>
-                }
-                arrow
-                placement="top"
-              >
-                <TextField
-                  fullWidth
-                  label="Height (cm)"
-                  type="number"
-                  value={newJob.loadDimensions?.height || ''}
-                  onChange={(e) => {
-                    const height = Number(e.target.value);
-                    const volume = calculateVolume(
-                      newJob.loadDimensions?.length || 0,
-                      newJob.loadDimensions?.width || 0,
-                      height
-                    );
-                    setNewJob({
-                      ...newJob,
-                      loadDimensions: {
-                        ...newJob.loadDimensions!,
-                        height,
-                        volume,
-                      }
-                    });
-                  }}
-                  InputProps={{
-                    startAdornment: <Height sx={{ mr: 1, color: 'action.active' }} />,
-                  }}
-                />
-              </Tooltip>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Tooltip
-                title={
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      {fieldHints.weight.title}
-                    </Typography>
-                    <List dense>
-                      {fieldHints.weight.items.map((item, index) => (
-                        <ListItem key={index} sx={{ py: 0 }}>
-                          <ListItemIcon sx={{ minWidth: 20 }}>
-                            <Typography variant="caption">•</Typography>
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary={<Typography variant="caption">{item}</Typography>} 
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Box>
-                }
-                arrow
-                placement="top"
-              >
-                <TextField
-                  fullWidth
-                  label="Weight (kg)"
-                  type="number"
-                  value={newJob.loadDimensions?.weight || ''}
-                  onChange={(e) => setNewJob({
-                    ...newJob,
-                    loadDimensions: {
-                      ...newJob.loadDimensions!,
-                      weight: Number(e.target.value),
-                    }
-                  })}
-                  InputProps={{
-                    startAdornment: <Scale sx={{ mr: 1, color: 'action.active' }} />,
-                  }}
-                />
-              </Tooltip>
-            </Grid>
-
-            {/* Calculated Volume */}
-            <Grid item xs={12} md={6}>
-              <Alert severity="info">
-                <Typography variant="body2">
-                  <strong>Calculated Volume:</strong> {newJob.loadDimensions?.volume?.toFixed(2) || '0.00'} m³
-                </Typography>
-              </Alert>
-            </Grid>
-
-            {/* Load Characteristics */}
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Load Characteristics
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={newJob.loadDimensions?.isOversized || false}
-                    onChange={(e) => setNewJob({
-                      ...newJob,
-                      loadDimensions: {
-                        ...newJob.loadDimensions!,
-                        isOversized: e.target.checked,
-                      }
-                    })}
-                  />
-                }
-                label="Oversized"
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={newJob.loadDimensions?.isProtruding || false}
-                    onChange={(e) => setNewJob({
-                      ...newJob,
-                      loadDimensions: {
-                        ...newJob.loadDimensions!,
-                        isProtruding: e.target.checked,
-                      }
-                    })}
-                  />
-                }
-                label="Protruding"
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={newJob.loadDimensions?.isBalanced || false}
-                    onChange={(e) => setNewJob({
-                      ...newJob,
-                      loadDimensions: {
-                        ...newJob.loadDimensions!,
-                        isBalanced: e.target.checked,
-                      }
-                    })}
-                  />
-                }
-                label="Balanced"
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={newJob.loadDimensions?.isFragile || false}
-                    onChange={(e) => setNewJob({
-                      ...newJob,
-                      loadDimensions: {
-                        ...newJob.loadDimensions!,
-                        isFragile: e.target.checked,
-                      }
-                    })}
-                  />
-                }
-                label="Fragile"
-              />
-            </Grid>
-
-            {/* Load Notes */}
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Load Notes"
-                multiline
-                rows={3}
-                placeholder="Special handling instructions, loading requirements, etc."
-                value={newJob.loadDimensions?.loadNotes || ''}
-                onChange={(e) => setNewJob({
-                  ...newJob,
-                  loadDimensions: {
-                    ...newJob.loadDimensions!,
-                    loadNotes: e.target.value,
-                  }
-                })}
-              />
-            </Grid>
-
-            {/* Other Job Details */}
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Priority</InputLabel>
-                <Select
-                  value={newJob.priority}
-                  onChange={(e) => setNewJob({ ...newJob, priority: e.target.value as JobPriority })}
-                  label="Priority"
-                >
-                  <MenuItem value="low">Low</MenuItem>
-                  <MenuItem value="medium">Medium</MenuItem>
-                  <MenuItem value="high">High</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Cargo Type"
-                value={newJob.cargoType}
-                onChange={(e) => setNewJob({ ...newJob, cargoType: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Scheduled Date"
-                type="date"
-                value={newJob.scheduledDate}
-                onChange={(e) => setNewJob({ ...newJob, scheduledDate: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Scheduled Time"
-                type="time"
-                value={newJob.scheduledTime}
-                onChange={(e) => setNewJob({ ...newJob, scheduledTime: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-          </Grid>
+          <Stepper activeStep={activeStep} orientation="vertical">
+            {steps.map((step, index) => (
+              <Step key={step}>
+                <StepLabel>{step}</StepLabel>
+                <StepContent>
+                  {index === 0 && (
+                    <BasicInformationStep 
+                      newJob={newJob} 
+                      setNewJob={setNewJob} 
+                      onNext={handleNext}
+                    />
+                  )}
+                  {index === 1 && (
+                    <CustomerDetailsStep 
+                      newJob={newJob} 
+                      setNewJob={setNewJob} 
+                      onNext={handleNext}
+                      onBack={handleBack}
+                    />
+                  )}
+                  {index === 2 && (
+                    <ConsignmentItemsStep 
+                      newJob={newJob}
+                      setNewJob={setNewJob}
+                      newConsignmentItem={newConsignmentItem}
+                      setNewConsignmentItem={setNewConsignmentItem}
+                      onAddItem={handleAddConsignmentItem}
+                      onRemoveItem={handleRemoveConsignmentItem}
+                      onNext={handleNext}
+                      onBack={handleBack}
+                    />
+                  )}
+                  {index === 3 && (
+                    <DeliveryScheduleStep 
+                      newJob={newJob}
+                      setNewJob={setNewJob}
+                      onNext={handleNext}
+                      onBack={handleBack}
+                    />
+                  )}
+                  {index === 4 && (
+                    <RouteCostStep 
+                      newJob={newJob}
+                      setNewJob={setNewJob}
+                      onNext={handleNext}
+                      onBack={handleBack}
+                    />
+                  )}
+                  {index === 5 && (
+                    <ReviewSubmitStep 
+                      newJob={newJob}
+                      onBack={handleBack}
+                      onSubmit={handleAddJob}
+                    />
+                  )}
+                </StepContent>
+              </Step>
+            ))}
+          </Stepper>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowAddDialog(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleAddJob} variant="contained">
-            Add Job
-          </Button>
+          <Button onClick={() => setShowAddDialog(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
 
       {/* View Job Dialog */}
       {selectedJob && (
-        <Dialog open={showViewDialog} onClose={() => setShowViewDialog(false)} maxWidth="md" fullWidth>
+        <Dialog open={showViewDialog} onClose={() => setShowViewDialog(false)} maxWidth="lg" fullWidth>
           <DialogTitle>
             Job Details: {selectedJob.jobNumber}
           </DialogTitle>
           <DialogContent>
-            <Grid container spacing={3} sx={{ mt: 1 }}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom>
-                  Job Information
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Title:</strong> {selectedJob.title}
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Customer:</strong> {selectedJob.customerName}
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Priority:</strong> 
-                  <Chip
-                    label={selectedJob.priority}
-                    color={getPriorityColor(selectedJob.priority) as any}
-                    size="small"
-                    sx={{ ml: 1 }}
-                  />
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Status:</strong> 
-                  <Chip
-                    label={selectedJob.status.replace('_', ' ')}
-                    color={getStatusColor(selectedJob.status) as any}
-                    size="small"
-                    sx={{ ml: 1 }}
-                  />
-                </Typography>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom>
-                  Load Dimensions
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Dimensions:</strong> {selectedJob.loadDimensions?.length}×{selectedJob.loadDimensions?.width}×{selectedJob.loadDimensions?.height}cm
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Volume:</strong> {selectedJob.loadDimensions?.volume?.toFixed(2)} m³
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Weight:</strong> {selectedJob.loadDimensions?.weight} kg
-                </Typography>
-                <Box sx={{ mt: 1 }}>
-                  {selectedJob.loadDimensions?.isOversized && (
-                    <Chip label="Oversized" color="warning" size="small" sx={{ mr: 1 }} />
-                  )}
-                  {selectedJob.loadDimensions?.isProtruding && (
-                    <Chip label="Protruding" color="error" size="small" sx={{ mr: 1 }} />
-                  )}
-                  {selectedJob.loadDimensions?.isBalanced && (
-                    <Chip label="Balanced" color="success" size="small" sx={{ mr: 1 }} />
-                  )}
-                  {selectedJob.loadDimensions?.isFragile && (
-                    <Chip label="Fragile" color="info" size="small" sx={{ mr: 1 }} />
-                  )}
-                </Box>
-              </Grid>
-              {selectedJob.loadDimensions?.loadNotes && (
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
-                    Load Notes
-                  </Typography>
-                  <Alert severity="info">
-                    <Typography variant="body2">
-                      {selectedJob.loadDimensions.loadNotes}
-                    </Typography>
-                  </Alert>
-                </Grid>
-              )}
-            </Grid>
+            <JobDetailsView job={selectedJob} />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setShowViewDialog(false)}>
-              Close
-            </Button>
+            <Button onClick={() => setShowViewDialog(false)}>Close</Button>
             {(user?.role === 'admin' || user?.role === 'owner') && (
-              <Button variant="contained">
-                Edit Job
-              </Button>
+              <Button variant="contained">Edit Job</Button>
             )}
           </DialogActions>
         </Dialog>
       )}
+
+            {/* Trailer Plan */}
+      {showTrailerPlotter && (
+        <TrailerPlan
+          onClose={() => setShowTrailerPlotter(false)}
+          selectedJobs={jobs}
+        />
+      )}
     </Box>
   );
 };
+
+// Helper Components
+const JobList: React.FC<{ jobs: JobAssignmentType[]; onView: (job: JobAssignmentType) => void }> = ({ jobs, onView }) => (
+  <TableContainer component={Paper}>
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableCell>Job Number</TableCell>
+          <TableCell>Title</TableCell>
+          <TableCell>Customer</TableCell>
+          <TableCell>Priority</TableCell>
+          <TableCell>Status</TableCell>
+          <TableCell>Volume (m³)</TableCell>
+          <TableCell>Weight (kg)</TableCell>
+          <TableCell>Actions</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {jobs.map((job) => (
+          <TableRow key={job.id}>
+            <TableCell>{job.jobNumber}</TableCell>
+            <TableCell>{job.title}</TableCell>
+            <TableCell>{job.customerName}</TableCell>
+            <TableCell>
+              <Chip
+                label={job.priority}
+                color={job.priority === 'urgent' ? 'error' : job.priority === 'high' ? 'warning' : 'default'}
+                size="small"
+              />
+            </TableCell>
+            <TableCell>
+              <InteractiveStatusChip
+                status={job.status.replace('_', ' ')}
+                statusIcon={getStatusIcon(job.status)}
+                statusColor={getStatusColor(job.status)}
+                statusOptions={getJobStatusOptions()}
+                onStatusChange={(newStatus) => {
+                  dispatch(updateJobStatus({
+                    jobId: job.id,
+                    status: newStatus as JobStatus,
+                  }));
+                }}
+                disabled={false}
+                tooltipText={user?.role === 'driver' ? 'Click to update job status' : 'Click to update status'}
+              />
+            </TableCell>
+            <TableCell>{(job as any).totalVolume?.toFixed(2) || '0.00'}</TableCell>
+            <TableCell>{(job as any).totalWeight?.toFixed(0) || '0'}</TableCell>
+            <TableCell>
+              <Tooltip title="View Details">
+                <IconButton onClick={() => onView(job)}>
+                  <Visibility />
+                </IconButton>
+              </Tooltip>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </TableContainer>
+);
+
+const ConsignmentAnalysis: React.FC<{ jobs: JobAssignmentType[] }> = ({ jobs }) => (
+  <Grid container spacing={3}>
+    <Grid item xs={12} md={6}>
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Volume Distribution
+          </Typography>
+          <LinearProgress 
+            variant="determinate" 
+            value={Math.min((jobs.reduce((sum, job) => sum + (job.cargoWeight || 0), 0) / 100) * 100, 100)} 
+            sx={{ height: 20, borderRadius: 10 }}
+          />
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            Total Weight: {jobs.reduce((sum, job) => sum + (job.cargoWeight || 0), 0).toFixed(0)} kg
+          </Typography>
+        </CardContent>
+      </Card>
+    </Grid>
+    <Grid item xs={12} md={6}>
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Weight Distribution
+          </Typography>
+          <LinearProgress 
+            variant="determinate" 
+            value={Math.min((jobs.reduce((sum, job) => sum + (job.cargoWeight || 0), 0) / 26000) * 100, 100)} 
+            sx={{ height: 20, borderRadius: 10 }}
+          />
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            Total Weight: {jobs.reduce((sum, job) => sum + (job.cargoWeight || 0), 0).toFixed(0)} kg
+          </Typography>
+        </CardContent>
+      </Card>
+    </Grid>
+  </Grid>
+);
+
+// Step Components (simplified for brevity)
+const BasicInformationStep: React.FC<any> = ({ newJob, setNewJob, onNext }) => (
+  <Box>
+    <Grid container spacing={2}>
+      <Grid item xs={12} md={6}>
+        <TextField
+          fullWidth
+          label="Job Number"
+          value={newJob.jobNumber}
+          onChange={(e) => setNewJob({ ...newJob, jobNumber: e.target.value })}
+        />
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <TextField
+          fullWidth
+          label="Title"
+          value={newJob.title}
+          onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
+        />
+      </Grid>
+      <Grid item xs={12}>
+        <TextField
+          fullWidth
+          label="Description"
+          multiline
+          rows={3}
+          value={newJob.description}
+          onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
+        />
+      </Grid>
+    </Grid>
+    <Button variant="contained" onClick={onNext} sx={{ mt: 2 }}>
+      Next
+    </Button>
+  </Box>
+);
+
+const CustomerDetailsStep: React.FC<any> = ({ newJob, setNewJob, onNext, onBack }) => (
+  <Box>
+    <Grid container spacing={2}>
+      <Grid item xs={12} md={6}>
+        <TextField
+          fullWidth
+          label="Customer Name"
+          value={newJob.customerName}
+          onChange={(e) => setNewJob({ ...newJob, customerName: e.target.value })}
+        />
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <TextField
+          fullWidth
+          label="Customer Phone"
+          value={newJob.customerPhone}
+          onChange={(e) => setNewJob({ ...newJob, customerPhone: e.target.value })}
+        />
+      </Grid>
+      <Grid item xs={12}>
+        <TextField
+          fullWidth
+          label="Customer Email"
+          value={newJob.customerEmail}
+          onChange={(e) => setNewJob({ ...newJob, customerEmail: e.target.value })}
+        />
+      </Grid>
+    </Grid>
+    <Box sx={{ mt: 2 }}>
+      <Button onClick={onBack}>Back</Button>
+      <Button variant="contained" onClick={onNext} sx={{ ml: 1 }}>
+        Next
+      </Button>
+    </Box>
+  </Box>
+);
+
+const ConsignmentItemsStep: React.FC<any> = ({ 
+  newJob, 
+  setNewJob, 
+  newConsignmentItem, 
+  setNewConsignmentItem, 
+  onAddItem, 
+  onRemoveItem, 
+  onNext, 
+  onBack 
+}) => (
+  <Box>
+    <Typography variant="h6" gutterBottom>
+      Consignment Items ({newJob.consignmentItems?.length || 0})
+    </Typography>
+    
+    {/* Add Item Form */}
+    <Card sx={{ mb: 2 }}>
+      <CardContent>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Description"
+              value={newConsignmentItem.description}
+              onChange={(e) => setNewConsignmentItem({ ...newConsignmentItem, description: e.target.value })}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Category"
+              value={newConsignmentItem.category}
+              onChange={(e) => setNewConsignmentItem({ ...newConsignmentItem, category: e.target.value })}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Length (cm)"
+              type="number"
+              value={newConsignmentItem.dimensions?.length || ''}
+              onChange={(e) => setNewConsignmentItem({
+                ...newConsignmentItem,
+                dimensions: { ...newConsignmentItem.dimensions, length: parseFloat(e.target.value) || 0 }
+              })}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Width (cm)"
+              type="number"
+              value={newConsignmentItem.dimensions?.width || ''}
+              onChange={(e) => setNewConsignmentItem({
+                ...newConsignmentItem,
+                dimensions: { ...newConsignmentItem.dimensions, width: parseFloat(e.target.value) || 0 }
+              })}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Height (cm)"
+              type="number"
+              value={newConsignmentItem.dimensions?.height || ''}
+              onChange={(e) => setNewConsignmentItem({
+                ...newConsignmentItem,
+                dimensions: { ...newConsignmentItem.dimensions, height: parseFloat(e.target.value) || 0 }
+              })}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Weight (kg)"
+              type="number"
+              value={newConsignmentItem.dimensions?.weight || ''}
+              onChange={(e) => setNewConsignmentItem({
+                ...newConsignmentItem,
+                dimensions: { ...newConsignmentItem.dimensions, weight: parseFloat(e.target.value) || 0 }
+              })}
+            />
+          </Grid>
+        </Grid>
+        <Button variant="contained" onClick={onAddItem} sx={{ mt: 2 }}>
+          Add Item
+        </Button>
+      </CardContent>
+    </Card>
+
+    {/* Items List */}
+    <List>
+      {newJob.consignmentItems?.map((item: ConsignmentItem) => (
+        <ListItem key={item.id}>
+          <ListItemIcon>
+            <Inventory />
+          </ListItemIcon>
+          <ListItemText
+            primary={item.description}
+            secondary={`${item.dimensions.length}×${item.dimensions.width}×${item.dimensions.height}cm, ${item.dimensions.weight}kg, ${item.dimensions.volume.toFixed(2)}m³`}
+          />
+          <IconButton onClick={() => onRemoveItem(item.id)}>
+            <Delete />
+          </IconButton>
+        </ListItem>
+      ))}
+    </List>
+
+    <Box sx={{ mt: 2 }}>
+      <Button onClick={onBack}>Back</Button>
+      <Button variant="contained" onClick={onNext} sx={{ ml: 1 }}>
+        Next
+      </Button>
+    </Box>
+  </Box>
+);
+
+const DeliveryScheduleStep: React.FC<any> = ({ newJob, setNewJob, onNext, onBack }) => (
+  <Box>
+    <Grid container spacing={2}>
+      <Grid item xs={12} md={6}>
+        <TextField
+          fullWidth
+          label="Pickup Date"
+          type="date"
+          value={newJob.deliverySchedule?.pickupDate}
+          onChange={(e) => setNewJob({
+            ...newJob,
+            deliverySchedule: { ...newJob.deliverySchedule, pickupDate: e.target.value }
+          })}
+          InputLabelProps={{ shrink: true }}
+        />
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <TextField
+          fullWidth
+          label="Pickup Time"
+          type="time"
+          value={newJob.deliverySchedule?.pickupTime}
+          onChange={(e) => setNewJob({
+            ...newJob,
+            deliverySchedule: { ...newJob.deliverySchedule, pickupTime: e.target.value }
+          })}
+          InputLabelProps={{ shrink: true }}
+        />
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <TextField
+          fullWidth
+          label="Delivery Date"
+          type="date"
+          value={newJob.deliverySchedule?.deliveryDate}
+          onChange={(e) => setNewJob({
+            ...newJob,
+            deliverySchedule: { ...newJob.deliverySchedule, deliveryDate: e.target.value }
+          })}
+          InputLabelProps={{ shrink: true }}
+        />
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <TextField
+          fullWidth
+          label="Delivery Time"
+          type="time"
+          value={newJob.deliverySchedule?.deliveryTime}
+          onChange={(e) => setNewJob({
+            ...newJob,
+            deliverySchedule: { ...newJob.deliverySchedule, deliveryTime: e.target.value }
+          })}
+          InputLabelProps={{ shrink: true }}
+        />
+      </Grid>
+    </Grid>
+    <Box sx={{ mt: 2 }}>
+      <Button onClick={onBack}>Back</Button>
+      <Button variant="contained" onClick={onNext} sx={{ ml: 1 }}>
+        Next
+      </Button>
+    </Box>
+  </Box>
+);
+
+const RouteCostStep: React.FC<any> = ({ newJob, setNewJob, onNext, onBack }) => (
+  <Box>
+    <Grid container spacing={2}>
+      <Grid item xs={12} md={6}>
+        <TextField
+          fullWidth
+          label="Transport Cost (£)"
+          type="number"
+          value={newJob.costBreakdown?.transportCost || ''}
+          onChange={(e) => setNewJob({
+            ...newJob,
+            costBreakdown: { ...newJob.costBreakdown, transportCost: parseFloat(e.target.value) || 0 }
+          })}
+        />
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <TextField
+          fullWidth
+          label="Handling Cost (£)"
+          type="number"
+          value={newJob.costBreakdown?.handlingCost || ''}
+          onChange={(e) => setNewJob({
+            ...newJob,
+            costBreakdown: { ...newJob.costBreakdown, handlingCost: parseFloat(e.target.value) || 0 }
+          })}
+        />
+      </Grid>
+    </Grid>
+    <Box sx={{ mt: 2 }}>
+      <Button onClick={onBack}>Back</Button>
+      <Button variant="contained" onClick={onNext} sx={{ ml: 1 }}>
+        Next
+      </Button>
+    </Box>
+  </Box>
+);
+
+const ReviewSubmitStep: React.FC<any> = ({ newJob, onBack, onSubmit }) => (
+  <Box>
+    <Typography variant="h6" gutterBottom>
+      Review Job Details
+    </Typography>
+    <Grid container spacing={2}>
+      <Grid item xs={12} md={6}>
+        <Typography variant="body2">
+          <strong>Job Number:</strong> {newJob.jobNumber}
+        </Typography>
+        <Typography variant="body2">
+          <strong>Title:</strong> {newJob.title}
+        </Typography>
+        <Typography variant="body2">
+          <strong>Customer:</strong> {newJob.customerName}
+        </Typography>
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <Typography variant="body2">
+          <strong>Total Volume:</strong> {newJob.totalVolume?.toFixed(2)} m³
+        </Typography>
+        <Typography variant="body2">
+          <strong>Total Weight:</strong> {newJob.totalWeight?.toFixed(0)} kg
+        </Typography>
+        <Typography variant="body2">
+          <strong>Items:</strong> {newJob.consignmentItems?.length || 0}
+        </Typography>
+      </Grid>
+    </Grid>
+    <Box sx={{ mt: 2 }}>
+      <Button onClick={onBack}>Back</Button>
+      <Button variant="contained" onClick={onSubmit} sx={{ ml: 1 }}>
+        Create Job
+      </Button>
+    </Box>
+  </Box>
+);
+
+const JobDetailsView: React.FC<{ job: EnhancedJobAssignment }> = ({ job }) => (
+  <Grid container spacing={3}>
+    <Grid item xs={12} md={6}>
+      <Typography variant="h6" gutterBottom>
+        Job Information
+      </Typography>
+      <Typography variant="body2" gutterBottom>
+        <strong>Job Number:</strong> {job.jobNumber}
+      </Typography>
+      <Typography variant="body2" gutterBottom>
+        <strong>Title:</strong> {job.title}
+      </Typography>
+      <Typography variant="body2" gutterBottom>
+        <strong>Customer:</strong> {job.customerName}
+      </Typography>
+      <Typography variant="body2" gutterBottom>
+        <strong>Total Volume:</strong> {job.totalVolume?.toFixed(2)} m³
+      </Typography>
+      <Typography variant="body2" gutterBottom>
+        <strong>Total Weight:</strong> {job.totalWeight?.toFixed(0)} kg
+      </Typography>
+    </Grid>
+    <Grid item xs={12} md={6}>
+      <Typography variant="h6" gutterBottom>
+        Consignment Items
+      </Typography>
+      <List dense>
+        {job.consignmentItems?.map((item) => (
+          <ListItem key={item.id}>
+            <ListItemText
+              primary={item.description}
+              secondary={`${item.dimensions.length}×${item.dimensions.width}×${item.dimensions.height}cm, ${item.dimensions.weight}kg`}
+            />
+          </ListItem>
+        ))}
+      </List>
+    </Grid>
+  </Grid>
+);
 
 export default JobAssignment; 

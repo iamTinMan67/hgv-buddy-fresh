@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../store';
+import { updateFuelRecordStatus, calculateFuelStatistics, addFuelRecordFromDriver, FuelRecord } from '../store/slices/fuelSlice';
+import InteractiveStatusChip, { StatusOption } from './InteractiveStatusChip';
 import {
   Box,
   Card,
@@ -6,6 +10,7 @@ import {
   Typography,
   Grid,
   Button,
+  TextField,
   Table,
   TableBody,
   TableCell,
@@ -23,6 +28,12 @@ import {
   DialogActions,
   Badge,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
+  Menu,
 } from '@mui/material';
 import {
   LocalGasStation,
@@ -38,6 +49,7 @@ import {
   DirectionsCar,
   Person,
   LocationOn,
+  MoreVert,
 } from '@mui/icons-material';
 
 interface FuelManagementProps {
@@ -65,100 +77,38 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-interface FuelRecord {
-  id: string;
-  date: string;
-  vehicleId: string;
-  vehicleRegistration: string;
-  driverId: string;
-  driverName: string;
-  odometerReading: number;
-  litres: number;
-  pricePerLitre: number;
-  totalCost: number;
-  receiptNumber: string;
-  fuelStation: string;
-  receiptImage?: string;
-  notes?: string;
-  status: 'pending' | 'approved' | 'rejected';
-  approvedBy?: string;
-  approvedDate?: string;
-}
+
 
 const FuelManagement: React.FC<FuelManagementProps> = ({ onClose }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { fuelRecords, statistics, loading } = useSelector((state: RootState) => state.fuel);
+  const { user } = useSelector((state: RootState) => state.auth);
+  
   const [tabValue, setTabValue] = useState(0);
-  const [, setShowAddDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<FuelRecord | null>(null);
+  const [newFuelRecord, setNewFuelRecord] = useState({
+    date: new Date().toISOString().split('T')[0],
+    vehicleId: '',
+    vehicleRegistration: '',
+    driverId: '',
+    driverName: '',
+    odometerReading: 0,
+    litres: 0,
+    pricePerLitre: 0,
+    totalCost: 0,
+    receiptNumber: '',
+    fuelStation: '',
+    notes: '',
+  });
 
-  // Mock fuel data
-  const [fuelRecords] = useState<FuelRecord[]>([
-    {
-      id: '1',
-      date: '2024-01-15',
-      vehicleId: 'HGV001',
-      vehicleRegistration: 'AB12 CDE',
-      driverId: 'EMP001',
-      driverName: 'John Driver',
-      odometerReading: 125450,
-      litres: 150.5,
-      pricePerLitre: 1.85,
-      totalCost: 278.43,
-      receiptNumber: 'REC-2024-001',
-      fuelStation: 'BP Fuel Station - London',
-      status: 'approved',
-      approvedBy: 'Manager',
-      approvedDate: '2024-01-16',
-    },
-    {
-      id: '2',
-      date: '2024-01-14',
-      vehicleId: 'HGV002',
-      vehicleRegistration: 'XY34 FGH',
-      driverId: 'EMP002',
-      driverName: 'Jane Manager',
-      odometerReading: 98750,
-      litres: 120.0,
-      pricePerLitre: 1.82,
-      totalCost: 218.40,
-      receiptNumber: 'REC-2024-002',
-      fuelStation: 'Shell Station - Manchester',
-      status: 'approved',
-      approvedBy: 'Manager',
-      approvedDate: '2024-01-15',
-    },
-    {
-      id: '3',
-      date: '2024-01-13',
-      vehicleId: 'HGV001',
-      vehicleRegistration: 'AB12 CDE',
-      driverId: 'EMP001',
-      driverName: 'John Driver',
-      odometerReading: 125200,
-      litres: 180.0,
-      pricePerLitre: 1.88,
-      totalCost: 338.40,
-      receiptNumber: 'REC-2024-003',
-      fuelStation: 'Esso Station - Birmingham',
-      status: 'pending',
-    },
-    {
-      id: '4',
-      date: '2024-01-12',
-      vehicleId: 'HGV003',
-      vehicleRegistration: 'PQ56 RST',
-      driverId: 'EMP003',
-      driverName: 'Mike Wilson',
-      odometerReading: 45680,
-      litres: 95.5,
-      pricePerLitre: 1.80,
-      totalCost: 171.90,
-      receiptNumber: 'REC-2024-004',
-      fuelStation: 'Tesco Fuel - Leeds',
-      status: 'rejected',
-      notes: 'Receipt not provided',
-    },
-  ]);
+
+
+  // Calculate statistics when component mounts or fuel records change
+  useEffect(() => {
+    dispatch(calculateFuelStatistics());
+  }, [dispatch, fuelRecords]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -184,15 +134,48 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onClose }) => {
     setShowAddDialog(true);
   };
 
+  const handleSaveFuelRecord = () => {
+    const fuelData = {
+      ...newFuelRecord,
+      totalCost: newFuelRecord.litres * newFuelRecord.pricePerLitre,
+      receiptNumber: newFuelRecord.receiptNumber || `REC-${Date.now()}`,
+      uploadedBy: user?.id || 'EMP001',
+    };
+
+    dispatch(addFuelRecordFromDriver(fuelData));
+    setShowAddDialog(false);
+    setNewFuelRecord({
+      date: new Date().toISOString().split('T')[0],
+      vehicleId: '',
+      vehicleRegistration: '',
+      driverId: '',
+      driverName: '',
+      odometerReading: 0,
+      litres: 0,
+      pricePerLitre: 0,
+      totalCost: 0,
+      receiptNumber: '',
+      fuelStation: '',
+      notes: '',
+    });
+  };
+
   const openViewDialog = (record: FuelRecord) => {
     setSelectedRecord(record);
     setShowViewDialog(true);
   };
 
-  const totalFuelCost = fuelRecords.reduce((sum, record) => sum + record.totalCost, 0);
-  const totalLitres = fuelRecords.reduce((sum, record) => sum + record.litres, 0);
-  const averagePricePerLitre = totalLitres > 0 ? totalFuelCost / totalLitres : 0;
-  const pendingRecords = fuelRecords.filter(r => r.status === 'pending');
+
+
+  const getStatusOptions = (): StatusOption[] => [
+    { value: 'approved', label: 'Approved', icon: <CheckCircle />, color: 'success' },
+    { value: 'rejected', label: 'Rejected', icon: <Error />, color: 'error' },
+  ];
+
+  const totalFuelCost = statistics.totalFuelCost;
+  const totalLitres = statistics.totalLitres;
+  const averagePricePerLitre = statistics.averagePricePerLitre;
+  const pendingRecordsCount = statistics.pendingRecords;
 
   // Calculate fuel efficiency for each vehicle
   const vehicleEfficiency = fuelRecords.reduce((acc, record) => {
@@ -277,11 +260,11 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onClose }) => {
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Badge badgeContent={pendingRecords.length} color="warning">
+              <Badge badgeContent={pendingRecordsCount} color="warning">
                 <Warning sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
               </Badge>
               <Typography variant="h4" component="div">
-                {pendingRecords.length}
+                {pendingRecordsCount}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Pending Approvals
@@ -335,16 +318,27 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onClose }) => {
                   <TableCell>{record.date}</TableCell>
                   <TableCell>{record.vehicleRegistration}</TableCell>
                   <TableCell>{record.driverName}</TableCell>
-                  <TableCell>{record.odometerReading.toLocaleString()}</TableCell>
+                  <TableCell>{record.odometerReading?.toLocaleString() || 'N/A'}</TableCell>
                   <TableCell>{record.litres}L</TableCell>
                   <TableCell>£{record.pricePerLitre}</TableCell>
                   <TableCell>£{record.totalCost.toFixed(2)}</TableCell>
                   <TableCell>
-                    <Chip 
-                      icon={getStatusIcon(record.status)}
-                      label={record.status} 
-                      color={getStatusColor(record.status)}
-                      size="small"
+                    <InteractiveStatusChip
+                      status={record.status}
+                      statusIcon={getStatusIcon(record.status)}
+                      statusColor={getStatusColor(record.status)}
+                      statusOptions={getStatusOptions()}
+                      onStatusChange={(newStatus) => {
+                        if (newStatus === 'approved' || newStatus === 'rejected') {
+                          dispatch(updateFuelRecordStatus({
+                            recordId: record.id,
+                            status: newStatus as 'approved' | 'rejected',
+                            approvedBy: user?.id || 'EMP001',
+                          }));
+                        }
+                      }}
+                      disabled={record.status === 'approved' || record.status === 'rejected'}
+                      tooltipText={record.status === 'pending' ? 'Click to approve or reject' : 'Status cannot be changed'}
                     />
                   </TableCell>
                   <TableCell>
@@ -580,7 +574,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onClose }) => {
               </Grid>
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" color="text.secondary">Odometer Reading</Typography>
-                <Typography variant="body1">{selectedRecord.odometerReading.toLocaleString()}</Typography>
+                <Typography variant="body1">{selectedRecord.odometerReading?.toLocaleString() || 'N/A'}</Typography>
               </Grid>
 
               <Grid item xs={12} md={6}>
@@ -620,6 +614,116 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onClose }) => {
           <Button onClick={() => setShowViewDialog(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Add Fuel Record Dialog */}
+      <Dialog 
+        open={showAddDialog} 
+        onClose={() => setShowAddDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Add New Fuel Record
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Date"
+                type="date"
+                value={newFuelRecord.date}
+                onChange={(e) => setNewFuelRecord(prev => ({ ...prev, date: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Vehicle Registration"
+                value={newFuelRecord.vehicleRegistration}
+                onChange={(e) => setNewFuelRecord(prev => ({ ...prev, vehicleRegistration: e.target.value }))}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Driver Name"
+                value={newFuelRecord.driverName}
+                onChange={(e) => setNewFuelRecord(prev => ({ ...prev, driverName: e.target.value }))}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Odometer Reading"
+                type="number"
+                value={newFuelRecord.odometerReading}
+                onChange={(e) => setNewFuelRecord(prev => ({ ...prev, odometerReading: parseInt(e.target.value) || 0 }))}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Litres"
+                type="number"
+                value={newFuelRecord.litres}
+                onChange={(e) => setNewFuelRecord(prev => ({ ...prev, litres: parseFloat(e.target.value) || 0 }))}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Price per Litre (£)"
+                type="number"
+                value={newFuelRecord.pricePerLitre}
+                onChange={(e) => setNewFuelRecord(prev => ({ ...prev, pricePerLitre: parseFloat(e.target.value) || 0 }))}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Total Cost (£)"
+                type="number"
+                value={newFuelRecord.litres * newFuelRecord.pricePerLitre}
+                InputProps={{ readOnly: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Fuel Station"
+                value={newFuelRecord.fuelStation}
+                onChange={(e) => setNewFuelRecord(prev => ({ ...prev, fuelStation: e.target.value }))}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Receipt Number"
+                value={newFuelRecord.receiptNumber}
+                onChange={(e) => setNewFuelRecord(prev => ({ ...prev, receiptNumber: e.target.value }))}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Notes"
+                multiline
+                rows={3}
+                value={newFuelRecord.notes}
+                onChange={(e) => setNewFuelRecord(prev => ({ ...prev, notes: e.target.value }))}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowAddDialog(false)}>Cancel</Button>
+          <Button onClick={handleSaveFuelRecord} variant="contained">Save Record</Button>
+        </DialogActions>
+      </Dialog>
+
+      
     </Box>
   );
 };

@@ -46,6 +46,7 @@ import {
   Receipt,
   AccountBalance,
   Home,
+  ErrorOutline,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import {
@@ -132,6 +133,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
       case 'rescheduled': return 'secondary';
       case 'completed': return 'success';
       case 'failed': return 'error';
+      case 'refused': return 'error';
       case 'cancelled': return 'error';
       default: return 'default';
     }
@@ -145,7 +147,8 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
       case 'attempted': return <Warning />;
       case 'rescheduled': return <Refresh />;
       case 'completed': return <Stop />;
-      case 'failed': return <Stop />;
+      case 'failed': return <ErrorOutline />;
+      case 'refused': return <Stop />;
       case 'cancelled': return <Stop />;
       default: return <Pending />;
     }

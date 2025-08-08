@@ -26,7 +26,10 @@ import {
   Print,
   Warning,
   ArrowBack,
+  Book,
 } from '@mui/icons-material';
+
+import BookKeeping from './BookKeeping';
 
 interface AccountingHubProps {
   onClose: () => void;
@@ -47,6 +50,7 @@ interface AccountingRecord {
 const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<AccountingRecord | null>(null);
+  const [showBookKeeping, setShowBookKeeping] = useState(false);
 
   // Mock accounting data
   const [accountingRecords] = useState<AccountingRecord[]>([
@@ -168,7 +172,7 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
       <Grid container spacing={3}>
         {/* Financial Overview Card */}
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={{ transform: 'scale(0.6)' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
@@ -226,7 +230,7 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
 
         {/* Recent Transactions Card */}
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={{ transform: 'scale(0.6)' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
@@ -274,8 +278,9 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
+              transform: 'scale(0.6)',
               '&:hover': {
-                transform: 'translateY(-4px)',
+                transform: 'translateY(-4px) scale(0.6)',
                 boxShadow: 4,
               }
             }}
@@ -321,14 +326,70 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
+        {/* Books Card */}
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.6)',
+              '&:hover': {
+                transform: 'translateY(-4px) scale(0.6)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={() => setShowBookKeeping(true)}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
+                  <Book />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Books
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Bookkeeping & ledgers
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<TrendingUp />} 
+                  label="Income Ledger" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<TrendingDown />} 
+                  label="Expense Ledger" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<AccountBalance />} 
+                  label="General Ledger" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Reports Card */}
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
+              transform: 'scale(0.6)',
               '&:hover': {
-                transform: 'translateY(-4px)',
+                transform: 'translateY(-4px) scale(0.6)',
                 boxShadow: 4,
               }
             }}
@@ -376,7 +437,7 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
 
         {/* Quick Actions Card */}
         <Grid item xs={12} md={4}>
-          <Card>
+          <Card sx={{ transform: 'scale(0.6)' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
@@ -477,6 +538,11 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
           <Button onClick={closeViewDialog}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      {/* BookKeeping Component */}
+      {showBookKeeping && (
+        <BookKeeping onClose={() => setShowBookKeeping(false)} />
+      )}
     </Box>
   );
 };

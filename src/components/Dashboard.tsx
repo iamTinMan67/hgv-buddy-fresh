@@ -34,7 +34,9 @@ import LegalHub from './LegalHub';
 import DriverHub from './DriverHub';
 
 import DriverDashboard from './DriverDashboard';
+import DriverPlanner from './DriverPlanner';
 import ReportsHub from './ReportsHub';
+import TrailerPlan from './TrailerPlotter';
 import AccountingHub from './AccountingHub';
 import InvoiceUpload from './InvoiceUpload';
 
@@ -60,6 +62,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [showPlanningHub, setShowPlanningHub] = useState(false);
   const [showReportsHub, setShowReportsHub] = useState(false);
   const [showDriverDashboard, setShowDriverDashboard] = useState(false);
+  const [showDriverPlanner, setShowDriverPlanner] = useState(false);
+  const [showTrailerPlan, setShowTrailerPlan] = useState(false);
 
 
   const [showAccountingHub, setShowAccountingHub] = useState(false);
@@ -224,6 +228,24 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     );
   }
 
+  // Show driver planner if requested
+  if (showDriverPlanner) {
+    return (
+      <Box sx={{ py: 2 }}>
+        <DriverPlanner onClose={() => setShowDriverPlanner(false)} />
+      </Box>
+    );
+  }
+
+  // Show trailer plan if requested
+  if (showTrailerPlan) {
+    return (
+      <Box sx={{ py: 2 }}>
+        <TrailerPlan onClose={() => setShowTrailerPlan(false)} />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ py: 2 }}>
       {/* Header */}
@@ -256,7 +278,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           // Driver Dashboard - Complete Feature Set
           <>
             <Grid item xs={12} md={6} lg={4}>
-              <Card>
+              <Card sx={{ transform: 'scale(0.94)' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <CheckCircle sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
                   <Typography variant="h6">Daily Vehicle Checks</Typography>
@@ -279,7 +301,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
 
             <Grid item xs={12} md={6} lg={4}>
-              <Card>
+              <Card sx={{ transform: 'scale(0.94)' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Upload sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
                   <Typography variant="h6">Invoice Upload</Typography>
@@ -298,23 +320,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Card>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Route sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-                  <Typography variant="h6">Route Planning</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    GPS navigation
-                  </Typography>
-                  <Button variant="contained" color="success" sx={{ mt: 2 }}>
-                    Plan Route
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
+
 
             <Grid item xs={12} md={6} lg={4}>
-              <Card>
+              <Card sx={{ transform: 'scale(0.94)' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Schedule sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
                   <Typography variant="h6">Daily Planner</Typography>
@@ -334,7 +343,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </Grid>
 
             <Grid item xs={12} md={6} lg={4}>
-              <Card>
+              <Card sx={{ transform: 'scale(0.94)' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Person sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
                   <Typography variant="h6">Driver Dashboard</Typography>
@@ -354,7 +363,47 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </Grid>
 
             <Grid item xs={12} md={6} lg={4}>
-              <Card>
+              <Card sx={{ transform: 'scale(0.94)' }}>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Route sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
+                  <Typography variant="h6">Driver Planner</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Daily/weekly schedule reports & route optimization
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="warning" 
+                    sx={{ mt: 2 }}
+                    onClick={() => setShowDriverPlanner(true)}
+                  >
+                    Open Planner
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6} lg={4}>
+              <Card sx={{ transform: 'scale(0.94)' }}>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <LocalShipping sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
+                  <Typography variant="h6">Trailer Plan</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Load planning & trailer optimization with drag & drop
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="secondary" 
+                    sx={{ mt: 2 }}
+                    onClick={() => setShowTrailerPlan(true)}
+                  >
+                    Open Trailer Plan
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6} lg={4}>
+              <Card sx={{ transform: 'scale(0.94)' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Schedule sx={{ fontSize: 40, color: 'error.main', mb: 1 }} />
                   <Typography variant="h6">Hours Logging</Typography>
@@ -374,7 +423,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </Grid>
 
             <Grid item xs={12} md={6} lg={4}>
-              <Card>
+              <Card sx={{ transform: 'scale(0.94)' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Report sx={{ fontSize: 40, color: 'error.main', mb: 1 }} />
                   <Typography variant="h6">Incident Reporting</Typography>
@@ -392,7 +441,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           // Admin Dashboard (Admin & Owner)
           <>
             <Grid item xs={12} md={6} lg={4}>
-              <Card>
+              <Card sx={{ transform: 'scale(0.94)' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <LocalShipping sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
                   <Typography variant="h6">Manage Fleet</Typography>
@@ -411,7 +460,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </Grid>
 
             <Grid item xs={12} md={6} lg={4}>
-              <Card>
+              <Card sx={{ transform: 'scale(0.94)' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Person sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
                   <Typography variant="h6">Staff Data</Typography>
@@ -431,51 +480,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </Grid>
 
             <Grid item xs={12} md={6} lg={4}>
-              <Card>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Assessment sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-                  <Typography variant="h6">Legal</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Legal compliance and regulations
-                  </Typography>
-                  <Button 
-                    variant="contained" 
-                    color="success" 
-                    sx={{ mt: 2 }}
-                    onClick={() => setShowLegalHub(true)}
-                  >
-                    Legal Hub
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-
-
-            <Grid item xs={12} md={6} lg={4}>
-              <Card>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Schedule sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
-                  <Typography variant="h6">Jobs & Planning</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Daily planning, routes & job assignment
-                  </Typography>
-                  <Button 
-                    variant="contained" 
-                    color="info" 
-                    sx={{ mt: 2 }}
-                    onClick={() => setShowPlanningHub(true)}
-                  >
-                    Planning Hub
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-
-
-            <Grid item xs={12} md={6} lg={4}>
-              <Card>
+              <Card sx={{ transform: 'scale(0.94)' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Assessment sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
                   <Typography variant="h6">Print Screen</Typography>
@@ -495,7 +500,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </Grid>
 
             <Grid item xs={12} md={6} lg={4}>
-              <Card>
+              <Card sx={{ transform: 'scale(0.94)' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <AccountBalance sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
                   <Typography variant="h6">Financial</Typography>
@@ -509,6 +514,46 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     onClick={() => setShowAccountingHub(true)}
                   >
                     Finance Hub
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6} lg={4}>
+              <Card sx={{ transform: 'scale(0.94)' }}>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Schedule sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
+                  <Typography variant="h6">Jobs & Planning</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Daily planning, routes & job assignment
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="info" 
+                    sx={{ mt: 2 }}
+                    onClick={() => setShowPlanningHub(true)}
+                  >
+                    Planning Hub
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6} lg={4}>
+              <Card sx={{ transform: 'scale(0.94)' }}>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Assessment sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
+                  <Typography variant="h6">Legal</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Legal compliance and regulations
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="success" 
+                    sx={{ mt: 2 }}
+                    onClick={() => setShowLegalHub(true)}
+                  >
+                    Legal Hub
                   </Button>
                 </CardContent>
               </Card>

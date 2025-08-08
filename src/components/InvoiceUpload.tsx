@@ -1,4 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../store';
+import { addFuelRecordFromDriver, calculateFuelStatistics } from '../store/slices/fuelSlice';
 import {
   Box,
   Typography,
@@ -93,6 +96,10 @@ interface ProcessedInvoice {
 }
 
 const InvoiceUpload: React.FC<InvoiceUploadProps> = ({ onClose }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const { fuelRecords } = useSelector((state: RootState) => state.fuel);
+  
   const [tabValue, setTabValue] = useState(0);
   const [uploadedFiles, setUploadedFiles] = useState<ProcessedInvoice[]>([]);
   const [processingFile, setProcessingFile] = useState<File | null>(null);
@@ -101,15 +108,29 @@ const InvoiceUpload: React.FC<InvoiceUploadProps> = ({ onClose }) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<ProcessedInvoice | null>(null);
   const [manualData, setManualData] = useState<any>({});
+  const [documentType, setDocumentType] = useState<'auto' | 'invoice' | 'fuel_receipt'>('auto');
+  const [showFuelTransferDialog, setShowFuelTransferDialog] = useState(false);
+  const [fuelTransferData, setFuelTransferData] = useState<any>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Calculate statistics when fuel records change
+  useEffect(() => {
+    dispatch(calculateFuelStatistics());
+  }, [fuelRecords, dispatch]);
+
   // Mock OCR processing function
-  const processImageWithOCR = async (file: File): Promise<ExtractedData> => {
+  const processImageWithOCR = async (file: File, documentType?: 'invoice' | 'fuel_receipt'): Promise<ExtractedData> => {
     // Simulate OCR processing delay
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Mock extracted data based on file name
-    const isFuelReceipt = file.name.toLowerCase().includes('fuel') || file.name.toLowerCase().includes('gas');
+    // Enhanced detection logic
+    const fileName = file.name.toLowerCase();
+    const isFuelReceipt = documentType === 'fuel_receipt' || 
+      fileName.includes('fuel') || 
+      fileName.includes('gas') || 
+      fileName.includes('petrol') || 
+      fileName.includes('diesel') || 
+      fileName.includes('receipt') && (fileName.includes('station') || fileName.includes('shell') || fileName.includes('bp') || fileName.includes('esso'));
     
     if (isFuelReceipt) {
       return {
@@ -143,11 +164,26 @@ const InvoiceUpload: React.FC<InvoiceUploadProps> = ({ onClose }) => {
     setIsProcessing(true);
 
     try {
-      const extractedData = await processImageWithOCR(file);
+      const extractedData = await processImageWithOCR(file, documentType !== 'auto' ? documentType : undefined);
+      
+      // Enhanced type detection logic
+      const fileName = file.name.toLowerCase();
+      let detectedType: 'invoice' | 'fuel_receipt';
+      
+      if (documentType !== 'auto') {
+        detectedType = documentType;
+      } else {
+        const isFuelReceipt = fileName.includes('fuel') || 
+          fileName.includes('gas') || 
+          fileName.includes('petrol') || 
+          fileName.includes('diesel') || 
+          (fileName.includes('receipt') && (fileName.includes('station') || fileName.includes('shell') || fileName.includes('bp') || fileName.includes('esso')));
+        detectedType = isFuelReceipt ? 'fuel_receipt' : 'invoice';
+      }
       
       const processedInvoice: ProcessedInvoice = {
         id: Date.now().toString(),
-        type: file.name.toLowerCase().includes('fuel') ? 'fuel_receipt' : 'invoice',
+        type: detectedType,
         fileName: file.name,
         uploadedAt: new Date().toISOString(),
         extractedData,
@@ -185,6 +221,51 @@ const InvoiceUpload: React.FC<InvoiceUploadProps> = ({ onClose }) => {
       setShowEditDialog(false);
       setSelectedInvoice(null);
       setManualData({});
+    }
+  };
+
+  const handleFuelReceiptTransfer = async () => {
+    if (selectedInvoice && selectedInvoice.type === 'fuel_receipt') {
+      try {
+        const fuelData = {
+          date: fuelTransferData.date || selectedInvoice.extractedData.date || new Date().toISOString().split('T')[0],
+          vehicleId: fuelTransferData.vehicleId || 'HGV001', // Default vehicle, should be selected by driver
+          vehicleRegistration: fuelTransferData.vehicleRegistration || 'AB12 CDE',
+          driverId: user?.id || 'EMP001',
+          driverName: user ? `${user.firstName} ${user.lastName}` : 'Unknown Driver',
+          odometerReading: fuelTransferData.odometerReading,
+          litres: selectedInvoice.extractedData.fuelQuantity || 0,
+          pricePerLitre: selectedInvoice.extractedData.fuelPrice || 0,
+          totalCost: selectedInvoice.extractedData.amount || 0,
+          receiptNumber: `REC-${Date.now()}`,
+          fuelStation: selectedInvoice.extractedData.stationName || 'Unknown Station',
+          receiptImage: selectedInvoice.fileName,
+          notes: fuelTransferData.notes,
+          uploadedBy: user?.id || 'EMP001',
+        };
+
+        await dispatch(addFuelRecordFromDriver(fuelData)).unwrap();
+        
+        // Update the invoice status to show it was transferred
+        const updatedInvoice = {
+          ...selectedInvoice,
+          status: 'completed' as const,
+          notes: 'Transferred to Fuel Management',
+        };
+        setUploadedFiles(prev => 
+          prev.map(inv => inv.id === selectedInvoice.id ? updatedInvoice : inv)
+        );
+        
+        setShowFuelTransferDialog(false);
+        setSelectedInvoice(null);
+        setFuelTransferData({});
+        
+        // Show success message
+        alert('Fuel receipt successfully transferred to management portal!');
+      } catch (error) {
+        console.error('Failed to transfer fuel receipt:', error);
+        alert('Failed to transfer fuel receipt. Please try again.');
+      }
     }
   };
 
@@ -239,32 +320,53 @@ const InvoiceUpload: React.FC<InvoiceUploadProps> = ({ onClose }) => {
         <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Upload Documents
-              </Typography>
-              
-              <Box sx={{ textAlign: 'center', py: 3 }}>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={handleFileUpload}
-                  style={{ display: 'none' }}
-                />
-                <Button
-                  variant="contained"
-                  startIcon={<CloudUpload />}
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isProcessing}
-                  sx={{ mb: 2 }}
-                >
-                  Upload Image/PDF
-                </Button>
-                
-                <Typography variant="body2" color="text.secondary">
-                  Supported: JPG, PNG, PDF
-                </Typography>
-              </Box>
+                             <Typography variant="h6" gutterBottom>
+                 Upload Documents
+               </Typography>
+               
+               <FormControl fullWidth sx={{ mb: 2 }}>
+                 <InputLabel>Document Type</InputLabel>
+                 <Select
+                   value={documentType}
+                   onChange={(e) => setDocumentType(e.target.value as 'auto' | 'invoice' | 'fuel_receipt')}
+                   label="Document Type"
+                 >
+                   <MenuItem value="auto">Auto Detect</MenuItem>
+                   <MenuItem value="invoice">Invoice</MenuItem>
+                   <MenuItem value="fuel_receipt">Fuel Receipt</MenuItem>
+                 </Select>
+               </FormControl>
+               
+               <Box sx={{ textAlign: 'center', py: 3 }}>
+                 <input
+                   ref={fileInputRef}
+                   type="file"
+                   accept="image/*,.pdf"
+                   onChange={handleFileUpload}
+                   style={{ display: 'none' }}
+                 />
+                 <Button
+                   variant="contained"
+                   startIcon={<CloudUpload />}
+                   onClick={() => fileInputRef.current?.click()}
+                   disabled={isProcessing}
+                   sx={{ mb: 2 }}
+                 >
+                   Upload Image/PDF
+                 </Button>
+                 
+                 <Typography variant="body2" color="text.secondary">
+                   Supported: JPG, PNG, PDF
+                 </Typography>
+                 
+                 {documentType !== 'auto' && (
+                   <Alert severity="info" sx={{ mt: 2 }}>
+                     <Typography variant="caption">
+                       Document type set to: {documentType === 'fuel_receipt' ? 'Fuel Receipt' : 'Invoice'}
+                     </Typography>
+                   </Alert>
+                 )}
+               </Box>
 
               {isProcessing && (
                 <Box sx={{ mt: 2 }}>
@@ -420,18 +522,37 @@ const InvoiceUpload: React.FC<InvoiceUploadProps> = ({ onClose }) => {
                             >
                               <Visibility />
                             </IconButton>
-                            {file.status === 'manual_review' && (
-                              <IconButton
-                                size="small"
-                                onClick={() => {
-                                  setSelectedInvoice(file);
-                                  setManualData(file.extractedData);
-                                  setShowEditDialog(true);
-                                }}
-                              >
-                                <Edit />
-                              </IconButton>
-                            )}
+                                                         {file.status === 'manual_review' && (
+                               <IconButton
+                                 size="small"
+                                 onClick={() => {
+                                   setSelectedInvoice(file);
+                                   setManualData(file.extractedData);
+                                   setShowEditDialog(true);
+                                 }}
+                               >
+                                 <Edit />
+                               </IconButton>
+                             )}
+                             {file.type === 'fuel_receipt' && file.status === 'completed' && (
+                               <IconButton
+                                 size="small"
+                                 onClick={() => {
+                                   setSelectedInvoice(file);
+                                   setFuelTransferData({
+                                     date: file.extractedData.date,
+                                     vehicleId: 'HGV001',
+                                     vehicleRegistration: 'AB12 CDE',
+                                     odometerReading: '',
+                                     notes: '',
+                                   });
+                                   setShowFuelTransferDialog(true);
+                                 }}
+                                 title="Transfer to Fuel Management"
+                               >
+                                 <LocalGasStation />
+                               </IconButton>
+                             )}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -714,10 +835,146 @@ const InvoiceUpload: React.FC<InvoiceUploadProps> = ({ onClose }) => {
         <DialogActions>
           <Button onClick={() => setShowEditDialog(false)}>Cancel</Button>
           <Button onClick={handleManualEdit} variant="contained">Save Changes</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  );
-};
+                 </DialogActions>
+       </Dialog>
+
+       {/* Fuel Transfer Dialog */}
+       <Dialog
+         open={showFuelTransferDialog}
+         onClose={() => setShowFuelTransferDialog(false)}
+         maxWidth="md"
+         fullWidth
+       >
+         <DialogTitle>
+           Transfer Fuel Receipt to Management Portal
+         </DialogTitle>
+         <DialogContent>
+           {selectedInvoice && (
+             <Grid container spacing={3}>
+               <Grid item xs={12}>
+                 <Alert severity="info" sx={{ mb: 2 }}>
+                   <Typography variant="body2">
+                     This fuel receipt will be transferred to the management portal's Fuel Management system. 
+                     Management will review and approve the record.
+                   </Typography>
+                 </Alert>
+               </Grid>
+               
+               <Grid item xs={12} md={6}>
+                 <Typography variant="h6" gutterBottom>
+                   Extracted Data
+                 </Typography>
+                 <List dense>
+                   <ListItem>
+                     <ListItemText
+                       primary="Fuel Quantity"
+                       secondary={`${selectedInvoice.extractedData.fuelQuantity?.toFixed(2)}L`}
+                     />
+                   </ListItem>
+                   <ListItem>
+                     <ListItemText
+                       primary="Price per Liter"
+                       secondary={`£${selectedInvoice.extractedData.fuelPrice?.toFixed(2)}`}
+                     />
+                   </ListItem>
+                   <ListItem>
+                     <ListItemText
+                       primary="Total Amount"
+                       secondary={`£${selectedInvoice.extractedData.amount?.toFixed(2)}`}
+                     />
+                   </ListItem>
+                   <ListItem>
+                     <ListItemText
+                       primary="Station"
+                       secondary={selectedInvoice.extractedData.stationName}
+                     />
+                   </ListItem>
+                 </List>
+               </Grid>
+               
+               <Grid item xs={12} md={6}>
+                 <Typography variant="h6" gutterBottom>
+                   Additional Information
+                 </Typography>
+                 <Grid container spacing={2}>
+                   <Grid item xs={12}>
+                     <TextField
+                       fullWidth
+                       label="Date"
+                       type="date"
+                       value={fuelTransferData.date || ''}
+                       onChange={(e) => setFuelTransferData({
+                         ...fuelTransferData,
+                         date: e.target.value
+                       })}
+                       InputLabelProps={{ shrink: true }}
+                     />
+                   </Grid>
+                   <Grid item xs={12}>
+                     <TextField
+                       fullWidth
+                       label="Vehicle ID"
+                       value={fuelTransferData.vehicleId || ''}
+                       onChange={(e) => setFuelTransferData({
+                         ...fuelTransferData,
+                         vehicleId: e.target.value
+                       })}
+                     />
+                   </Grid>
+                   <Grid item xs={12}>
+                     <TextField
+                       fullWidth
+                       label="Vehicle Registration"
+                       value={fuelTransferData.vehicleRegistration || ''}
+                       onChange={(e) => setFuelTransferData({
+                         ...fuelTransferData,
+                         vehicleRegistration: e.target.value
+                       })}
+                     />
+                   </Grid>
+                   <Grid item xs={12}>
+                     <TextField
+                       fullWidth
+                       label="Odometer Reading (optional)"
+                       type="number"
+                       value={fuelTransferData.odometerReading || ''}
+                       onChange={(e) => setFuelTransferData({
+                         ...fuelTransferData,
+                         odometerReading: Number(e.target.value)
+                       })}
+                     />
+                   </Grid>
+                   <Grid item xs={12}>
+                     <TextField
+                       fullWidth
+                       label="Notes (optional)"
+                       multiline
+                       rows={2}
+                       value={fuelTransferData.notes || ''}
+                       onChange={(e) => setFuelTransferData({
+                         ...fuelTransferData,
+                         notes: e.target.value
+                       })}
+                     />
+                   </Grid>
+                 </Grid>
+               </Grid>
+             </Grid>
+           )}
+         </DialogContent>
+         <DialogActions>
+           <Button onClick={() => setShowFuelTransferDialog(false)}>Cancel</Button>
+           <Button 
+             onClick={handleFuelReceiptTransfer} 
+             variant="contained"
+             startIcon={<LocalGasStation />}
+           >
+             Transfer to Fuel Management
+           </Button>
+         </DialogActions>
+       </Dialog>
+     </Box>
+   );
+ };
 
 export default InvoiceUpload;

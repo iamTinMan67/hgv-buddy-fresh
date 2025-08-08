@@ -52,6 +52,7 @@ import {
   Update,
   Refresh,
   Home,
+  ErrorOutline,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import {
@@ -132,6 +133,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
       case 'rescheduled': return 'secondary';
       case 'completed': return 'success';
       case 'failed': return 'error';
+      case 'refused': return 'error';
       case 'cancelled': return 'error';
       default: return 'default';
     }
@@ -145,7 +147,8 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
       case 'attempted': return <Warning />;
       case 'rescheduled': return <Refresh />;
       case 'completed': return <CheckCircle />;
-      case 'failed': return <Stop />;
+      case 'failed': return <ErrorOutline />;
+      case 'refused': return <Stop />;
       case 'cancelled': return <Stop />;
       default: return <Pending />;
     }
