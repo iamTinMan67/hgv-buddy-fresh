@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import {
   Box,
   Typography,
@@ -23,6 +24,9 @@ import {
   Checkbox,
 } from '@mui/material';
 import { jobIdGenerator } from '../utils/jobIdGenerator';
+import { AppDispatch } from '../store';
+import { addJob, addDailySchedule } from '../store/slices/jobSlice';
+import { JobAssignment, JobStatus, JobLocation, JobPriority } from '../store/slices/jobSlice';
 import {
   Assignment,
   Person,
@@ -35,18 +39,15 @@ import {
   Add,
   Delete,
   Edit,
-  CheckCircle,
-  Warning,
-  Info,
 } from '@mui/icons-material';
 
-interface JobAllocationFormProps {
+interface JobConsignmentFormProps {
   onClose: () => void;
 }
 
-interface JobAllocationData {
+interface JobConsignmentData {
   jobId: string;
-  jobTitle: string;
+  clientName: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assignedDriver: string;
   vehicleType: string;
@@ -56,8 +57,9 @@ interface JobAllocationData {
   pickupTime: string;
   deliveryDate: string;
   deliveryTime: string;
-  useAlternateDeliveryAddress: boolean;
   alternateDeliveryAddress: string;
+  useSecondAlternateDeliveryAddress: boolean;
+  secondAlternateDeliveryAddress: string;
   cargoType: string;
   cargoWeight: number;
   cargoVolume: number;
@@ -65,9 +67,25 @@ interface JobAllocationData {
   notes: string;
   estimatedDuration: number;
   estimatedCost: number;
+  customerPhone: string;
+  customerEmail: string;
+  pickupPostcode: string;
+  deliveryPostcode: string;
 }
 
-const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
+interface Client {
+  id: string;
+  name: string;
+  company: string;
+  address: string;
+  city: string;
+  postcode: string;
+  phone: string;
+  email: string;
+}
+
+const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose }) => {
+  const dispatch = useDispatch<AppDispatch>();
   const [activeStep, setActiveStep] = useState(0);
   // Get tomorrow's date for default values
   const tomorrow = new Date();
@@ -76,20 +94,52 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
 
   // Get active drivers from staff data (this would typically come from a global state or API)
   const activeDrivers = [
-    'John Driver',
+    'Adam Mustafa',
     'Jane Manager',
     'Sarah Johnson',
     'David Davis',
     'Emma Taylor'
   ];
 
+  // Mock clients data
+  const clients: Client[] = [
+    {
+      id: '1',
+      name: 'John Smith',
+      company: 'ABC Transport Ltd',
+      address: '123 Transport Way, London',
+      city: 'London',
+      postcode: 'SW1A 1AA',
+      phone: '020 7123 4567',
+      email: 'john.smith@abctransport.com'
+    },
+    {
+      id: '2',
+      name: 'Sarah Johnson',
+      company: 'XYZ Logistics',
+      address: '456 Industrial Estate, Manchester',
+      city: 'Manchester',
+      postcode: 'M1 1AA',
+      phone: '0161 234 5678',
+      email: 'sarah.johnson@xyzlogistics.co.uk'
+    },
+    {
+      id: '3',
+      name: 'David Wilson',
+      company: 'Wilson Freight Services',
+      address: '789 Business Park, Birmingham',
+      city: 'Birmingham',
+      postcode: 'B1 1AA',
+      phone: '0121 345 6789',
+      email: 'david.wilson@wilsonfreight.co.uk'
+    }
+  ];
 
-
-  const [formData, setFormData] = useState<JobAllocationData>({
+  const [formData, setFormData] = useState<JobConsignmentData>({
     jobId: '',
-    jobTitle: '',
+    clientName: '',
     priority: 'medium',
-    assignedDriver: '',
+    assignedDriver: 'Adam Mustafa',
     vehicleType: 'Tail-Lift',
     pickupLocation: '',
     deliveryLocation: '',
@@ -97,8 +147,9 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
     pickupTime: '12:00',
     deliveryDate: tomorrowString,
     deliveryTime: '12:00',
-    useAlternateDeliveryAddress: false,
     alternateDeliveryAddress: '',
+    useSecondAlternateDeliveryAddress: false,
+    secondAlternateDeliveryAddress: '',
     cargoType: '',
     cargoWeight: 0,
     cargoVolume: 0,
@@ -106,6 +157,10 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
     notes: '',
     estimatedDuration: 0,
     estimatedCost: 0,
+    customerPhone: '',
+    customerEmail: '',
+    pickupPostcode: '',
+    deliveryPostcode: '',
   });
 
   // Auto-generate Job ID when component mounts
@@ -128,9 +183,7 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
   const [newRequirement, setNewRequirement] = useState('');
 
   const steps = [
-    'Basic Information',
-    'Driver & Vehicle',
-    'Route Details',
+    'Driver, Vehicle & Route',
     'Cargo Information',
     'Review & Submit'
   ];
@@ -144,17 +197,142 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
   };
 
   const handleSubmit = () => {
-    // Handle form submission
-    console.log('Job Allocation Data:', formData);
-    // Here you would typically save to database or dispatch to Redux
+    // Convert form data to JobAssignment format
+    const jobAssignment: JobAssignment = {
+      id: formData.jobId,
+      jobNumber: formData.jobId,
+      title: `Job for ${formData.clientName}`,
+      description: `Cargo: ${formData.cargoType}, Weight: ${formData.cargoWeight}kg`,
+      customerName: formData.clientName,
+      customerPhone: formData.customerPhone,
+      customerEmail: formData.customerEmail,
+      priority: formData.priority as JobPriority,
+      status: 'scheduled' as JobStatus,
+      assignedDriver: formData.assignedDriver,
+      assignedVehicle: formData.vehicleType,
+      scheduledDate: formData.pickupDate,
+      scheduledTime: formData.pickupTime,
+      estimatedDuration: formData.estimatedDuration,
+      pickupLocation: {
+        id: `pickup-${formData.jobId}`,
+        name: 'Pickup Location',
+        address: formData.pickupLocation,
+        postcode: formData.pickupPostcode,
+      },
+      deliveryLocation: {
+        id: `delivery-${formData.jobId}`,
+        name: 'Delivery Location',
+        address: formData.alternateDeliveryAddress || formData.deliveryLocation,
+        postcode: formData.deliveryPostcode,
+      },
+      useDifferentDeliveryAddress: !!formData.alternateDeliveryAddress,
+      deliveryAddress: formData.alternateDeliveryAddress,
+      cargoType: formData.cargoType,
+      cargoWeight: formData.cargoWeight,
+      specialRequirements: formData.specialRequirements.join(', '),
+      notes: formData.notes,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: 'current-user', // Would need to get from auth context
+      authorizedBy: 'current-user', // Would need to get from auth context
+      loadDimensions: {
+        length: 0, // Would need to add to form
+        width: 0, // Would need to add to form
+        height: 0, // Would need to add to form
+        weight: formData.cargoWeight,
+        volume: formData.cargoVolume,
+        isOversized: false,
+        isProtruding: false,
+        isBalanced: true,
+        isFragile: false,
+      }
+    };
+
+    // Dispatch to Redux store
+    dispatch(addJob(jobAssignment));
+
+    // Create a daily schedule entry
+    const dailySchedule = {
+      id: `schedule-${formData.jobId}`,
+      vehicleId: formData.vehicleType,
+      driverId: formData.assignedDriver,
+      date: formData.pickupDate,
+      jobs: [{
+        jobId: formData.jobId,
+        scheduledTime: formData.pickupTime,
+        estimatedDuration: formData.estimatedDuration,
+        status: 'scheduled' as JobStatus,
+      }],
+      totalJobs: 1,
+      completedJobs: 0,
+      totalDistance: 0, // Would calculate from coordinates
+      totalDuration: formData.estimatedDuration,
+      status: 'scheduled',
+      notes: `Job created from consignment form`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    dispatch(addDailySchedule(dailySchedule));
+
+    console.log('Job saved to Redux store:', jobAssignment);
+    console.log('Daily schedule created:', dailySchedule);
+    
+    // Close the form
     onClose();
   };
 
-  const handleInputChange = (field: keyof JobAllocationData, value: any) => {
+  const handleInputChange = (field: keyof JobConsignmentData, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleLocationChange = (field: 'pickupLocation' | 'deliveryLocation', value: string) => {
+    // Format commas to line breaks for location fields
+    const formattedValue = value.replace(/, /g, ',\n');
+    setFormData(prev => ({
+      ...prev,
+      [field]: formattedValue
+    }));
+  };
+
+  const handleClientChange = (clientName: string) => {
+    const selectedClient = clients.find(client => client.name === clientName);
+    if (selectedClient) {
+      const fullAddress = `${selectedClient.address}, ${selectedClient.city}, ${selectedClient.postcode}`;
+      const formattedAddress = fullAddress.replace(/, /g, ',\n');
+      setFormData(prev => ({
+        ...prev,
+        clientName: clientName,
+        pickupLocation: formattedAddress,
+        deliveryLocation: formattedAddress
+      }));
+      
+      // Focus on pickup location field after client selection
+      setTimeout(() => {
+        const pickupLocationField = document.querySelector('textarea[name="pickupLocation"]') as HTMLTextAreaElement;
+        if (pickupLocationField) {
+          pickupLocationField.focus();
+        }
+      }, 100);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        clientName: clientName,
+        pickupLocation: '',
+        deliveryLocation: ''
+      }));
+      
+      // Focus on pickup location field even if no client is selected
+      setTimeout(() => {
+        const pickupLocationField = document.querySelector('textarea[name="pickupLocation"]') as HTMLTextAreaElement;
+        if (pickupLocationField) {
+          pickupLocationField.focus();
+        }
+      }, 100);
+    }
   };
 
   const addSpecialRequirement = () => {
@@ -174,32 +352,12 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
     }));
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'error';
-      case 'high': return 'warning';
-      case 'medium': return 'info';
-      case 'low': return 'success';
-      default: return 'default';
-    }
-  };
-
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return <Warning />;
-      case 'high': return <Warning />;
-      case 'medium': return <Info />;
-      case 'low': return <CheckCircle />;
-      default: return <Info />;
-    }
-  };
-
   return (
     <Box sx={{ p: 3, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1" sx={{ color: 'white' }}>
           <Assignment sx={{ mr: 1, verticalAlign: 'middle' }} />
-          Job Allocation Form
+          Job Consignment Form
         </Typography>
         <IconButton
           onClick={onClose}
@@ -217,21 +375,33 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
                 <StepLabel sx={{ color: 'white' }}>{step}</StepLabel>
                 <StepContent>
                   <Box sx={{ mb: 2 }}>
-                                         {index === 0 && (
-                       <Grid container spacing={3}>
-                         <Grid item xs={12} md={6}>
-                           <TextField
-                             fullWidth
-                             label="Job Title"
-                             value={formData.jobTitle}
-                             onChange={(e) => handleInputChange('jobTitle', e.target.value)}
-                             sx={{ 
-                               '& .MuiOutlinedInput-root': { color: 'white' },
-                               '& .MuiInputLabel-root': { color: 'grey.400' },
-                               '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                             }}
-                           />
-                         </Grid>
+                    {index === 0 && (
+                      <Grid container spacing={3}>
+                        {/* Client Name */}
+                        <Grid item xs={12} md={6}>
+                          <FormControl fullWidth>
+                            <InputLabel sx={{ color: 'grey.400' }}>Client Name</InputLabel>
+                            <Select
+                              value={formData.clientName}
+                              onChange={(e) => handleClientChange(e.target.value)}
+                              sx={{ 
+                                color: 'white',
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                              }}
+                            >
+                              <MenuItem value="">
+                                <em>Select a client</em>
+                              </MenuItem>
+                              {clients.map((client) => (
+                                <MenuItem key={client.id} value={client.name}>
+                                  {client.name} - {client.company}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                        
+                        {/* Priority */}
                         <Grid item xs={12} md={6}>
                           <FormControl fullWidth>
                             <InputLabel sx={{ color: 'grey.400' }}>Priority</InputLabel>
@@ -250,189 +420,295 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
                             </Select>
                           </FormControl>
                         </Grid>
+                        
+                        {/* Assigned Driver */}
+                        <Grid item xs={12} md={6}>
+                          <FormControl fullWidth>
+                            <InputLabel sx={{ color: 'grey.400' }}>Assigned Driver</InputLabel>
+                            <Select
+                              value={formData.assignedDriver}
+                              onChange={(e) => handleInputChange('assignedDriver', e.target.value)}
+                              sx={{ 
+                                color: 'white',
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                              }}
+                            >
+                              <MenuItem value="">
+                                <em>Select a driver</em>
+                              </MenuItem>
+                              {activeDrivers.map((driver) => (
+                                <MenuItem key={driver} value={driver}>
+                                  {driver}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                        
+                        {/* Vehicle Type */}
+                        <Grid item xs={12} md={6}>
+                          <FormControl fullWidth>
+                            <InputLabel sx={{ color: 'grey.400' }}>Vehicle Type</InputLabel>
+                            <Select
+                              value={formData.vehicleType}
+                              onChange={(e) => handleInputChange('vehicleType', e.target.value)}
+                              sx={{ 
+                                color: 'white',
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                              }}
+                            >
+                              <MenuItem value="Van">Van</MenuItem>
+                              <MenuItem value="Rigid">Rigid</MenuItem>
+                              <MenuItem value="Tail-Lift">Tail-Lift</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                        
+                        {/* Pickup and Delivery Location - Same line, equal width */}
                         <Grid item xs={12}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Chip 
-                              icon={getPriorityIcon(formData.priority)}
-                              label={`Priority: ${formData.priority.toUpperCase()}`}
-                              color={getPriorityColor(formData.priority) as any}
-                              size="small"
+                          <Grid container spacing={2}>
+                            <Grid item xs={6}>
+                              <TextField
+                                fullWidth
+                                label="Pickup Location"
+                                value={formData.pickupLocation}
+                                onChange={(e) => handleLocationChange('pickupLocation', e.target.value)}
+                                multiline
+                                rows={3}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    const deliveryLocationField = document.querySelector('input[name="deliveryLocation"]') as HTMLInputElement;
+                                    if (deliveryLocationField) {
+                                      deliveryLocationField.focus();
+                                    }
+                                  }
+                                }}
+                                name="pickupLocation"
+                                sx={{ 
+                                  '& .MuiOutlinedInput-root': { color: 'white' },
+                                  '& .MuiInputLabel-root': { color: 'grey.400' },
+                                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                                }}
+                              />
+                            </Grid>
+                            <Grid item xs={6}>
+                              <TextField
+                                fullWidth
+                                label="Delivery Location"
+                                value={formData.deliveryLocation}
+                                onChange={(e) => handleLocationChange('deliveryLocation', e.target.value)}
+                                multiline
+                                rows={3}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    const nextField = document.querySelector('input[name="pickupDate"]') as HTMLInputElement;
+                                    if (nextField) {
+                                      nextField.focus();
+                                    }
+                                  }
+                                }}
+                                name="deliveryLocation"
+                                sx={{ 
+                                  '& .MuiOutlinedInput-root': { color: 'white' },
+                                  '& .MuiInputLabel-root': { color: 'grey.400' },
+                                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                                }}
+                              />
+                            </Grid>
+                          </Grid>
+                        </Grid>
+                        
+                        {/* Second Alternate Delivery Address Checkbox */}
+                        <Grid item xs={12}>
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={formData.useSecondAlternateDeliveryAddress}
+                                onChange={(e) => handleInputChange('useSecondAlternateDeliveryAddress', e.target.checked)}
+                                sx={{ 
+                                  color: 'primary.main',
+                                  '&.Mui-checked': { color: 'primary.main' }
+                                }}
+                              />
+                            }
+                            label="Add another alternative delivery address"
+                            sx={{ color: 'white' }}
+                          />
+                        </Grid>
+                        
+                        {/* Alternate Delivery Address Field - Only show if checkbox is checked */}
+                        {formData.useSecondAlternateDeliveryAddress && (
+                          <Grid item xs={12}>
+                            <TextField
+                              fullWidth
+                              multiline
+                              rows={3}
+                              label="Alternate Delivery Address"
+                              value={formData.alternateDeliveryAddress}
+                              onChange={(e) => handleInputChange('alternateDeliveryAddress', e.target.value)}
+                              placeholder="Enter full delivery address..."
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  const nextField = document.querySelector('input[name="pickupDate"]') as HTMLInputElement;
+                                  if (nextField) {
+                                    nextField.focus();
+                                  }
+                                }
+                              }}
+                              name="alternateDeliveryAddress"
+                              sx={{ 
+                                '& .MuiOutlinedInput-root': { color: 'white' },
+                                '& .MuiInputLabel-root': { color: 'grey.400' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                              }}
                             />
-                          </Box>
+                          </Grid>
+                        )}
+                        
+                        {/* Second Alternate Delivery Address Field - Only show if first alternate address is filled */}
+                        {formData.useSecondAlternateDeliveryAddress && formData.alternateDeliveryAddress && (
+                          <Grid item xs={12}>
+                            <TextField
+                              fullWidth
+                              multiline
+                              rows={3}
+                              label="Second Alternate Delivery Address"
+                              value={formData.secondAlternateDeliveryAddress}
+                              onChange={(e) => handleInputChange('secondAlternateDeliveryAddress', e.target.value)}
+                              placeholder="Enter full delivery address..."
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  const nextField = document.querySelector('input[name="pickupDate"]') as HTMLInputElement;
+                                  if (nextField) {
+                                    nextField.focus();
+                                  }
+                                }
+                              }}
+                              name="secondAlternateDeliveryAddress"
+                              sx={{ 
+                                '& .MuiOutlinedInput-root': { color: 'white' },
+                                '& .MuiInputLabel-root': { color: 'grey.400' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                              }}
+                            />
+                          </Grid>
+                        )}
+                        
+                        {/* Pickup Date */}
+                        <Grid item xs={12} md={3}>
+                          <TextField
+                            fullWidth
+                            type="date"
+                            label="Pickup Date"
+                            value={formData.pickupDate}
+                            onChange={(e) => handleInputChange('pickupDate', e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const nextField = document.querySelector('input[name="pickupTime"]') as HTMLInputElement;
+                                if (nextField) {
+                                  nextField.focus();
+                                }
+                              }
+                            }}
+                            name="pickupDate"
+                            sx={{ 
+                              '& .MuiOutlinedInput-root': { color: 'white' },
+                              '& .MuiInputLabel-root': { color: 'grey.400' },
+                              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                            }}
+                          />
+                        </Grid>
+                        
+                        {/* Pickup Time */}
+                        <Grid item xs={12} md={3}>
+                          <TextField
+                            fullWidth
+                            type="time"
+                            label="Pickup Time"
+                            value={formData.pickupTime}
+                            onChange={(e) => handleInputChange('pickupTime', e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const nextField = document.querySelector('input[name="deliveryDate"]') as HTMLInputElement;
+                                if (nextField) {
+                                  nextField.focus();
+                                }
+                              }
+                            }}
+                            name="pickupTime"
+                            sx={{ 
+                              '& .MuiOutlinedInput-root': { color: 'white' },
+                              '& .MuiInputLabel-root': { color: 'grey.400' },
+                              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                            }}
+                          />
+                        </Grid>
+                        
+                        {/* Delivery Date */}
+                        <Grid item xs={12} md={3}>
+                          <TextField
+                            fullWidth
+                            type="date"
+                            label="Delivery Date"
+                            value={formData.deliveryDate}
+                            onChange={(e) => handleInputChange('deliveryDate', e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const nextField = document.querySelector('input[name="deliveryTime"]') as HTMLInputElement;
+                                if (nextField) {
+                                  nextField.focus();
+                                }
+                              }
+                            }}
+                            name="deliveryDate"
+                            sx={{ 
+                              '& .MuiOutlinedInput-root': { color: 'white' },
+                              '& .MuiInputLabel-root': { color: 'grey.400' },
+                              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                            }}
+                          />
+                        </Grid>
+                        
+                        {/* Delivery Time */}
+                        <Grid item xs={12} md={3}>
+                          <TextField
+                            fullWidth
+                            type="time"
+                            label="Delivery Time"
+                            value={formData.deliveryTime}
+                            onChange={(e) => handleInputChange('deliveryTime', e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const nextField = document.querySelector('input[name="cargoType"]') as HTMLInputElement;
+                                if (nextField) {
+                                  nextField.focus();
+                                }
+                              }
+                            }}
+                            name="deliveryTime"
+                            sx={{ 
+                              '& .MuiOutlinedInput-root': { color: 'white' },
+                              '& .MuiInputLabel-root': { color: 'grey.400' },
+                              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                            }}
+                          />
                         </Grid>
                       </Grid>
                     )}
 
-                                         {index === 1 && (
-                       <Grid container spacing={3}>
-                         <Grid item xs={12} md={6}>
-                           <FormControl fullWidth>
-                             <InputLabel sx={{ color: 'grey.400' }}>Assigned Driver</InputLabel>
-                             <Select
-                               value={formData.assignedDriver}
-                               onChange={(e) => handleInputChange('assignedDriver', e.target.value)}
-                               sx={{ 
-                                 color: 'white',
-                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                               }}
-                             >
-                               <MenuItem value="">
-                                 <em>Select a driver</em>
-                               </MenuItem>
-                               {activeDrivers.map((driver) => (
-                                 <MenuItem key={driver} value={driver}>
-                                   {driver}
-                                 </MenuItem>
-                               ))}
-                             </Select>
-                           </FormControl>
-                         </Grid>
-                         <Grid item xs={12} md={6}>
-                           <FormControl fullWidth>
-                             <InputLabel sx={{ color: 'grey.400' }}>Vehicle Type</InputLabel>
-                             <Select
-                               value={formData.vehicleType}
-                               onChange={(e) => handleInputChange('vehicleType', e.target.value)}
-                               sx={{ 
-                                 color: 'white',
-                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                               }}
-                             >
-                               <MenuItem value="Van">Van</MenuItem>
-                               <MenuItem value="Rigid">Rigid</MenuItem>
-                               <MenuItem value="Tail-Lift">Tail-Lift</MenuItem>
-                             </Select>
-                           </FormControl>
-                         </Grid>
-                       </Grid>
-                     )}
-
-                                         {index === 2 && (
-                       <Grid container spacing={3}>
-                         <Grid item xs={12} md={6}>
-                           <TextField
-                             fullWidth
-                             label="Pickup Location"
-                             value={formData.pickupLocation}
-                             onChange={(e) => handleInputChange('pickupLocation', e.target.value)}
-                             sx={{ 
-                               '& .MuiOutlinedInput-root': { color: 'white' },
-                               '& .MuiInputLabel-root': { color: 'grey.400' },
-                               '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                             }}
-                           />
-                         </Grid>
-                         <Grid item xs={12} md={6}>
-                           <TextField
-                             fullWidth
-                             label="Delivery Location"
-                             value={formData.deliveryLocation}
-                             onChange={(e) => handleInputChange('deliveryLocation', e.target.value)}
-                             sx={{ 
-                               '& .MuiOutlinedInput-root': { color: 'white' },
-                               '& .MuiInputLabel-root': { color: 'grey.400' },
-                               '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                             }}
-                           />
-                         </Grid>
-                         <Grid item xs={12}>
-                           <FormControlLabel
-                             control={
-                               <Checkbox
-                                 checked={formData.useAlternateDeliveryAddress}
-                                 onChange={(e) => handleInputChange('useAlternateDeliveryAddress', e.target.checked)}
-                                 sx={{ 
-                                   color: 'primary.main',
-                                   '&.Mui-checked': { color: 'primary.main' }
-                                 }}
-                               />
-                             }
-                             label="Use delivery address other than client's stored business address"
-                             sx={{ color: 'white' }}
-                           />
-                         </Grid>
-                         {formData.useAlternateDeliveryAddress && (
-                           <Grid item xs={12}>
-                             <TextField
-                               fullWidth
-                               multiline
-                               rows={3}
-                               label="Alternate Delivery Address"
-                               value={formData.alternateDeliveryAddress}
-                               onChange={(e) => handleInputChange('alternateDeliveryAddress', e.target.value)}
-                               placeholder="Enter full delivery address..."
-                               sx={{ 
-                                 '& .MuiOutlinedInput-root': { color: 'white' },
-                                 '& .MuiInputLabel-root': { color: 'grey.400' },
-                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                               }}
-                             />
-                           </Grid>
-                         )}
-                         <Grid item xs={12} md={3}>
-                           <TextField
-                             fullWidth
-                             type="date"
-                             label="Pickup Date"
-                             value={formData.pickupDate}
-                             onChange={(e) => handleInputChange('pickupDate', e.target.value)}
-                             InputLabelProps={{ shrink: true }}
-                             sx={{ 
-                               '& .MuiOutlinedInput-root': { color: 'white' },
-                               '& .MuiInputLabel-root': { color: 'grey.400' },
-                               '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                             }}
-                           />
-                         </Grid>
-                         <Grid item xs={12} md={3}>
-                           <TextField
-                             fullWidth
-                             type="time"
-                             label="Pickup Time"
-                             value={formData.pickupTime}
-                             onChange={(e) => handleInputChange('pickupTime', e.target.value)}
-                             InputLabelProps={{ shrink: true }}
-                             sx={{ 
-                               '& .MuiOutlinedInput-root': { color: 'white' },
-                               '& .MuiInputLabel-root': { color: 'grey.400' },
-                               '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                             }}
-                           />
-                         </Grid>
-                         <Grid item xs={12} md={3}>
-                           <TextField
-                             fullWidth
-                             type="date"
-                             label="Delivery Date"
-                             value={formData.deliveryDate}
-                             onChange={(e) => handleInputChange('deliveryDate', e.target.value)}
-                             InputLabelProps={{ shrink: true }}
-                             sx={{ 
-                               '& .MuiOutlinedInput-root': { color: 'white' },
-                               '& .MuiInputLabel-root': { color: 'grey.400' },
-                               '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                             }}
-                           />
-                         </Grid>
-                         <Grid item xs={12} md={3}>
-                           <TextField
-                             fullWidth
-                             type="time"
-                             label="Delivery Time"
-                             value={formData.deliveryTime}
-                             onChange={(e) => handleInputChange('deliveryTime', e.target.value)}
-                             InputLabelProps={{ shrink: true }}
-                             sx={{ 
-                               '& .MuiOutlinedInput-root': { color: 'white' },
-                               '& .MuiInputLabel-root': { color: 'grey.400' },
-                               '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                             }}
-                           />
-                         </Grid>
-                       </Grid>
-                     )}
-
-                    {index === 3 && (
+                    {index === 1 && (
                       <Grid container spacing={3}>
                         <Grid item xs={12} md={6}>
                           <TextField
@@ -440,6 +716,16 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
                             label="Cargo Type"
                             value={formData.cargoType}
                             onChange={(e) => handleInputChange('cargoType', e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const nextField = document.querySelector('input[name="cargoWeight"]') as HTMLInputElement;
+                                if (nextField) {
+                                  nextField.focus();
+                                }
+                              }
+                            }}
+                            name="cargoType"
                             sx={{ 
                               '& .MuiOutlinedInput-root': { color: 'white' },
                               '& .MuiInputLabel-root': { color: 'grey.400' },
@@ -454,6 +740,16 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
                             label="Cargo Weight (kg)"
                             value={formData.cargoWeight}
                             onChange={(e) => handleInputChange('cargoWeight', Number(e.target.value))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const nextField = document.querySelector('input[name="cargoVolume"]') as HTMLInputElement;
+                                if (nextField) {
+                                  nextField.focus();
+                                }
+                              }
+                            }}
+                            name="cargoWeight"
                             sx={{ 
                               '& .MuiOutlinedInput-root': { color: 'white' },
                               '& .MuiInputLabel-root': { color: 'grey.400' },
@@ -468,6 +764,16 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
                             label="Cargo Volume (m³)"
                             value={formData.cargoVolume}
                             onChange={(e) => handleInputChange('cargoVolume', Number(e.target.value))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const nextField = document.querySelector('input[name="specialRequirement"]') as HTMLInputElement;
+                                if (nextField) {
+                                  nextField.focus();
+                                }
+                              }
+                            }}
+                            name="cargoVolume"
                             sx={{ 
                               '& .MuiOutlinedInput-root': { color: 'white' },
                               '& .MuiInputLabel-root': { color: 'grey.400' },
@@ -481,6 +787,17 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
                               label="Add Special Requirement"
                               value={newRequirement}
                               onChange={(e) => setNewRequirement(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  addSpecialRequirement();
+                                  const nextField = document.querySelector('textarea[name="notes"]') as HTMLTextAreaElement;
+                                  if (nextField) {
+                                    nextField.focus();
+                                  }
+                                }
+                              }}
+                              name="specialRequirement"
                               sx={{ 
                                 flexGrow: 1,
                                 '& .MuiOutlinedInput-root': { color: 'white' },
@@ -512,6 +829,14 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
                             label="Additional Notes"
                             value={formData.notes}
                             onChange={(e) => handleInputChange('notes', e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                // Move to the next step or submit
+                                handleNext();
+                              }
+                            }}
+                            name="notes"
                             sx={{ 
                               '& .MuiOutlinedInput-root': { color: 'white' },
                               '& .MuiInputLabel-root': { color: 'grey.400' },
@@ -522,10 +847,10 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
                       </Grid>
                     )}
 
-                    {index === 4 && (
+                    {index === 2 && (
                       <Box>
                         <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
-                          Review Job Allocation Details
+                          Review Job Consignment Details
                         </Typography>
                         <Grid container spacing={2}>
                           <Grid item xs={12} md={6}>
@@ -533,8 +858,12 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
                             <Typography variant="body1" sx={{ color: 'white' }}>{formData.jobId}</Typography>
                           </Grid>
                           <Grid item xs={12} md={6}>
-                            <Typography variant="body2" sx={{ color: 'grey.400' }}>Job Title:</Typography>
-                            <Typography variant="body1" sx={{ color: 'white' }}>{formData.jobTitle}</Typography>
+                            <Typography variant="body2" sx={{ color: 'grey.400' }}>Client Name:</Typography>
+                            <Typography variant="body1" sx={{ color: 'white' }}>{formData.clientName || 'Not selected'}</Typography>
+                          </Grid>
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="body2" sx={{ color: 'grey.400' }}>Priority:</Typography>
+                            <Typography variant="body1" sx={{ color: 'white' }}>{formData.priority.toUpperCase()}</Typography>
                           </Grid>
                           <Grid item xs={12} md={6}>
                             <Typography variant="body2" sx={{ color: 'grey.400' }}>Assigned Driver:</Typography>
@@ -550,6 +879,22 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
                               {formData.pickupLocation} → {formData.deliveryLocation}
                             </Typography>
                           </Grid>
+                          {formData.alternateDeliveryAddress && (
+                            <Grid item xs={12}>
+                              <Typography variant="body2" sx={{ color: 'grey.400' }}>Alternate Delivery Address:</Typography>
+                              <Typography variant="body1" sx={{ color: 'white' }}>
+                                {formData.alternateDeliveryAddress}
+                              </Typography>
+                            </Grid>
+                          )}
+                          {formData.useSecondAlternateDeliveryAddress && formData.secondAlternateDeliveryAddress && (
+                            <Grid item xs={12}>
+                              <Typography variant="body2" sx={{ color: 'grey.400' }}>Second Alternate Delivery Address:</Typography>
+                              <Typography variant="body1" sx={{ color: 'white' }}>
+                                {formData.secondAlternateDeliveryAddress}
+                              </Typography>
+                            </Grid>
+                          )}
                           <Grid item xs={12}>
                             <Typography variant="body2" sx={{ color: 'grey.400' }}>Cargo:</Typography>
                             <Typography variant="body1" sx={{ color: 'white' }}>
@@ -567,7 +912,7 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
                         sx={{ mr: 1 }}
                         startIcon={index === steps.length - 1 ? <Save /> : undefined}
                       >
-                        {index === steps.length - 1 ? 'Submit Job Allocation' : 'Continue'}
+                        {index === steps.length - 1 ? 'Submit Job Consignment' : 'Continue'}
                       </Button>
                       <Button
                         disabled={index === 0}
@@ -594,4 +939,4 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose }) => {
   );
 };
 
-export default JobAllocationForm;
+export default JobConsignmentForm;

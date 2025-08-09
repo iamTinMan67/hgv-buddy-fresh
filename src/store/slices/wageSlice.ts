@@ -36,7 +36,7 @@ const initialState: WageState = {
     {
       id: '1',
       driverId: '1',
-      driverName: 'John Driver',
+      driverName: 'Adam Mustafa',
       standardHours: 40,
       hourlyRate: 15.50,
       overtimeRate: 23.25, // 1.5x standard rate

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export type JobStatus = 'pending' | 'assigned' | 'in_progress' | 'attempted' | 'rescheduled' | 'completed' | 'failed' | 'refused' | 'cancelled';
+export type JobStatus = 'pending' | 'assigned' | 'in_progress' | 'attempted' | 'rescheduled' | 'completed' | 'failed' | 'refused' | 'cancelled' | 'scheduled';
 
 export type JobPriority = 'low' | 'medium' | 'high' | 'urgent';
 

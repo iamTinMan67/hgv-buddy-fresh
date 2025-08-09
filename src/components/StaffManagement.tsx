@@ -30,7 +30,6 @@ import {
   ListItemText,
   ListItemIcon,
   Avatar,
-
   FormControl,
   InputLabel,
   Select,
@@ -111,7 +110,7 @@ interface StaffMember {
   };
   taxCode: string;
   nationalInsurance: string;
-  role: 'manager' | 'admin' | 'mechanic' | 'dispatcher' | 'accountant' | 'hr' | 'receptionist' | 'cleaner' | 'security' | 'driver' | 'senior_driver' | 'trainer' | 'supervisor';
+  role: 'manager' | 'admin' | 'driver';
   isActive: boolean;
   startDate: string;
   lastUpdated: string;
@@ -162,7 +161,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
     },
     taxCode: '',
     nationalInsurance: '',
-    role: 'receptionist',
+    role: 'driver',
     isActive: true,
     startDate: new Date().toISOString().split('T')[0],
   });
@@ -246,7 +245,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       },
       taxCode: '1257L',
       nationalInsurance: 'CD789012E',
-      role: 'mechanic',
+      role: 'admin',
       isActive: true,
       startDate: '2023-03-20',
       lastUpdated: '2024-01-10T14:30:00Z',
@@ -277,7 +276,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       },
       taxCode: '1257L',
       nationalInsurance: 'EF345678G',
-      role: 'dispatcher',
+      role: 'admin',
       isActive: true,
       startDate: '2023-06-10',
       lastUpdated: '2024-01-05T09:15:00Z',
@@ -286,9 +285,9 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
     {
       id: '4',
       staffId: 'EMP-2020-001',
-      firstName: 'John',
+      firstName: 'Adam',
       middleName: '',
-      familyName: 'Driver',
+      familyName: 'Mustafa',
       address: {
         line1: '123 Main Street',
         line2: '',
@@ -299,13 +298,13 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       contact: {
         phone: '+44 7700 900123',
         mobile: '+44 7700 900123',
-        email: 'john.driver@company.com',
+        email: 'adam.mustafa@company.com',
       },
       nextOfKin: {
-        name: 'Jane Driver',
+        name: 'Jane Mustafa',
         relationship: 'Spouse',
         phone: '+44 7700 900124',
-        email: 'jane.driver@email.com',
+        email: 'jane.mustafa@email.com',
       },
       taxCode: '1257L',
       nationalInsurance: 'GH567890I',
@@ -326,7 +325,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       totalMiles: 45000,
       safetyScore: 95,
       performanceRating: 4.2,
-      notes: 'Excellent driver, very reliable',
+      notes: 'Owner of the business, excellent driver, very reliable',
     },
     {
       id: '5',
@@ -354,7 +353,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       },
       taxCode: '1257L',
       nationalInsurance: 'JK901234L',
-      role: 'senior_driver',
+      role: 'driver',
       isActive: true,
       startDate: '2019-06-01',
       lastUpdated: '2024-01-15T10:00:00Z',
@@ -572,7 +571,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       nextOfKin: { name: '', relationship: '', phone: '', email: '' },
       taxCode: '',
       nationalInsurance: '',
-      role: 'receptionist',
+      role: 'driver',
       isActive: true,
       startDate: new Date().toISOString().split('T')[0],
     });
@@ -603,7 +602,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       nextOfKin: { name: '', relationship: '', phone: '', email: '' },
       taxCode: '',
       nationalInsurance: '',
-      role: 'receptionist',
+      role: 'driver',
       isActive: true,
       startDate: new Date().toISOString().split('T')[0],
     });
@@ -619,34 +618,21 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
     switch (role) {
       case 'manager': return 'primary';
       case 'admin': return 'secondary';
-      case 'mechanic': return 'warning';
-      case 'dispatcher': return 'info';
-      case 'accountant': return 'success';
-      case 'hr': return 'error';
       case 'driver': return 'info';
-      case 'senior_driver': return 'primary';
-      case 'trainer': return 'warning';
-      case 'supervisor': return 'secondary';
       default: return 'default';
     }
   };
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'manager': return <SupervisorAccount />;
-      case 'admin': return <AdminPanelSettings />;
-      case 'mechanic': return <Engineering />;
-      case 'dispatcher': return <Schedule />;
-      case 'accountant': return <Receipt />;
-      case 'hr': return <Group />;
-      case 'receptionist': return <Person />;
-      case 'cleaner': return <CleaningServices />;
-      case 'security': return <Security />;
-      case 'driver': return <DirectionsCar />;
-      case 'senior_driver': return <DirectionsCar />;
-      case 'trainer': return <DirectionsCar />;
-      case 'supervisor': return <SupervisorAccount />;
-      default: return <Person />;
+      case 'manager':
+        return <SupervisorAccount />;
+      case 'admin':
+        return <AdminPanelSettings />;
+      case 'driver':
+        return <DirectionsCar />;
+      default:
+        return <Person />;
     }
   };
 
@@ -670,7 +656,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
 
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={4}>
+         <Grid item xs={12} md={4}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Group sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
@@ -681,7 +667,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={4}>
+         <Grid item xs={12} md={4}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Person sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
@@ -692,13 +678,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={4}>
+         <Grid item xs={12} md={4}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Work sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
-              <Typography variant="h6">Roles</Typography>
+              <Business sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
+              <Typography variant="h6">Staff Management</Typography>
               <Typography variant="h4" color="info.main">
-                {new Set(staffMembers.map(s => s.role)).size}
+                {totalStaff}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Total Staff Members
               </Typography>
             </CardContent>
           </Card>
@@ -726,7 +715,6 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
           }}
         >
           <Tab label="Staff Directory" />
-          <Tab label="Add New Staff" />
           <Tab label="Reports" />
         </Tabs>
       </Box>
@@ -853,18 +841,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
         </TableContainer>
       </TabPanel>
 
-      {/* Add New Staff Tab */}
-      <TabPanel value={tabValue} index={1}>
-        <Typography variant="h6" gutterBottom>
-          Quick Add Staff Member
-        </Typography>
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Use the "Add Staff Member" button above to add new staff members with full details.
-        </Alert>
-      </TabPanel>
-
       {/* Reports Tab */}
-      <TabPanel value={tabValue} index={2}>
+      <TabPanel value={tabValue} index={1}>
         <Typography variant="h6" gutterBottom>
           Staff Reports
         </Typography>
@@ -959,6 +937,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                 label="First Name *"
                 value={currentStaff.firstName || ''}
                 onChange={(e) => setCurrentStaff({ ...currentStaff, firstName: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="middleName"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="firstName"
                 required
               />
             </Grid>
@@ -968,6 +956,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                 label="Middle Name"
                 value={currentStaff.middleName || ''}
                 onChange={(e) => setCurrentStaff({ ...currentStaff, middleName: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="familyName"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="middleName"
               />
             </Grid>
             <Grid item xs={12} md={4}>
@@ -976,6 +974,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                 label="Family Name *"
                 value={currentStaff.familyName || ''}
                 onChange={(e) => setCurrentStaff({ ...currentStaff, familyName: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="addressLine1"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="familyName"
                 required
               />
             </Grid>
@@ -995,6 +1003,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   address: { ...currentStaff.address!, line1: e.target.value }
                 })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="addressLine2"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="addressLine1"
                 required
               />
             </Grid>
@@ -1007,6 +1025,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   address: { ...currentStaff.address!, line2: e.target.value }
                 })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="addressLine3"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="addressLine2"
               />
             </Grid>
             <Grid item xs={12}>
@@ -1018,6 +1046,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   address: { ...currentStaff.address!, line3: e.target.value }
                 })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="town"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="addressLine3"
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -1029,6 +1067,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   address: { ...currentStaff.address!, town: e.target.value }
                 })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="postCode"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="town"
                 required
               />
             </Grid>
@@ -1041,6 +1089,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   address: { ...currentStaff.address!, postCode: e.target.value }
                 })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="phone"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="postCode"
                 required
               />
             </Grid>
@@ -1060,6 +1118,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   contact: { ...currentStaff.contact!, phone: e.target.value }
                 })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="mobile"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="phone"
               />
             </Grid>
             <Grid item xs={12} md={4}>
@@ -1071,6 +1139,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   contact: { ...currentStaff.contact!, mobile: e.target.value }
                 })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="email"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="mobile"
                 required
               />
             </Grid>
@@ -1084,6 +1162,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   contact: { ...currentStaff.contact!, email: e.target.value }
                 })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="nextOfKinName"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="email"
                 required
               />
             </Grid>
@@ -1103,6 +1191,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   nextOfKin: { ...currentStaff.nextOfKin!, name: e.target.value }
                 })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="relationship"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="nextOfKinName"
                 required
               />
             </Grid>
@@ -1115,6 +1213,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   nextOfKin: { ...currentStaff.nextOfKin!, relationship: e.target.value }
                 })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="nextOfKinPhone"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="relationship"
                 required
               />
             </Grid>
@@ -1127,6 +1235,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   nextOfKin: { ...currentStaff.nextOfKin!, phone: e.target.value }
                 })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="nextOfKinEmail"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="nextOfKinPhone"
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -1139,6 +1257,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   nextOfKin: { ...currentStaff.nextOfKin!, email: e.target.value }
                 })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="taxCode"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="nextOfKinEmail"
               />
             </Grid>
 
@@ -1152,19 +1280,13 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
               <FormControl fullWidth>
                 <InputLabel>Role *</InputLabel>
                 <Select
-                  value={currentStaff.role || 'receptionist'}
+                  value={currentStaff.role || 'driver'}
                   onChange={(e) => setCurrentStaff({ ...currentStaff, role: e.target.value as StaffMember['role'] })}
                   label="Role *"
                 >
                   <MenuItem value="manager">Manager</MenuItem>
                   <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="mechanic">Mechanic</MenuItem>
-                  <MenuItem value="dispatcher">Dispatcher</MenuItem>
-                  <MenuItem value="accountant">Accountant</MenuItem>
-                  <MenuItem value="hr">HR</MenuItem>
-                  <MenuItem value="receptionist">Receptionist</MenuItem>
-                  <MenuItem value="cleaner">Cleaner</MenuItem>
-                  <MenuItem value="security">Security</MenuItem>
+                  <MenuItem value="driver">Driver</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -1174,6 +1296,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                 label="Tax Code *"
                 value={currentStaff.taxCode || ''}
                 onChange={(e) => setCurrentStaff({ ...currentStaff, taxCode: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="nationalInsurance"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="taxCode"
                 required
               />
             </Grid>
@@ -1183,6 +1315,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                 label="NI Number *"
                 value={currentStaff.nationalInsurance || ''}
                 onChange={(e) => setCurrentStaff({ ...currentStaff, nationalInsurance: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="startDate"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="nationalInsurance"
                 required
               />
             </Grid>
@@ -1194,6 +1336,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                 value={currentStaff.startDate || ''}
                 onChange={(e) => setCurrentStaff({ ...currentStaff, startDate: e.target.value })}
                 InputLabelProps={{ shrink: true }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextField = document.querySelector('input[name="isActive"]') as HTMLInputElement;
+                    if (nextField) {
+                      nextField.focus();
+                    }
+                  }
+                }}
+                name="startDate"
                 required
               />
             </Grid>

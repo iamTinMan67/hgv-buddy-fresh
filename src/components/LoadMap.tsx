@@ -125,7 +125,7 @@ const LoadMap: React.FC<LoadMapProps> = ({ onClose }) => {
       routeId: 'route-1',
       date: '2024-01-25',
       driverId: 'driver-1',
-      driverName: 'John Driver',
+      driverName: 'Adam Mustafa',
       deliveryItems: [
         {
           id: 'delivery-1',

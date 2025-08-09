@@ -157,9 +157,9 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
   const [drivers] = useState<Driver[]>([
     {
       id: '1',
-      firstName: 'John',
-      lastName: 'Driver',
-      email: 'john.driver@company.com',
+      firstName: 'Adam',
+      lastName: 'Mustafa',
+      email: 'adam.mustafa@company.com',
       phone: '+44 7700 900123',
       address: '123 Main Street, London, SW1A 1AA',
       dateOfBirth: '1985-03-15',
@@ -178,9 +178,9 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
       totalMiles: 45000,
       safetyScore: 95,
       performanceRating: 4.2,
-      notes: 'Excellent driver, very reliable',
+      notes: 'Owner of the business, excellent driver, very reliable',
       emergencyContact: {
-        name: 'Jane Driver',
+        name: 'Jane Mustafa',
         relationship: 'Spouse',
         phone: '+44 7700 900124',
       },
@@ -251,7 +251,7 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
     {
       id: '1',
       driverId: '1',
-      driverName: 'John Driver',
+      driverName: 'Adam Mustafa',
       status: 'active',
       startDate: '2024-01-01',
       isActive: true,
@@ -623,12 +623,18 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
           onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
-              color: '#FFD700', // Yellow color for inactive tabs
+              color: 'white',
               fontWeight: 'bold',
               '&.Mui-selected': {
-                color: 'primary.main',
+                color: 'yellow',
               },
+              '&:hover': {
+                color: 'yellow',
+              }
             },
+            '& .MuiTabs-indicator': {
+              backgroundColor: 'yellow',
+            }
           }}
         >
           <Tab label="All Drivers" />

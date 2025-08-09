@@ -134,7 +134,7 @@ const Reports: React.FC<ReportsProps> = ({ onClose }) => {
     {
       id: '1',
       driverId: 'EMP001',
-      driverName: 'John Driver',
+      driverName: 'Adam Mustafa',
       weekNumber: 1,
       weekStartDate: '2024-01-01',
       weekEndDate: '2024-01-07',
@@ -164,7 +164,7 @@ const Reports: React.FC<ReportsProps> = ({ onClose }) => {
     {
       id: '3',
       driverId: 'EMP001',
-      driverName: 'John Driver',
+      driverName: 'Adam Mustafa',
       weekNumber: 2,
       weekStartDate: '2024-01-08',
       weekEndDate: '2024-01-14',
@@ -199,7 +199,7 @@ const Reports: React.FC<ReportsProps> = ({ onClose }) => {
       vehicleId: 'HGV001',
       vehicleRegistration: 'AB12 CDE',
       driverId: 'EMP001',
-      driverName: 'John Driver',
+      driverName: 'Adam Mustafa',
       odometerReading: 125450,
       litres: 150.5,
       pricePerLitre: 1.85,
@@ -214,7 +214,7 @@ const Reports: React.FC<ReportsProps> = ({ onClose }) => {
       vehicleId: 'HGV001',
       vehicleRegistration: 'AB12 CDE',
       driverId: 'EMP001',
-      driverName: 'John Driver',
+      driverName: 'Adam Mustafa',
       odometerReading: 125200,
       litres: 180.0,
       pricePerLitre: 1.88,
@@ -279,7 +279,7 @@ const Reports: React.FC<ReportsProps> = ({ onClose }) => {
 
   // Mock drivers data
   const [drivers] = useState([
-    { id: 'EMP001', name: 'John Driver' },
+    { id: 'EMP001', name: 'Adam Mustafa' },
     { id: 'EMP002', name: 'Jane Manager' },
     { id: 'EMP003', name: 'Mike Wilson' },
   ]);

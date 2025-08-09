@@ -21,22 +21,25 @@ import {
   Assignment,
   Home,
   Business,
+  Schedule,
 } from '@mui/icons-material';
 
 import DriverManagement from './DriverManagement';
 import StaffManagement from './StaffManagement';
 import WageManagement from './WageManagement';
+import HolidayPlanner from './HolidayPlanner';
 
 interface DriverHubProps {
   onClose: () => void;
 }
 
 const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
-  const [currentView, setCurrentView] = useState<'main' | 'management' | 'staff' | 'wages'>('main');
+  const [currentView, setCurrentView] = useState<'main' | 'management' | 'staff' | 'wages' | 'holiday'>('main');
 
   const handleNavigateToManagement = () => setCurrentView('management');
   const handleNavigateToStaff = () => setCurrentView('staff');
   const handleNavigateToWages = () => setCurrentView('wages');
+  const handleNavigateToHoliday = () => setCurrentView('holiday');
   const handleBackToMain = () => setCurrentView('main');
 
   if (currentView === 'management') {
@@ -49,6 +52,10 @@ const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
 
   if (currentView === 'wages') {
     return <WageManagement onClose={handleBackToMain} />;
+  }
+
+  if (currentView === 'holiday') {
+    return <HolidayPlanner onClose={handleBackToMain} />;
   }
 
   // Main Driver Hub
@@ -69,66 +76,15 @@ const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
 
       {/* Sub-Portal Navigation */}
       <Grid container spacing={3}>
-        {/* Drivers Management Card */}
-        <Grid item xs={12} md={4}>
-          <Card 
-            sx={{ 
-              cursor: 'pointer', 
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: 4,
-              }
-            }}
-            onClick={handleNavigateToManagement}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                  <Person />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" component="div">
-                    Drivers
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Driver profiles and qualifications
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
-                <Chip 
-                  icon={<Work />} 
-                  label="Profiles" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                />
-                <Chip 
-                  icon={<Assignment />} 
-                  label="Qualifications" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                />
-                <Chip 
-                  icon={<Settings />} 
-                  label="Status" 
-                  size="small" 
-                  sx={{ mb: 1 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
         {/* Staff Management Card */}
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
+              height: '280px',
+              display: 'flex',
+              flexDirection: 'column',
               '&:hover': {
                 transform: 'translateY(-4px)',
                 boxShadow: 4,
@@ -136,7 +92,7 @@ const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
             }}
             onClick={handleNavigateToStaff}
           >
-            <CardContent>
+            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
                   <Business />
@@ -146,14 +102,14 @@ const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
                     Staff
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    All other staff employees
+                    All staff employees
                   </Typography>
                 </Box>
               </Box>
               
               <Divider sx={{ my: 2 }} />
               
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
+              <Box sx={{ mt: 2, flexGrow: 1, minHeight: '60px' }}>
                 <Chip 
                   icon={<Person />} 
                   label="Profiles" 
@@ -183,6 +139,9 @@ const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
+              height: '280px',
+              display: 'flex',
+              flexDirection: 'column',
               '&:hover': {
                 transform: 'translateY(-4px)',
                 boxShadow: 4,
@@ -190,7 +149,7 @@ const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
             }}
             onClick={handleNavigateToWages}
           >
-            <CardContent>
+            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
                   <AttachMoney />
@@ -207,7 +166,7 @@ const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
               
               <Divider sx={{ my: 2 }} />
               
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
+              <Box sx={{ mt: 2, flexGrow: 1, minHeight: '60px' }}>
                 <Chip 
                   icon={<Payment />} 
                   label="Rates" 
@@ -223,6 +182,63 @@ const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
                 <Chip 
                   icon={<Analytics />} 
                   label="Bank Details" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Holiday Planner Card */}
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              height: '280px',
+              display: 'flex',
+              flexDirection: 'column',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={handleNavigateToHoliday}
+          >
+            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
+                  <Schedule />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Holiday Planner
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Manage holiday requests and schedules
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, flexGrow: 1, minHeight: '60px' }}>
+                <Chip 
+                  icon={<Schedule />} 
+                  label="Requests" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Assignment />} 
+                  label="Approvals" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Analytics />} 
+                  label="Conflicts" 
                   size="small" 
                   sx={{ mb: 1 }}
                 />

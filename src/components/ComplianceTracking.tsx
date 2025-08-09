@@ -102,11 +102,11 @@ const ComplianceTracking: React.FC<ComplianceTrackingProps> = ({ onClose }) => {
       id: '1',
       type: 'driver',
       category: 'Driver Hours',
-      title: 'John Driver - Weekly Hours',
+      title: 'Adam Mustafa - Weekly Hours',
       description: 'Driver hours compliance for week ending 2024-01-21',
       status: 'compliant',
       lastChecked: '2024-01-21',
-      responsible: 'John Driver',
+      responsible: 'Adam Mustafa',
       priority: 'medium',
     },
     {

@@ -181,18 +181,21 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
-              opacity: 0.3,
-              cursor: 'default',
+              cursor: 'pointer', 
               transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
             }}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'grey.400', mr: 2 }}>
-                  <LocalShipping />
+                <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
+                  <Analytics />
                 </Avatar>
                 <Box>
-                  <Typography variant="h5" component="div" sx={{ color: 'grey.500' }}>
+                  <Typography variant="h5" component="div">
                     Coming Soon
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -208,19 +211,19 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
                   icon={<TrendingUp />} 
                   label="Future" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
+                  sx={{ mr: 1, mb: 1 }}
                 />
                 <Chip 
                   icon={<Analytics />} 
                   label="Features" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
+                  sx={{ mr: 1, mb: 1 }}
                 />
                 <Chip 
                   icon={<Report />} 
                   label="Reports" 
                   size="small" 
-                  sx={{ mb: 1, opacity: 0.5 }}
+                  sx={{ mb: 1 }}
                 />
               </Box>
             </CardContent>

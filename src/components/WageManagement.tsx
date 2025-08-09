@@ -124,7 +124,7 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
 
   // Mock employee data
   const [employees] = useState<Employee[]>([
-    { id: '1', name: 'John Driver', role: 'driver', isActive: true },
+    { id: '1', name: 'Adam Mustafa', role: 'driver', isActive: true },
     { id: '2', name: 'Jane Manager', role: 'manager', isActive: true },
     { id: '3', name: 'Mike Mechanic', role: 'mechanic', isActive: true },
     { id: '4', name: 'Sarah Dispatcher', role: 'dispatcher', isActive: true },
@@ -139,7 +139,7 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
     {
       id: '1',
       driverId: '1',
-      accountName: 'John Driver',
+      accountName: 'Adam Mustafa',
       accountNumber: '12345678',
       sortCode: '12-34-56',
       bankName: 'Barclays Bank',
@@ -375,12 +375,18 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
           onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
-              color: '#FFD700', // Yellow color for inactive tabs
+              color: 'white',
               fontWeight: 'bold',
               '&.Mui-selected': {
-                color: 'primary.main',
+                color: 'yellow',
               },
+              '&:hover': {
+                color: 'yellow',
+              }
             },
+            '& .MuiTabs-indicator': {
+              backgroundColor: 'yellow',
+            }
           }}
         >
           <Tab label="Wage Settings" />

@@ -660,14 +660,14 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
         </Typography>
         <Box>
           {(user?.role === 'admin' || user?.role === 'owner') && (
-            <Button
-              variant="contained"
+          <Button
+            variant="contained"
               startIcon={<Add />}
-              onClick={() => setShowAddDialog(true)}
-              sx={{ mr: 2 }}
-            >
-              Add New Job
-            </Button>
+            onClick={() => setShowAddDialog(true)}
+            sx={{ mr: 2 }}
+          >
+            Add New Job
+          </Button>
           )}
           <IconButton
             onClick={onClose}
@@ -703,7 +703,7 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
         </Button>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
           Load planning & trailer optimization with drag & drop functionality
-        </Typography>
+              </Typography>
       </Box>
 
       {/* Tabs */}
@@ -757,7 +757,7 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
         <DialogTitle>
           <Typography variant="h5" component="div">
             Create New Job Assignment
-          </Typography>
+                    </Typography>
         </DialogTitle>
         <DialogContent>
           <Stepper activeStep={activeStep} orientation="vertical">
@@ -856,34 +856,34 @@ const JobAssignment: React.FC<JobAssignmentProps> = ({ onClose }) => {
 
 // Helper Components
 const JobList: React.FC<{ jobs: JobAssignmentType[]; onView: (job: JobAssignmentType) => void }> = ({ jobs, onView }) => (
-  <TableContainer component={Paper}>
-    <Table>
-      <TableHead>
-        <TableRow>
-          <TableCell>Job Number</TableCell>
-          <TableCell>Title</TableCell>
-          <TableCell>Customer</TableCell>
-          <TableCell>Priority</TableCell>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Job Number</TableCell>
+                <TableCell>Title</TableCell>
+                <TableCell>Customer</TableCell>
+                <TableCell>Priority</TableCell>
           <TableCell>Status</TableCell>
           <TableCell>Volume (m³)</TableCell>
           <TableCell>Weight (kg)</TableCell>
-          <TableCell>Actions</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
         {jobs.map((job) => (
-          <TableRow key={job.id}>
-            <TableCell>{job.jobNumber}</TableCell>
+                  <TableRow key={job.id}>
+                    <TableCell>{job.jobNumber}</TableCell>
             <TableCell>{job.title}</TableCell>
-            <TableCell>{job.customerName}</TableCell>
-            <TableCell>
-              <Chip
-                label={job.priority}
+                    <TableCell>{job.customerName}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={job.priority}
                 color={job.priority === 'urgent' ? 'error' : job.priority === 'high' ? 'warning' : 'default'}
-                size="small"
-              />
-            </TableCell>
-            <TableCell>
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
               <InteractiveStatusChip
                 status={job.status.replace('_', ' ')}
                 statusIcon={getStatusIcon(job.status)}
@@ -898,21 +898,21 @@ const JobList: React.FC<{ jobs: JobAssignmentType[]; onView: (job: JobAssignment
                 disabled={false}
                 tooltipText={user?.role === 'driver' ? 'Click to update job status' : 'Click to update status'}
               />
-            </TableCell>
+                    </TableCell>
             <TableCell>{(job as any).totalVolume?.toFixed(2) || '0.00'}</TableCell>
             <TableCell>{(job as any).totalWeight?.toFixed(0) || '0'}</TableCell>
-            <TableCell>
+                    <TableCell>
               <Tooltip title="View Details">
                 <IconButton onClick={() => onView(job)}>
                   <Visibility />
                 </IconButton>
               </Tooltip>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  </TableContainer>
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
 );
 
 const ConsignmentAnalysis: React.FC<{ jobs: JobAssignmentType[] }> = ({ jobs }) => (
@@ -922,7 +922,7 @@ const ConsignmentAnalysis: React.FC<{ jobs: JobAssignmentType[] }> = ({ jobs }) 
         <CardContent>
           <Typography variant="h6" gutterBottom>
             Volume Distribution
-          </Typography>
+                      </Typography>
           <LinearProgress 
             variant="determinate" 
             value={Math.min((jobs.reduce((sum, job) => sum + (job.cargoWeight || 0), 0) / 100) * 100, 100)} 
@@ -930,11 +930,11 @@ const ConsignmentAnalysis: React.FC<{ jobs: JobAssignmentType[] }> = ({ jobs }) 
           />
           <Typography variant="body2" sx={{ mt: 1 }}>
             Total Weight: {jobs.reduce((sum, job) => sum + (job.cargoWeight || 0), 0).toFixed(0)} kg
-          </Typography>
+                      </Typography>
         </CardContent>
       </Card>
-    </Grid>
-    <Grid item xs={12} md={6}>
+            </Grid>
+            <Grid item xs={12} md={6}>
       <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom>
@@ -950,7 +950,7 @@ const ConsignmentAnalysis: React.FC<{ jobs: JobAssignmentType[] }> = ({ jobs }) 
           </Typography>
         </CardContent>
       </Card>
-    </Grid>
+            </Grid>
   </Grid>
 );
 
@@ -974,16 +974,16 @@ const BasicInformationStep: React.FC<any> = ({ newJob, setNewJob, onNext }) => (
           onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
         />
       </Grid>
-      <Grid item xs={12}>
-        <TextField
-          fullWidth
-          label="Description"
-          multiline
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Description"
+                multiline
           rows={3}
-          value={newJob.description}
-          onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
-        />
-      </Grid>
+                value={newJob.description}
+                onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
+              />
+            </Grid>
     </Grid>
     <Button variant="contained" onClick={onNext} sx={{ mt: 2 }}>
       Next
@@ -1008,16 +1008,16 @@ const CustomerDetailsStep: React.FC<any> = ({ newJob, setNewJob, onNext, onBack 
           label="Customer Phone"
           value={newJob.customerPhone}
           onChange={(e) => setNewJob({ ...newJob, customerPhone: e.target.value })}
-        />
-      </Grid>
-      <Grid item xs={12}>
-        <TextField
-          fullWidth
+              />
+            </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
           label="Customer Email"
           value={newJob.customerEmail}
           onChange={(e) => setNewJob({ ...newJob, customerEmail: e.target.value })}
-        />
-      </Grid>
+                />
+              </Grid>
     </Grid>
     <Box sx={{ mt: 2 }}>
       <Button onClick={onBack}>Back</Button>
@@ -1047,9 +1047,9 @@ const ConsignmentItemsStep: React.FC<any> = ({
     <Card sx={{ mb: 2 }}>
       <CardContent>
         <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
               label="Description"
               value={newConsignmentItem.description}
               onChange={(e) => setNewConsignmentItem({ ...newConsignmentItem, description: e.target.value })}
@@ -1152,31 +1152,31 @@ const DeliveryScheduleStep: React.FC<any> = ({ newJob, setNewJob, onNext, onBack
         <TextField
           fullWidth
           label="Pickup Date"
-          type="date"
+                type="date"
           value={newJob.deliverySchedule?.pickupDate}
           onChange={(e) => setNewJob({
             ...newJob,
             deliverySchedule: { ...newJob.deliverySchedule, pickupDate: e.target.value }
           })}
-          InputLabelProps={{ shrink: true }}
-        />
-      </Grid>
-      <Grid item xs={12} md={6}>
-        <TextField
-          fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
           label="Pickup Time"
-          type="time"
+                type="time"
           value={newJob.deliverySchedule?.pickupTime}
           onChange={(e) => setNewJob({
             ...newJob,
             deliverySchedule: { ...newJob.deliverySchedule, pickupTime: e.target.value }
           })}
-          InputLabelProps={{ shrink: true }}
-        />
-      </Grid>
-      <Grid item xs={12} md={6}>
-        <TextField
-          fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
           label="Delivery Date"
           type="date"
           value={newJob.deliverySchedule?.deliveryDate}
@@ -1185,11 +1185,11 @@ const DeliveryScheduleStep: React.FC<any> = ({ newJob, setNewJob, onNext, onBack
             deliverySchedule: { ...newJob.deliverySchedule, deliveryDate: e.target.value }
           })}
           InputLabelProps={{ shrink: true }}
-        />
-      </Grid>
-      <Grid item xs={12} md={6}>
-        <TextField
-          fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
           label="Delivery Time"
           type="time"
           value={newJob.deliverySchedule?.deliveryTime}
@@ -1198,8 +1198,8 @@ const DeliveryScheduleStep: React.FC<any> = ({ newJob, setNewJob, onNext, onBack
             deliverySchedule: { ...newJob.deliverySchedule, deliveryTime: e.target.value }
           })}
           InputLabelProps={{ shrink: true }}
-        />
-      </Grid>
+              />
+            </Grid>
     </Grid>
     <Box sx={{ mt: 2 }}>
       <Button onClick={onBack}>Back</Button>
@@ -1214,8 +1214,8 @@ const RouteCostStep: React.FC<any> = ({ newJob, setNewJob, onNext, onBack }) => 
   <Box>
     <Grid container spacing={2}>
       <Grid item xs={12} md={6}>
-        <TextField
-          fullWidth
+              <TextField
+                fullWidth
           label="Transport Cost (£)"
           type="number"
           value={newJob.costBreakdown?.transportCost || ''}
@@ -1223,11 +1223,11 @@ const RouteCostStep: React.FC<any> = ({ newJob, setNewJob, onNext, onBack }) => 
             ...newJob,
             costBreakdown: { ...newJob.costBreakdown, transportCost: parseFloat(e.target.value) || 0 }
           })}
-        />
-      </Grid>
+              />
+            </Grid>
       <Grid item xs={12} md={6}>
-        <TextField
-          fullWidth
+              <TextField
+                fullWidth
           label="Handling Cost (£)"
           type="number"
           value={newJob.costBreakdown?.handlingCost || ''}
@@ -1235,34 +1235,34 @@ const RouteCostStep: React.FC<any> = ({ newJob, setNewJob, onNext, onBack }) => 
             ...newJob,
             costBreakdown: { ...newJob.costBreakdown, handlingCost: parseFloat(e.target.value) || 0 }
           })}
-        />
-      </Grid>
-    </Grid>
+              />
+            </Grid>
+          </Grid>
     <Box sx={{ mt: 2 }}>
       <Button onClick={onBack}>Back</Button>
       <Button variant="contained" onClick={onNext} sx={{ ml: 1 }}>
         Next
-      </Button>
+          </Button>
     </Box>
   </Box>
 );
 
 const ReviewSubmitStep: React.FC<any> = ({ newJob, onBack, onSubmit }) => (
   <Box>
-    <Typography variant="h6" gutterBottom>
+                <Typography variant="h6" gutterBottom>
       Review Job Details
-    </Typography>
+                </Typography>
     <Grid container spacing={2}>
       <Grid item xs={12} md={6}>
         <Typography variant="body2">
           <strong>Job Number:</strong> {newJob.jobNumber}
-        </Typography>
+                </Typography>
         <Typography variant="body2">
           <strong>Title:</strong> {newJob.title}
-        </Typography>
+                </Typography>
         <Typography variant="body2">
           <strong>Customer:</strong> {newJob.customerName}
-        </Typography>
+                </Typography>
       </Grid>
       <Grid item xs={12} md={6}>
         <Typography variant="body2">
@@ -1273,8 +1273,8 @@ const ReviewSubmitStep: React.FC<any> = ({ newJob, onBack, onSubmit }) => (
         </Typography>
         <Typography variant="body2">
           <strong>Items:</strong> {newJob.consignmentItems?.length || 0}
-        </Typography>
-      </Grid>
+                </Typography>
+              </Grid>
     </Grid>
     <Box sx={{ mt: 2 }}>
       <Button onClick={onBack}>Back</Button>
@@ -1287,30 +1287,30 @@ const ReviewSubmitStep: React.FC<any> = ({ newJob, onBack, onSubmit }) => (
 
 const JobDetailsView: React.FC<{ job: EnhancedJobAssignment }> = ({ job }) => (
   <Grid container spacing={3}>
-    <Grid item xs={12} md={6}>
-      <Typography variant="h6" gutterBottom>
+              <Grid item xs={12} md={6}>
+                <Typography variant="h6" gutterBottom>
         Job Information
-      </Typography>
-      <Typography variant="body2" gutterBottom>
+                </Typography>
+                <Typography variant="body2" gutterBottom>
         <strong>Job Number:</strong> {job.jobNumber}
-      </Typography>
-      <Typography variant="body2" gutterBottom>
+                </Typography>
+                <Typography variant="body2" gutterBottom>
         <strong>Title:</strong> {job.title}
-      </Typography>
-      <Typography variant="body2" gutterBottom>
+                </Typography>
+                <Typography variant="body2" gutterBottom>
         <strong>Customer:</strong> {job.customerName}
-      </Typography>
-      <Typography variant="body2" gutterBottom>
+                </Typography>
+                <Typography variant="body2" gutterBottom>
         <strong>Total Volume:</strong> {job.totalVolume?.toFixed(2)} m³
       </Typography>
       <Typography variant="body2" gutterBottom>
         <strong>Total Weight:</strong> {job.totalWeight?.toFixed(0)} kg
-      </Typography>
-    </Grid>
+                </Typography>
+              </Grid>
     <Grid item xs={12} md={6}>
-      <Typography variant="h6" gutterBottom>
+                  <Typography variant="h6" gutterBottom>
         Consignment Items
-      </Typography>
+                  </Typography>
       <List dense>
         {job.consignmentItems?.map((item) => (
           <ListItem key={item.id}>
@@ -1321,8 +1321,8 @@ const JobDetailsView: React.FC<{ job: EnhancedJobAssignment }> = ({ job }) => (
           </ListItem>
         ))}
       </List>
-    </Grid>
-  </Grid>
+                </Grid>
+            </Grid>
 );
 
 export default JobAssignment; 

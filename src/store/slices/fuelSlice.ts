@@ -60,7 +60,7 @@ const initialState: FuelState = {
       vehicleId: 'HGV001',
       vehicleRegistration: 'AB12 CDE',
       driverId: 'EMP001',
-      driverName: 'John Driver',
+      driverName: 'Adam Mustafa',
       odometerReading: 125450,
       litres: 150.5,
       pricePerLitre: 1.85,

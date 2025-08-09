@@ -33,7 +33,7 @@ import Timesheet from './Timesheet';
 import VehicleCheckSheet from './VehicleCheckSheet';
 import FleetManagementHub from './FleetManagementHub';
 import PlanningHub from './PlanningHub';
-import PlanningJobsHub from './PlanningJobsHub';
+// PlanningMainHub import removed - using PlanningHub directly
 import LegalHub from './LegalHub';
 import DriverHub from './DriverHub';
 
@@ -65,7 +65,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [showLegalHub, setShowLegalHub] = useState(false);
   const [showDriverHub, setShowDriverHub] = useState(false);
   const [showPlanningHub, setShowPlanningHub] = useState(false);
-  const [showPlanningJobsHub, setShowPlanningJobsHub] = useState(false);
+  // showPlanningMainHub state removed - using showPlanningHub directly
   const [showReportsHub, setShowReportsHub] = useState(false);
   const [showDriverDashboard, setShowDriverDashboard] = useState(false);
   const [showDriverPlanner, setShowDriverPlanner] = useState(false);
@@ -195,11 +195,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     );
   }
 
-  // Show planning jobs hub if requested
-  if (showPlanningJobsHub) {
+  // Show planning hub if requested
+  if (showPlanningHub) {
     return (
       <Box sx={{ py: 2 }}>
-        <PlanningJobsHub onClose={() => setShowPlanningJobsHub(false)} />
+        <PlanningHub onClose={() => setShowPlanningHub(false)} />
       </Box>
     );
   }
@@ -509,7 +509,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     variant="contained" 
                     color="info" 
                     sx={{ mt: 2 }}
-                    onClick={() => setShowPlanningJobsHub(true)}
+                    onClick={() => setShowPlanningHub(true)}
                   >
                     Main Hub
                   </Button>

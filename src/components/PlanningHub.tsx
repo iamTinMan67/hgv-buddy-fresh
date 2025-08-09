@@ -38,22 +38,21 @@ import {
 import DailyPlanner from './DailyPlanner';
 import RoutePlanning from './RoutePlanning';
 import GarminRoutePlanning from './GarminRoutePlanning';
-
 import TrailerPlanner from './TrailerPlanner';
+import JobConsignmentForm from './JobAllocationForm';
 
 interface PlanningHubProps {
   onClose: () => void;
 }
 
 const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
-  const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'trailer'>('main');
-
+  const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'trailer' | 'jobAllocation'>('main');
 
   const handleNavigateToDaily = () => setCurrentView('daily');
   const handleNavigateToRoute = () => setCurrentView('route');
   const handleNavigateToGarmin = () => setCurrentView('garmin');
-
   const handleNavigateToTrailer = () => setCurrentView('trailer');
+  const handleNavigateToJobAllocation = () => setCurrentView('jobAllocation');
   const handleBackToMain = () => setCurrentView('main');
 
   if (currentView === 'daily') {
@@ -68,10 +67,12 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
     return <GarminRoutePlanning onClose={handleBackToMain} />;
   }
 
-
-
   if (currentView === 'trailer') {
     return <TrailerPlanner onClose={handleBackToMain} />;
+  }
+
+  if (currentView === 'jobAllocation') {
+    return <JobConsignmentForm onClose={handleBackToMain} />;
   }
 
   // Main Planning Hub
@@ -90,10 +91,63 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
         </IconButton>
       </Box>
 
-
-
       {/* Sub-Portal Navigation */}
       <Grid container spacing={3}>
+        {/* Job Allocation Card */}
+        <Grid item xs={12} md={6} lg={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
+              '&:hover': {
+                transform: 'translateY(-4px) scale(0.94)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={handleNavigateToJobAllocation}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                  <Assignment />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Job Allocation
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Create and manage job assignments
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<Person />} 
+                  label="Driver Assignment" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Route />} 
+                  label="Route Planning" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<LocalShipping />} 
+                  label="Cargo Details" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Daily Planner Card */}
         <Grid item xs={12} md={6} lg={4}>
           <Card 

@@ -86,7 +86,7 @@ const initialState: VehicleState = {
       lastInspection: '2024-01-15',
       nextMOT: '2024-07-15',
       nextService: '2024-03-15',
-      currentDriver: 'John Driver',
+      currentDriver: 'Adam Mustafa',
       location: 'Main Depot',
       isActive: true,
       createdAt: '2024-01-01T00:00:00Z',
