@@ -23,6 +23,10 @@ import {
   Home,
   Person,
   Schedule,
+  Assessment,
+  AttachMoney,
+  Route,
+  Map,
 } from '@mui/icons-material';
 
 import FleetManagement from './FleetManagement';
@@ -244,31 +248,31 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
-        {/* Route Planning Card */}
+        {/* Coming Soon Card 1 */}
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
-              cursor: 'pointer', 
+              cursor: 'default', 
               transition: 'all 0.3s ease',
               transform: 'scale(0.94)',
+              opacity: 0.7,
               '&:hover': {
                 transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
               }
             }}
-            onClick={() => setCurrentView('routePlanning')}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-                  <Schedule />
+                <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
+                  <Build />
                 </Avatar>
                 <Box>
                   <Typography variant="h5" component="div">
-                    Route Planning
+                    Maintenance Hub
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Plan routes and optimize deliveries
+                    Vehicle maintenance tracking
                   </Typography>
                 </Box>
               </Box>
@@ -277,22 +281,83 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
               
               <Box sx={{ mt: 2, minHeight: '60px' }}>
                 <Chip 
-                  icon={<Route />} 
-                  label="Route Optimization" 
+                  icon={<Build />} 
+                  label="Coming Soon" 
                   size="small" 
                   sx={{ mr: 1, mb: 1 }}
-                />
-                <Chip 
-                  icon={<Map />} 
-                  label="Delivery Planning" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  color="default"
                 />
                 <Chip 
                   icon={<Assessment />} 
-                  label="Efficiency" 
+                  label="Maintenance Reports" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                  color="default"
+                />
+                <Chip 
+                  icon={<Schedule />} 
+                  label="Service Scheduling" 
                   size="small" 
                   sx={{ mb: 1 }}
+                  color="default"
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Coming Soon Card 2 */}
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'default', 
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
+              opacity: 0.7,
+              '&:hover': {
+                transform: 'translateY(-4px) scale(0.94)',
+                boxShadow: 4,
+              }
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
+                  <Analytics />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Analytics Dashboard
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Fleet performance insights
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<Analytics />} 
+                  label="Coming Soon" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                  color="default"
+                />
+                <Chip 
+                  icon={<TrendingUp />} 
+                  label="Performance Metrics" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                  color="default"
+                />
+                <Chip 
+                  icon={<Assessment />} 
+                  label="Data Insights" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                  color="default"
                 />
               </Box>
             </CardContent>

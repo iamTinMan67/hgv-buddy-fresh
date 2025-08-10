@@ -263,7 +263,7 @@ const DriverPlanner: React.FC<DriverPlannerProps> = ({ onClose }) => {
   const handleRouteUpdate = () => {
     if (selectedJob) {
       // In a real app, this would update the route in the backend
-      console.log('Alternative route saved:', alternativeRoute);
+      // Alternative route saved
       setShowRouteDialog(false);
       setAlternativeRoute({ waypoints: [], estimatedDistance: 0, estimatedDuration: 0, reason: '' });
       setSelectedJob(null);

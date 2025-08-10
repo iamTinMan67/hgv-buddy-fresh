@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import JobConsignmentForm from './JobAllocationForm';
 import {
   Box,
   Typography,
@@ -37,6 +38,7 @@ import {
   LinearProgress,
   Alert,
   Checkbox,
+  Avatar,
 } from '@mui/material';
 import {
   Add,
@@ -119,9 +121,13 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<DailySchedule | null>(null);
   const [selectedJob, setSelectedJob] = useState<{ scheduleId: string; jobId: string } | null>(null);
+  const [showJobDetailsDialog, setShowJobDetailsDialog] = useState(false);
+  const [selectedJobForDetails, setSelectedJobForDetails] = useState<any>(null);
+  const [showEditJobDialog, setShowEditJobDialog] = useState(false);
+  const [jobToEdit, setJobToEdit] = useState<any>(null);
   const [newSchedule, setNewSchedule] = useState<NewSchedule>({
     vehicleId: 'V001', // Default to Vehicle 1
-    runTitle: '',
+    runTitle: 'City', // Default to "City" as requested
     date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Today + 1
     routePlanId: '',
     jobs: [],
@@ -280,10 +286,11 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
     if (selectedJobIds.length > 0) {
       const firstJob = availableJobs.find(job => job.id === selectedJobIds[0]);
       if (firstJob && firstJob.deliveryLocation && firstJob.deliveryLocation.address) {
-        // Extract city from address (assuming format like "City, Postcode" or just "City")
-        const addressParts = firstJob.deliveryLocation.address.split(',');
-        const city = addressParts[0].trim();
-        setNewSchedule(prev => ({ ...prev, runTitle: city }));
+        // Extract city from address structure
+        const city = firstJob.deliveryLocation.address.city || firstJob.deliveryLocation.address.town;
+        if (city) {
+          setNewSchedule(prev => ({ ...prev, runTitle: city }));
+        }
       }
     } else {
       setNewSchedule(prev => ({ ...prev, runTitle: '' }));
@@ -316,12 +323,18 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
     setShowAddDialog(false);
     setNewSchedule({
       vehicleId: 'V001', // Reset to default Vehicle 1
-      runTitle: '',
+      runTitle: 'City', // Reset to default "City"
       date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Reset to Today + 1
       routePlanId: '',
       jobs: [],
       notes: '',
     });
+  };
+
+  const handleEditJob = (job: any) => {
+    setJobToEdit(job);
+    setShowEditJobDialog(true);
+    setShowJobDetailsDialog(false);
   };
 
   // Calculate statistics
@@ -364,99 +377,6 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
         </Box>
       </Box>
 
-      {/* Schedule Statistics */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={1.7}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary">
-                {totalSchedules}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Schedules
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={1.7}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="default">
-                {pendingSchedules}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Pending
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={1.7}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="info.main">
-                {scheduledSchedules}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Scheduled
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={1.7}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main">
-                {inProgressSchedules}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                In Progress
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={1.7}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main">
-                {completedSchedules}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Completed
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={1.7}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main">
-                {totalJobs}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Jobs
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={1.7}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main">
-                {completedJobs}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Completed Jobs
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={totalJobs > 0 ? (completedJobs / totalJobs) * 100 : 0}
-                sx={{ mt: 1 }}
-              />
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs 
@@ -475,7 +395,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
           <Tab label="Today's Schedules" />
           <Tab label="All Schedules" />
           <Tab label="Pending Deliveries" />
-          <Tab label="Timeline View" />
+          <Tab label="Vehicle Assignment" />
         </Tabs>
       </Box>
 
@@ -730,6 +650,22 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                           {job.deliveryLocation.name}
                         </Typography>
                       </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Total Weight
+                        </Typography>
+                        <Typography variant="body2" fontWeight="bold" color="primary">
+                          {job.cargoWeight || job.loadDimensions?.weight || 'N/A'} kg
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Volume
+                        </Typography>
+                        <Typography variant="body2">
+                          {job.loadDimensions?.volume || 'N/A'} m³
+                        </Typography>
+                      </Grid>
                     </Grid>
                     
                     <Box sx={{ display: 'flex', gap: 1 }}>
@@ -738,7 +674,8 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                         variant="outlined"
                         startIcon={<Visibility />}
                         onClick={() => {
-                          // View job details
+                          setSelectedJobForDetails(job);
+                          setShowJobDetailsDialog(true);
                         }}
                       >
                         View Details
@@ -767,91 +704,298 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
         )}
       </TabPanel>
 
-      {/* Timeline View Tab */}
+      {/* Vehicle Assignment Tab */}
       <TabPanel value={tabValue} index={3}>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Vehicle Assignment Management
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Assign vehicles to drivers and manage vehicle-driver allocations for daily schedules.
+          </Typography>
+        </Box>
+        
         <Grid container spacing={3}>
-          {userSchedules
-            .filter(schedule => schedule.date === new Date().toISOString().split('T')[0])
-            .map(schedule => (
-              <Grid item xs={12} key={schedule.id}>
-                <Card>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6">
-                        {schedule.vehicleId} - Driver {schedule.driverId}
-                      </Typography>
-                      <Chip
-                        icon={getStatusIcon(schedule.status)}
-                        label={schedule.status.replace('_', ' ')}
-                        color={getStatusColor(schedule.status) as any}
-                        size="small"
-                      />
-                    </Box>
-                    <List>
-                      {schedule.jobs.map((job, index) => {
-                        const jobDetails = jobs.find(j => j.id === job.jobId);
-                        return jobDetails ? (
-                          <ListItem key={job.jobId} sx={{ border: '1px solid #e0e0e0', borderRadius: 1, mb: 1 }}>
-                            <ListItemIcon>
-                              <Box sx={{ 
-                                width: 40, 
-                                height: 40, 
-                                borderRadius: '50%', 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center',
-                                bgcolor: getJobStatusColor(job.status) === 'success' ? 'success.main' : 
-                                         getJobStatusColor(job.status) === 'error' ? 'error.main' :
-                                         getJobStatusColor(job.status) === 'warning' ? 'warning.main' :
-                                         getJobStatusColor(job.status) === 'primary' ? 'primary.main' : 'grey.300'
-                              }}>
-                                {getJobStatusIcon(job.status)}
-                              </Box>
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <Typography variant="h6" component="span">
-                                    {index + 1}. {jobDetails.title}
-                                  </Typography>
-                                  <Chip
-                                    icon={getJobStatusIcon(job.status)}
-                                    label={job.status.replace('_', ' ')}
-                                    color={getJobStatusColor(job.status) as any}
-                                    size="small"
-                                  />
-                                </Box>
-                              }
-                              secondary={
-                                <Box>
-                                  <Typography variant="body2" color="text.secondary">
-                                    <strong>Time:</strong> {job.scheduledTime} | <strong>Customer:</strong> {jobDetails.customerName}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    <strong>Route:</strong> {jobDetails.pickupLocation.name} → {jobDetails.deliveryLocation.name}
-                                  </Typography>
-                                  {user?.role === 'driver' && job.status !== 'completed' && (
-                                    <Button
-                                      size="small"
-                                      variant="outlined"
-                                      onClick={() => openStatusDialog(schedule.id, job.jobId)}
-                                      startIcon={<Update />}
-                                      sx={{ mt: 1 }}
-                                    >
-                                      Update Status
-                                    </Button>
-                                  )}
-                                </Box>
-                              }
-                            />
-                          </ListItem>
-                        ) : null;
-                      })}
-                    </List>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
+          {/* Vehicle Assignment Form */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Assign Vehicle to Driver
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <FormControl fullWidth>
+                      <InputLabel>Driver</InputLabel>
+                      <Select
+                        value="driver1"
+                        onChange={() => {}}
+                        label="Driver"
+                      >
+                        <MenuItem value="driver1">Adam Mustafa</MenuItem>
+                        <MenuItem value="driver2">Jane Manager</MenuItem>
+                        <MenuItem value="driver3">Mike Wilson</MenuItem>
+                        <MenuItem value="driver4">Sarah Johnson</MenuItem>
+                        <MenuItem value="driver5">David Davis</MenuItem>
+                        <MenuItem value="driver6">Emma Taylor</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControl fullWidth>
+                      <InputLabel>Vehicle</InputLabel>
+                      <Select
+                        value="HGV001"
+                        onChange={() => {}}
+                        label="Vehicle"
+                      >
+                        <MenuItem value="HGV001">HGV-001 (Rigid Truck)</MenuItem>
+                        <MenuItem value="HGV002">HGV-002 (Articulated Lorry)</MenuItem>
+                        <MenuItem value="HGV003">HGV-003 (Box Van)</MenuItem>
+                        <MenuItem value="HGV004">HGV-004 (Flatbed)</MenuItem>
+                        <MenuItem value="HGV005">HGV-005 (Refrigerated)</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Assignment Date"
+                      type="date"
+                      defaultValue={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Notes"
+                      multiline
+                      rows={2}
+                      placeholder="Any special instructions or notes for this assignment..."
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      startIcon={<Assignment />}
+                    >
+                      Assign Vehicle
+                    </Button>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Current Assignments */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Current Vehicle Assignments
+                </Typography>
+                <List dense>
+                  <ListItem sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 1 }}>
+                    <ListItemIcon>
+                      <Avatar sx={{ bgcolor: 'primary.main' }}>
+                        <DirectionsCar />
+                      </Avatar>
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Adam Mustafa"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="primary">
+                            HGV-001 (Rigid Truck)
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Assigned: Today | Status: Active
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  <ListItem sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 1 }}>
+                    <ListItemIcon>
+                      <Avatar sx={{ bgcolor: 'secondary.main' }}>
+                        <DirectionsCar />
+                      </Avatar>
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Jane Manager"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="secondary">
+                            HGV-002 (Articulated Lorry)
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Assigned: Today | Status: Active
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  <ListItem sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 1 }}>
+                    <ListItemIcon>
+                      <Avatar sx={{ bgcolor: 'info.main' }}>
+                        <DirectionsCar />
+                      </Avatar>
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Sarah Johnson"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="info">
+                            HGV-003 (Box Van)
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Assigned: Today | Status: Active
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  <ListItem sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 1 }}>
+                    <ListItemIcon>
+                      <Avatar sx={{ bgcolor: 'success.main' }}>
+                        <DirectionsCar />
+                      </Avatar>
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="David Davis"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="success">
+                            HGV-004 (Flatbed)
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Assigned: Today | Status: Active
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  <ListItem sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 1 }}>
+                    <ListItemIcon>
+                      <Avatar sx={{ bgcolor: 'warning.main' }}>
+                        <DirectionsCar />
+                      </Avatar>
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Emma Taylor"
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="warning">
+                            HGV-005 (Refrigerated)
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Assigned: Today | Status: Active
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                </List>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Assignment History */}
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Assignment History
+                </Typography>
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Driver</TableCell>
+                        <TableCell>Vehicle</TableCell>
+                        <TableCell>Assignment Date</TableCell>
+                        <TableCell>Return Date</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
+                              <Person />
+                            </Avatar>
+                            Adam Mustafa
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            icon={<DirectionsCar />}
+                            label="HGV-001"
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>2024-01-15</TableCell>
+                        <TableCell>-</TableCell>
+                        <TableCell>
+                          <Chip
+                            label="Active"
+                            color="success"
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <IconButton size="small" color="primary">
+                            <Edit />
+                          </IconButton>
+                          <IconButton size="small" color="error">
+                            <Delete />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Avatar sx={{ mr: 2, bgcolor: 'secondary.main' }}>
+                              <Person />
+                            </Avatar>
+                            Jane Manager
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            icon={<DirectionsCar />}
+                            label="HGV-002"
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>2024-01-15</TableCell>
+                        <TableCell>-</TableCell>
+                        <TableCell>
+                          <Chip
+                            label="Active"
+                            color="success"
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <IconButton size="small" color="primary">
+                            <Edit />
+                          </IconButton>
+                          <IconButton size="small" color="error">
+                            <Delete />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
       </TabPanel>
 
@@ -887,11 +1031,8 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                 label="Run Title"
                 value={newSchedule.runTitle}
                 onChange={(e) => setNewSchedule({ ...newSchedule, runTitle: e.target.value })}
-                placeholder="Auto-populated from first job city"
-                InputProps={{
-                  readOnly: true,
-                }}
-                helperText="Auto-populated from the first selected job's delivery city"
+                placeholder="Enter run title or auto-populated from first job city"
+                helperText="Auto-populated from the first selected job's delivery city, but can be edited"
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -1050,58 +1191,404 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                 <Typography variant="h6" gutterBottom>
                   Jobs in Schedule
                 </Typography>
-                <TableContainer component={Paper}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Time</TableCell>
-                        <TableCell>Job</TableCell>
-                        <TableCell>Customer</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell>Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {selectedSchedule.jobs.map((job) => {
-                        const jobDetails = jobs.find(j => j.id === job.jobId);
-                        return jobDetails ? (
-                          <TableRow key={job.jobId}>
-                            <TableCell>{job.scheduledTime}</TableCell>
-                            <TableCell>
-                              <Typography variant="body2" fontWeight="bold">
-                                {jobDetails.title}
+                {selectedSchedule.jobs.map((job, index) => {
+                  const jobDetails = jobs.find(j => j.id === job.jobId);
+                  if (!jobDetails) return null;
+                  
+                  return (
+                    <Card key={job.jobId} sx={{ mb: 2, border: '1px solid', borderColor: 'divider' }}>
+                      <CardContent>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                          <Typography variant="h6" color="primary">
+                            Job #{index + 1}: {jobDetails.title}
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                            <Chip
+                              icon={getJobStatusIcon(job.status)}
+                              label={job.status.replace('_', ' ')}
+                              color={getJobStatusColor(job.status) as any}
+                              size="small"
+                            />
+                            {user?.role === 'driver' && job.status !== 'completed' && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={() => openStatusDialog(selectedSchedule.id, job.jobId)}
+                                startIcon={<Update />}
+                              >
+                                Update
+                              </Button>
+                            )}
+                          </Box>
+                        </Box>
+
+                        <Grid container spacing={3}>
+                          {/* Basic Job Information */}
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                              Basic Information
+                            </Typography>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Job Number
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {jobDetails.pickupLocation.name} → {jobDetails.deliveryLocation.name}
+                              <Typography variant="body1" fontWeight="bold">
+                                {jobDetails.jobNumber}
                               </Typography>
-                            </TableCell>
-                            <TableCell>{jobDetails.customerName}</TableCell>
-                            <TableCell>
+                            </Box>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Description
+                              </Typography>
+                              <Typography variant="body1">
+                                {jobDetails.description}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Priority
+                              </Typography>
                               <Chip
-                                icon={getJobStatusIcon(job.status)}
-                                label={job.status.replace('_', ' ')}
-                                color={getJobStatusColor(job.status) as any}
+                                label={jobDetails.priority}
+                                color={jobDetails.priority === 'urgent' ? 'error' : 
+                                       jobDetails.priority === 'high' ? 'warning' : 
+                                       jobDetails.priority === 'medium' ? 'info' : 'default'}
                                 size="small"
                               />
-                            </TableCell>
-                            <TableCell>
-                              {user?.role === 'driver' && job.status !== 'completed' && (
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  onClick={() => openStatusDialog(selectedSchedule.id, job.jobId)}
-                                  startIcon={<Update />}
-                                >
-                                  Update
-                                </Button>
+                            </Box>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Scheduled Time
+                              </Typography>
+                              <Typography variant="body1">
+                                {job.scheduledTime}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Estimated Duration
+                              </Typography>
+                              <Typography variant="body1">
+                                {job.estimatedDuration} minutes
+                              </Typography>
+                            </Box>
+                          </Grid>
+
+                          {/* Customer Information */}
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                              Customer Information
+                            </Typography>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Customer Name
+                              </Typography>
+                              <Typography variant="body1" fontWeight="bold">
+                                {jobDetails.customerName}
+                              </Typography>
+                            </Box>
+                            {jobDetails.customerPhone && (
+                              <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                  Phone
+                                </Typography>
+                                <Typography variant="body1">
+                                  {jobDetails.customerPhone}
+                                </Typography>
+                              </Box>
+                            )}
+                            {jobDetails.customerEmail && (
+                              <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                  Email
+                                </Typography>
+                                <Typography variant="body1">
+                                  {jobDetails.customerEmail}
+                                </Typography>
+                              </Box>
+                            )}
+                          </Grid>
+
+                          {/* Pickup Location */}
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                              📍 Pickup Location
+                            </Typography>
+                            <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                              <Typography variant="body2" fontWeight="bold">
+                                {jobDetails.pickupLocation.name}
+                              </Typography>
+                              {jobDetails.pickupLocation.address.line1 && (
+                                <Typography variant="body2" color="text.secondary">
+                                  {jobDetails.pickupLocation.address.line1}
+                                </Typography>
                               )}
-                            </TableCell>
-                          </TableRow>
-                        ) : null;
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                              {jobDetails.pickupLocation.address.line2 && (
+                                <Typography variant="body2" color="text.secondary">
+                                  {jobDetails.pickupLocation.address.line2}
+                                </Typography>
+                              )}
+                              {jobDetails.pickupLocation.address.line3 && (
+                                <Typography variant="body2" color="text.secondary">
+                                  {jobDetails.pickupLocation.address.line3}
+                                </Typography>
+                              )}
+                              <Typography variant="body2" color="text.secondary">
+                                {jobDetails.pickupLocation.address.town}
+                                {jobDetails.pickupLocation.address.city && `, ${jobDetails.pickupLocation.address.city}`}
+                                , {jobDetails.pickupLocation.address.postcode}
+                              </Typography>
+                              {jobDetails.pickupLocation.contactPerson && (
+                                <Typography variant="body2" color="text.secondary">
+                                  Contact: {jobDetails.pickupLocation.contactPerson}
+                                  {jobDetails.pickupLocation.contactPhone && ` (${jobDetails.pickupLocation.contactPhone})`}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Grid>
+
+                          {/* Delivery Location */}
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                              🚚 Delivery Location
+                            </Typography>
+                            <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                              <Typography variant="body2" fontWeight="bold">
+                                {jobDetails.deliveryLocation.name}
+                              </Typography>
+                              {jobDetails.deliveryLocation.address.line1 && (
+                                <Typography variant="body2" color="text.secondary">
+                                  {jobDetails.deliveryLocation.address.line1}
+                                </Typography>
+                              )}
+                              {jobDetails.deliveryLocation.address.line2 && (
+                                <Typography variant="body2" color="text.secondary">
+                                  {jobDetails.deliveryLocation.address.line2}
+                                </Typography>
+                              )}
+                              {jobDetails.deliveryLocation.address.line3 && (
+                                <Typography variant="body2" color="text.secondary">
+                                  {jobDetails.deliveryLocation.address.line3}
+                                </Typography>
+                              )}
+                              <Typography variant="body2" color="text.secondary">
+                                {jobDetails.deliveryLocation.address.town}
+                                {jobDetails.deliveryLocation.address.city && `, ${jobDetails.deliveryLocation.address.city}`}
+                                , {jobDetails.deliveryLocation.address.postcode}
+                              </Typography>
+                              {jobDetails.deliveryLocation.contactPerson && (
+                                <Typography variant="body2" color="text.secondary">
+                                  Contact: {jobDetails.deliveryLocation.contactPerson}
+                                  {jobDetails.deliveryLocation.contactPhone && ` (${jobDetails.deliveryLocation.contactPhone})`}
+                                </Typography>
+                              )}
+                              {jobDetails.deliveryLocation.deliveryInstructions && (
+                                <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
+                                  📝 {jobDetails.deliveryLocation.deliveryInstructions}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Grid>
+
+                          {/* Alternative Delivery Address - Only show if it actually has data */}
+                          {jobDetails.useDifferentDeliveryAddress && 
+                           jobDetails.alternativeDeliveryAddress && 
+                           jobDetails.alternativeDeliveryAddress.name && 
+                           jobDetails.alternativeDeliveryAddress.address.line1 && (
+                            <Grid item xs={12}>
+                              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                🔄 Alternative Delivery Address
+                              </Typography>
+                              <Box sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1, border: '1px solid', borderColor: 'warning.main' }}>
+                                <Typography variant="body2" fontWeight="bold">
+                                  {jobDetails.alternativeDeliveryAddress.name}
+                                </Typography>
+                                {jobDetails.alternativeDeliveryAddress.address.line1 && (
+                                  <Typography variant="body2" color="text.secondary">
+                                    {jobDetails.alternativeDeliveryAddress.address.line1}
+                                  </Typography>
+                                )}
+                                {jobDetails.alternativeDeliveryAddress.address.line2 && (
+                                  <Typography variant="body2" color="text.secondary">
+                                    {jobDetails.alternativeDeliveryAddress.address.line2}
+                                  </Typography>
+                                )}
+                                {jobDetails.alternativeDeliveryAddress.address.line3 && (
+                                  <Typography variant="body2" color="text.secondary">
+                                    {jobDetails.alternativeDeliveryAddress.address.line3}
+                                  </Typography>
+                                )}
+                                <Typography variant="body2" color="text.secondary">
+                                  {jobDetails.alternativeDeliveryAddress.address.town}
+                                  {jobDetails.alternativeDeliveryAddress.address.city && `, ${jobDetails.alternativeDeliveryAddress.address.city}`}
+                                  , {jobDetails.alternativeDeliveryAddress.address.postcode}
+                                </Typography>
+                                {jobDetails.alternativeDeliveryAddress.contactPerson && (
+                                  <Typography variant="body2" color="text.secondary">
+                                    Contact: {jobDetails.alternativeDeliveryAddress.contactPerson}
+                                    {jobDetails.alternativeDeliveryAddress.contactPhone && ` (${jobDetails.alternativeDeliveryAddress.contactPhone})`}
+                                  </Typography>
+                                )}
+                                {jobDetails.alternativeDeliveryAddress.deliveryInstructions && (
+                                  <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
+                                    📝 {jobDetails.alternativeDeliveryAddress.deliveryInstructions}
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Grid>
+                          )}
+
+                          {/* Cargo Information */}
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                              📦 Cargo Information
+                            </Typography>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Cargo Type
+                              </Typography>
+                              <Typography variant="body1">
+                                {jobDetails.cargoType}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Cargo Weight
+                              </Typography>
+                              <Typography variant="body1">
+                                {jobDetails.cargoWeight} kg
+                              </Typography>
+                            </Box>
+                            {jobDetails.specialRequirements && (
+                              <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                  Special Requirements
+                                </Typography>
+                                <Typography variant="body1">
+                                  {jobDetails.specialRequirements}
+                                </Typography>
+                              </Box>
+                            )}
+                          </Grid>
+
+                          {/* Load Dimensions */}
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                              📏 Load Dimensions
+                            </Typography>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Dimensions (L × W × H)
+                              </Typography>
+                              <Typography variant="body1">
+                                {jobDetails.loadDimensions.length} × {jobDetails.loadDimensions.width} × {jobDetails.loadDimensions.height} cm
+                              </Typography>
+                            </Box>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Volume
+                              </Typography>
+                              <Typography variant="body1">
+                                {jobDetails.loadDimensions.volume} m³
+                              </Typography>
+                            </Box>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Weight
+                              </Typography>
+                              <Typography variant="body1">
+                                {jobDetails.loadDimensions.weight} kg
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                              {jobDetails.loadDimensions.isOversized && (
+                                <Chip label="Oversized" color="warning" size="small" />
+                              )}
+                              {jobDetails.loadDimensions.isProtruding && (
+                                <Chip label="Protruding" color="warning" size="small" />
+                              )}
+                              {jobDetails.loadDimensions.isFragile && (
+                                <Chip label="Fragile" color="error" size="small" />
+                              )}
+                              {jobDetails.loadDimensions.isBalanced && (
+                                <Chip label="Balanced" color="success" size="small" />
+                              )}
+                            </Box>
+                          </Grid>
+
+                          {/* Notes and Additional Information */}
+                          <Grid item xs={12}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                              📝 Additional Information
+                            </Typography>
+                            <Grid container spacing={2}>
+                              {jobDetails.notes && (
+                                <Grid item xs={12} md={6}>
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                      General Notes
+                                    </Typography>
+                                    <Typography variant="body1">
+                                      {jobDetails.notes}
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              )}
+                              {jobDetails.driverNotes && (
+                                <Grid item xs={12} md={6}>
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Driver Notes
+                                    </Typography>
+                                    <Typography variant="body1">
+                                      {jobDetails.driverNotes}
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              )}
+                              {jobDetails.managementNotes && (
+                                <Grid item xs={12} md={6}>
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Management Notes
+                                    </Typography>
+                                    <Typography variant="body1">
+                                      {jobDetails.managementNotes}
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              )}
+                              {jobDetails.deliveryNotes && (
+                                <Grid item xs={12} md={6}>
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Delivery Notes
+                                    </Typography>
+                                    <Typography variant="body1">
+                                      {jobDetails.deliveryNotes}
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              )}
+                              {jobDetails.routeNotes && (
+                                <Grid item xs={12} md={6}>
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Route Notes
+                                    </Typography>
+                                    <Typography variant="body1">
+                                      {jobDetails.routeNotes}
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              )}
+                            </Grid>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </Grid>
             </Grid>
           </DialogContent>
@@ -1176,6 +1663,360 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Job Details Dialog for Pending Jobs */}
+      {selectedJobForDetails && (
+        <Dialog open={showJobDetailsDialog} onClose={() => setShowJobDetailsDialog(false)} maxWidth="lg" fullWidth>
+          <DialogTitle>
+            <Typography variant="h5" component="div">
+              Job Details - {selectedJobForDetails.jobNumber}
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            <Grid container spacing={3}>
+              {/* Basic Job Information */}
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  📋 Basic Information
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Job Number
+                  </Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {selectedJobForDetails.jobNumber}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Title
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.title}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Description
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.description}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Priority
+                  </Typography>
+                  <Chip
+                    label={selectedJobForDetails.priority}
+                    size="small"
+                    color={selectedJobForDetails.priority === 'high' ? 'error' : selectedJobForDetails.priority === 'medium' ? 'warning' : 'success'}
+                  />
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Status
+                  </Typography>
+                  <Chip
+                    icon={<Pending />}
+                    label="Pending"
+                    color="default"
+                    size="small"
+                  />
+                </Box>
+              </Grid>
+
+              {/* Customer Information */}
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  👤 Customer Information
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Customer Name
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.customerName}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Contact Person
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.customerContact?.contactPerson || 'N/A'}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Contact Phone
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.customerContact?.contactPhone || 'N/A'}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Email
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.customerContact?.email || 'N/A'}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              {/* Location Information */}
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  📍 Pickup Location
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Location Name
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.pickupLocation.name}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Address
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.pickupLocation.address?.street}, {selectedJobForDetails.pickupLocation.address?.city}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Postcode
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.pickupLocation.address?.postcode || 'N/A'}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Contact Person
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.pickupLocation.contactPerson || 'N/A'}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Contact Phone
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.pickupLocation.contactPhone || 'N/A'}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  🚚 Delivery Location
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Location Name
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.deliveryLocation.name}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Address
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.deliveryLocation.address?.street}, {selectedJobForDetails.deliveryLocation.address?.city}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Postcode
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.deliveryLocation.address?.postcode || 'N/A'}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Contact Person
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.deliveryLocation.contactPerson || 'N/A'}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Contact Phone
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.deliveryLocation.contactPhone || 'N/A'}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              {/* Cargo Information */}
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  📦 Cargo Information
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Cargo Type
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.cargoType || 'N/A'}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Cargo Weight
+                  </Typography>
+                  <Typography variant="body1" fontWeight="bold" color="primary">
+                    {selectedJobForDetails.cargoWeight || selectedJobForDetails.loadDimensions?.weight || 'N/A'} kg
+                  </Typography>
+                </Box>
+                {selectedJobForDetails.specialRequirements && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Special Requirements
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedJobForDetails.specialRequirements}
+                    </Typography>
+                  </Box>
+                )}
+              </Grid>
+
+              {/* Load Dimensions */}
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  📏 Load Dimensions
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Dimensions (L × W × H)
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.loadDimensions?.length || 'N/A'} × {selectedJobForDetails.loadDimensions?.width || 'N/A'} × {selectedJobForDetails.loadDimensions?.height || 'N/A'} cm
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Volume
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedJobForDetails.loadDimensions?.volume || 'N/A'} m³
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Weight
+                  </Typography>
+                  <Typography variant="body1" fontWeight="bold" color="primary">
+                    {selectedJobForDetails.loadDimensions?.weight || 'N/A'} kg
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {selectedJobForDetails.loadDimensions?.isOversized && (
+                    <Chip label="Oversized" color="warning" size="small" />
+                  )}
+                  {selectedJobForDetails.loadDimensions?.isProtruding && (
+                    <Chip label="Protruding" color="warning" size="small" />
+                  )}
+                  {selectedJobForDetails.loadDimensions?.isFragile && (
+                    <Chip label="Fragile" color="error" size="small" />
+                  )}
+                  {selectedJobForDetails.loadDimensions?.isBalanced && (
+                    <Chip label="Balanced" color="success" size="small" />
+                  )}
+                </Box>
+              </Grid>
+
+              {/* Additional Information */}
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  📝 Additional Information
+                </Typography>
+                <Grid container spacing={2}>
+                  {selectedJobForDetails.notes && (
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Notes
+                        </Typography>
+                        <Typography variant="body1">
+                          {selectedJobForDetails.notes}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  )}
+                  {selectedJobForDetails.routeNotes && (
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Route Notes
+                        </Typography>
+                        <Typography variant="body1">
+                          {selectedJobForDetails.routeNotes}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  )}
+                </Grid>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowJobDetailsDialog(false)}>
+              Close
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Edit />}
+              onClick={() => handleEditJob(selectedJobForDetails)}
+              sx={{ mr: 1 }}
+            >
+              Edit Job
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<LocalShipping />}
+              onClick={() => {
+                setNewSchedule(prev => ({
+                  ...prev,
+                  jobs: [...prev.jobs, selectedJobForDetails.id]
+                }));
+                setShowJobDetailsDialog(false);
+                setShowAddDialog(true);
+              }}
+            >
+              Add to Schedule
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
+
+      {/* Edit Job Dialog */}
+      {jobToEdit && (
+        <Dialog open={showEditJobDialog} onClose={() => setShowEditJobDialog(false)} maxWidth="xl" fullWidth>
+          <DialogTitle>
+            <Typography variant="h5" component="div">
+              Edit Job - {jobToEdit.jobNumber}
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            <JobConsignmentForm 
+              onClose={() => setShowEditJobDialog(false)}
+              initialData={jobToEdit}
+              isEditing={true}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </Box>
   );
 };

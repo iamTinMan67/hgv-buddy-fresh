@@ -38,6 +38,8 @@ import {
   Build,
   Error,
   Speed,
+  Assignment,
+  Person,
 } from '@mui/icons-material';
 import { RootState } from '../store';
 
@@ -193,6 +195,7 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
           <Tab label="Fleet Overview" />
           <Tab label="Defect Reports" />
           <Tab label="Maintenance Schedule" />
+          <Tab label="Vehicle Assignment" />
         </Tabs>
       </Box>
 
@@ -389,6 +392,156 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
               </Card>
             </Grid>
           ))}
+        </Grid>
+      </TabPanel>
+
+      {/* Vehicle Assignment Tab */}
+      <TabPanel value={tabValue} index={3}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h6">Vehicle Assignment Management</Typography>
+          <Button
+            variant="contained"
+            startIcon={<Assignment />}
+            onClick={() => {/* Add assignment handler */}}
+          >
+            Assign Vehicle
+          </Button>
+        </Box>
+
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            <strong>Vehicle Assignment:</strong> Manage driver-vehicle assignments, track current allocations, and view assignment history.
+          </Typography>
+        </Alert>
+
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Vehicle</TableCell>
+                <TableCell>Registration</TableCell>
+                <TableCell>Current Driver</TableCell>
+                <TableCell>Assignment Date</TableCell>
+                <TableCell>Assignment Status</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {vehicles.map((vehicle) => (
+                <TableRow key={vehicle.id}>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <LocalShipping sx={{ mr: 1 }} />
+                      <Box>
+                        <Typography variant="body2" fontWeight="bold">
+                          {vehicle.make} {vehicle.model}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {vehicle.year}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </TableCell>
+                  <TableCell>{vehicle.registration}</TableCell>
+                  <TableCell>
+                    {vehicle.currentDriver ? (
+                      <Chip
+                        icon={<Person />}
+                        label={vehicle.currentDriver}
+                        color="success"
+                        size="small"
+                      />
+                    ) : (
+                      <Chip
+                        icon={<Warning />}
+                        label="Unassigned"
+                        color="warning"
+                        size="small"
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {vehicle.updatedAt ? new Date(vehicle.updatedAt).toLocaleDateString() : 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      icon={vehicle.currentDriver ? <CheckCircle /> : <Circle />}
+                      label={vehicle.currentDriver ? 'Assigned' : 'Available'}
+                      color={vehicle.currentDriver ? 'success' : 'default'}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Tooltip title="View Assignment Details">
+                      <IconButton
+                        size="small"
+                        onClick={() => {/* View assignment details */}}
+                      >
+                        <Visibility />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Change Assignment">
+                      <IconButton
+                        size="small"
+                        onClick={() => {/* Change assignment */}}
+                      >
+                        <Assignment />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        {/* Assignment Summary Cards */}
+        <Grid container spacing={3} sx={{ mt: 3 }}>
+          <Grid item xs={12} md={4}>
+            <Card sx={{ bgcolor: 'success.light', color: 'white' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Assigned Vehicles
+                </Typography>
+                <Typography variant="h4">
+                  {vehicles.filter(v => v.currentDriver).length}
+                </Typography>
+                <Typography variant="body2">
+                  Currently in use
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Card sx={{ bgcolor: 'warning.light', color: 'white' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Available Vehicles
+                </Typography>
+                <Typography variant="h4">
+                  {vehicles.filter(v => !v.currentDriver).length}
+                </Typography>
+                <Typography variant="body2">
+                  Ready for assignment
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Card sx={{ bgcolor: 'info.light', color: 'white' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Total Fleet
+                </Typography>
+                <Typography variant="h4">
+                  {vehicles.length}
+                </Typography>
+                <Typography variant="body2">
+                  All vehicles
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
       </TabPanel>
 

@@ -7,8 +7,14 @@ export type JobPriority = 'low' | 'medium' | 'high' | 'urgent';
 export interface JobLocation {
   id: string;
   name: string;
-  address: string;
-  postcode: string;
+  address: {
+    line1: string;
+    line2?: string;
+    line3?: string;
+    town: string;
+    city?: string;
+    postcode: string;
+  };
   coordinates?: {
     lat: number;
     lng: number;
@@ -38,7 +44,7 @@ export interface JobAssignment {
   pickupLocation: JobLocation;
   deliveryLocation: JobLocation;
   useDifferentDeliveryAddress: boolean;
-  deliveryAddress?: string;
+  alternativeDeliveryAddress?: JobLocation;
   cargoType: string;
   cargoWeight: number;
   specialRequirements?: string;
@@ -143,8 +149,14 @@ const initialState: JobState = {
       pickupLocation: {
         id: 'loc1',
         name: 'London Warehouse',
-        address: '123 Industrial Estate, London',
-        postcode: 'E1 1AA',
+        address: {
+          line1: '123 Industrial Estate',
+          line2: 'Unit 15',
+          line3: 'Floor 2',
+          town: 'London',
+          city: 'London',
+          postcode: 'E1 1AA'
+        },
         contactPerson: 'John Smith',
         contactPhone: '+44 20 1234 5678',
         deliveryInstructions: 'Load from dock 3, security pass required'
@@ -152,8 +164,14 @@ const initialState: JobState = {
       deliveryLocation: {
         id: 'loc2',
         name: 'Manchester Distribution Center',
-        address: '456 Business Park, Manchester',
-        postcode: 'M1 1AA',
+        address: {
+          line1: '456 Business Park',
+          line2: 'Building C',
+          line3: 'Suite 200',
+          town: 'Manchester',
+          city: 'Manchester',
+          postcode: 'M1 1AA'
+        },
         contactPerson: 'Sarah Johnson',
         contactPhone: '+44 161 9876 5432',
         deliveryInstructions: 'Deliver to receiving bay 2, call 30 minutes before arrival'
@@ -196,8 +214,14 @@ const initialState: JobState = {
       pickupLocation: {
         id: 'loc3',
         name: 'Birmingham Factory',
-        address: '789 Industrial Way, Birmingham',
-        postcode: 'B1 1AA',
+        address: {
+          line1: '789 Industrial Way',
+          line2: 'Factory Building A',
+          line3: 'Loading Zone 1',
+          town: 'Birmingham',
+          city: 'Birmingham',
+          postcode: 'B1 1AA'
+        },
         contactPerson: 'Mike Wilson',
         contactPhone: '+44 121 3456 7890',
         deliveryInstructions: 'Collection from loading bay 1, pallets ready'
@@ -205,8 +229,14 @@ const initialState: JobState = {
       deliveryLocation: {
         id: 'loc4',
         name: 'Leeds Warehouse',
-        address: '321 Storage Lane, Leeds',
-        postcode: 'LS1 1AA',
+        address: {
+          line1: '321 Storage Lane',
+          line2: 'Warehouse Complex',
+          line3: 'Unit 3',
+          town: 'Leeds',
+          city: 'Leeds',
+          postcode: 'LS1 1AA'
+        },
         contactPerson: 'Emma Davis',
         contactPhone: '+44 113 4567 8901',
         deliveryInstructions: 'Deliver to warehouse 3, unload with forklift'
@@ -248,8 +278,14 @@ const initialState: JobState = {
       pickupLocation: {
         id: 'loc5',
         name: 'Liverpool Textile Mill',
-        address: '654 Factory Road, Liverpool',
-        postcode: 'L1 1AA',
+        address: {
+          line1: '654 Factory Road',
+          line2: 'Textile Mill Complex',
+          line3: 'Warehouse A, Loading Dock 2',
+          town: 'Liverpool',
+          city: 'Liverpool',
+          postcode: 'L1 1AA'
+        },
         contactPerson: 'David Brown',
         contactPhone: '+44 151 4567 8901',
         deliveryInstructions: 'Load from warehouse A, use loading dock 2'
@@ -257,8 +293,14 @@ const initialState: JobState = {
       deliveryLocation: {
         id: 'loc6',
         name: 'Bristol Retail Center',
-        address: '987 Shopping District, Bristol',
-        postcode: 'BS1 1AA',
+        address: {
+          line1: '987 Shopping District',
+          line2: 'Retail Complex',
+          line3: 'Back Entrance',
+          town: 'Bristol',
+          city: 'Bristol',
+          postcode: 'BS1 1AA'
+        },
         contactPerson: 'Lisa Green',
         contactPhone: '+44 117 5678 9012',
         deliveryInstructions: 'Deliver to back entrance, security code: 1234'

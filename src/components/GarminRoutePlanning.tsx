@@ -140,7 +140,7 @@ const GarminRoutePlanning: React.FC<GarminRoutePlanningProps> = ({ onClose }) =>
       // Mock Garmin connection
       await new Promise(resolve => setTimeout(resolve, 2000));
       setGarminConnected(true);
-      console.log('Connected to Garmin services');
+      // Connected to Garmin services
     } catch (error) {
       console.error('Failed to connect to Garmin:', error);
     } finally {
@@ -153,7 +153,7 @@ const GarminRoutePlanning: React.FC<GarminRoutePlanningProps> = ({ onClose }) =>
     try {
       // Mock Garmin sync
       await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('Route synced with Garmin device:', route.name);
+              // Route synced with Garmin device
       return true;
     } catch (error) {
       console.error('Failed to sync with Garmin:', error);

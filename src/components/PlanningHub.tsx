@@ -11,50 +11,55 @@ import {
   IconButton,
 } from '@mui/material';
 import {
-  Schedule,
-  Route,
-  Assignment,
-  TrendingUp,
-  Map,
-  CalendarToday,
-  Add,
-  Timeline,
-  DirectionsCar,
-  Person,
-  Home,
-  Navigation,
-  Traffic,
-  Speed,
-  Warning,
-  ViewInAr,
-  Scale,
-  Storage,
-  LocalShipping,
-  Edit,
-  Assessment,
-  Receipt,
-  Analytics,
-  Report,
+  Box,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Avatar,
+  Divider,
+  Chip,
+  IconButton,
+} from '@mui/material';
+import { 
+  CalendarToday, 
+  Home, 
+  Route, 
+  TrendingUp, 
+  Map, 
+  Timeline, 
+  DirectionsCar, 
+  Person, 
+  Navigation, 
+  Traffic, 
+  Speed, 
+  Warning, 
+  ViewInAr, 
+  Scale, 
+  Storage, 
+  Edit, 
+  Assessment, 
+  Receipt, 
+  Analytics, 
+  Report 
 } from '@mui/icons-material';
 
 import DailyPlanner from './DailyPlanner';
 import RoutePlanning from './RoutePlanning';
 import GarminRoutePlanning from './GarminRoutePlanning';
 import TrailerPlanner from './TrailerPlanner';
-import JobConsignmentForm from './JobAllocationForm';
 
 interface PlanningHubProps {
   onClose: () => void;
 }
 
 const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
-  const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'trailer' | 'jobAllocation'>('main');
+  const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'trailer'>('main');
 
   const handleNavigateToDaily = () => setCurrentView('daily');
   const handleNavigateToRoute = () => setCurrentView('route');
   const handleNavigateToGarmin = () => setCurrentView('garmin');
   const handleNavigateToTrailer = () => setCurrentView('trailer');
-  const handleNavigateToJobAllocation = () => setCurrentView('jobAllocation');
   const handleBackToMain = () => setCurrentView('main');
 
   if (currentView === 'daily') {
@@ -73,16 +78,12 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
     return <TrailerPlanner onClose={handleBackToMain} />;
   }
 
-  if (currentView === 'jobAllocation') {
-    return <JobConsignmentForm onClose={handleBackToMain} />;
-  }
-
   // Main Planning Hub
   return (
     <Box sx={{ p: 3, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1" sx={{ color: 'white' }}>
-          <Schedule sx={{ mr: 1, verticalAlign: 'middle' }} />
+          <CalendarToday sx={{ mr: 1, verticalAlign: 'middle' }} />
           Planning Hub
         </Typography>
         <IconButton
@@ -95,61 +96,6 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
 
       {/* Sub-Portal Navigation */}
       <Grid container spacing={3}>
-        {/* Job Allocation Card */}
-        <Grid item xs={12} md={4}>
-          <Card 
-            sx={{ 
-              cursor: 'pointer', 
-              transition: 'all 0.3s ease',
-              transform: 'scale(0.94)',
-              '&:hover': {
-                transform: 'translateY(-4px) scale(0.94)',
-                boxShadow: 4,
-              }
-            }}
-            onClick={handleNavigateToJobAllocation}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                  <Assignment />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" component="div">
-                    Job Allocation
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Create and manage job assignments
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
-                <Chip 
-                  icon={<Person />} 
-                  label="Driver Assignment" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                />
-                <Chip 
-                  icon={<Route />} 
-                  label="Route Planning" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                />
-                <Chip 
-                  icon={<LocalShipping />} 
-                  label="Cargo Details" 
-                  size="small" 
-                  sx={{ mb: 1 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
         {/* Daily Planner Card */}
         <Grid item xs={12} md={4}>
           <Card 
@@ -181,28 +127,26 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               
               <Divider sx={{ my: 2 }} />
               
-              
-
-                             <Box sx={{ mt: 2, minHeight: '60px' }}>
-                 <Chip 
-                   icon={<Timeline />} 
-                   label="Daily Schedule" 
-                   size="small" 
-                   sx={{ mr: 1, mb: 1 }}
-                 />
-                 <Chip 
-                   icon={<Person />} 
-                   label="Driver Assignments" 
-                   size="small" 
-                   sx={{ mr: 1, mb: 1 }}
-                 />
-                 <Chip 
-                   icon={<DirectionsCar />} 
-                   label="Vehicle Allocation" 
-                   size="small" 
-                   sx={{ mb: 1 }}
-                 />
-               </Box>
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<Timeline />} 
+                  label="Daily Schedule" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }} 
+                />
+                <Chip 
+                  icon={<Person />} 
+                  label="Driver Assignments" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }} 
+                />
+                <Chip 
+                  icon={<DirectionsCar />} 
+                  label="Vehicle Allocation" 
+                  size="small" 
+                  sx={{ mb: 1 }} 
+                />
+              </Box>
             </CardContent>
           </Card>
         </Grid>
@@ -238,33 +182,29 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               
               <Divider sx={{ my: 2 }} />
               
-              
-
-                             <Box sx={{ mt: 2, minHeight: '60px' }}>
-                 <Chip 
-                   icon={<Map />} 
-                   label="Route Optimization" 
-                   size="small" 
-                   sx={{ mr: 1, mb: 1 }}
-                 />
-                 <Chip 
-                   icon={<TrendingUp />} 
-                   label="Efficiency" 
-                   size="small" 
-                   sx={{ mr: 1, mb: 1 }}
-                 />
-                 <Chip 
-                   icon={<DirectionsCar />} 
-                   label="Vehicle Routes" 
-                   size="small" 
-                   sx={{ mb: 1 }}
-                 />
-               </Box>
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<Map />} 
+                  label="Route Optimization" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }} 
+                />
+                <Chip 
+                  icon={<TrendingUp />} 
+                  label="Efficiency" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }} 
+                />
+                <Chip 
+                  icon={<DirectionsCar />} 
+                  label="Vehicle Routes" 
+                  size="small" 
+                  sx={{ mb: 1 }} 
+                />
+              </Box>
             </CardContent>
           </Card>
         </Grid>
-
-
 
         {/* Trailer Planner Card */}
         <Grid item xs={12} md={4}>
@@ -302,19 +242,19 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
                   icon={<Scale />} 
                   label="Cubage Calculator" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1 }} 
                 />
                 <Chip 
                   icon={<Storage />} 
                   label="Cargo Layout" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1 }} 
                 />
                 <Chip 
                   icon={<ViewInAr />} 
                   label="3D Visualization" 
                   size="small" 
-                  sx={{ mb: 1 }}
+                  sx={{ mb: 1 }} 
                 />
               </Box>
             </CardContent>
@@ -357,19 +297,19 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
                   icon={<Traffic />} 
                   label="Live Traffic" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1 }} 
                 />
                 <Chip 
                   icon={<Speed />} 
                   label="Real-time ETA" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1 }} 
                 />
                 <Chip 
                   icon={<Warning />} 
                   label="HGV Alerts" 
                   size="small" 
-                  sx={{ mb: 1 }}
+                  sx={{ mb: 1 }} 
                 />
               </Box>
             </CardContent>
@@ -410,28 +350,26 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
                   icon={<TrendingUp />} 
                   label="Feature 1" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }} 
                 />
                 <Chip 
                   icon={<Analytics />} 
                   label="Feature 2" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }} 
                 />
                 <Chip 
                   icon={<Report />} 
                   label="Feature 3" 
                   size="small" 
-                  sx={{ mb: 1, opacity: 0.7 }}
+                  sx={{ mb: 1, opacity: 0.7 }} 
                 />
               </Box>
             </CardContent>
           </Card>
         </Grid>
 
-
       </Grid>
-
 
     </Box>
   );

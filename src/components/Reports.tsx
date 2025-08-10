@@ -385,19 +385,19 @@ const Reports: React.FC<ReportsProps> = ({ onClose }) => {
 
   const handlePrintFuelReport = (consumption: VehicleFuelConsumption) => {
     // In a real application, this would generate and print a PDF
-    console.log('Printing fuel report for vehicle:', consumption.vehicleRegistration);
+          // Printing fuel report for vehicle
     alert(`Printing fuel report for ${consumption.vehicleRegistration}`);
   };
 
   const handlePrintAllWageSlips = () => {
     // In a real application, this would generate and print all wage slips
-    console.log('Printing all wage slips');
+          // Printing all wage slips
     alert(`Printing ${filteredWageSlips.length} wage slips`);
   };
 
   const handleExportFuelReport = () => {
     // In a real application, this would export to CSV/Excel
-    console.log('Exporting fuel report');
+          // Exporting fuel report
     alert('Exporting fuel consumption report to CSV');
   };
 

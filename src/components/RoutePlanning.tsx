@@ -132,6 +132,36 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
   // Get pending jobs for allocation
   const pendingJobs = jobs.filter(job => job.status === 'pending');
 
+  // Filter vehicles to only show available ones (exclude V.O.R, Service, etc.)
+  const availableVehicles = vehicles.filter(vehicle => vehicle.status === 'Available');
+
+  // Calculate total tonnage of selected jobs
+  const selectedJobsTonnage = pendingJobs
+    .filter(job => jobAllocation.selectedJobs.includes(job.id))
+    .reduce((total, job) => total + (job.cargoWeight || 0), 0);
+
+  // Get selected vehicle for capacity checking
+  const selectedVehicleData = vehicles.find(v => v.id === selectedVehicle);
+  const vehicleCapacity = selectedVehicleData?.capacity || 0;
+  const remainingCapacity = vehicleCapacity - selectedJobsTonnage;
+  const isOverCapacity = remainingCapacity < 0;
+
+  // Helper function to format address by returning array of address components
+  const formatAddress = (location: any) => {
+    if (!location?.address) return ['Address not available'];
+    
+    const { line1, line2, line3, town, city, postcode } = location.address;
+    const addressParts = [line1];
+    
+    if (line2) addressParts.push(line2);
+    if (line3) addressParts.push(line3);
+    if (town) addressParts.push(town);
+    if (city) addressParts.push(city);
+    if (postcode) addressParts.push(postcode);
+    
+    return addressParts;
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'planned': return 'info';
@@ -432,7 +462,7 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
       {/* Vehicle Assignment Tab */}
       <TabPanel value={tabValue} index={1}>
         <Grid container spacing={3}>
-          {vehicles.map((vehicle) => (
+          {availableVehicles.map((vehicle) => (
             <Grid item xs={12} md={6} lg={4} key={vehicle.id}>
               <Card>
                 <CardContent>
@@ -765,6 +795,45 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
               <Typography variant="h6" gutterBottom>
                 Select Jobs to Allocate to Vehicle
               </Typography>
+              
+              {/* Vehicle Capacity and Tonnage Counter */}
+              <Box sx={{ mb: 3, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, bgcolor: 'background.paper' }}>
+                <Grid container spacing={2} alignItems="center">
+                  <Grid item xs={12} md={4}>
+                    <Typography variant="subtitle2" color="primary" gutterBottom>
+                      Vehicle Capacity
+                    </Typography>
+                    <Typography variant="h6" color="primary">
+                      {vehicleCapacity} tons
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Typography variant="subtitle2" color="info.main" gutterBottom>
+                      Selected Jobs Tonnage
+                    </Typography>
+                    <Typography variant="h6" color="info.main">
+                      {selectedJobsTonnage} tons
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Typography variant="subtitle2" color={isOverCapacity ? 'error.main' : 'success.main'} gutterBottom>
+                      Remaining Capacity
+                    </Typography>
+                    <Typography variant="h6" color={isOverCapacity ? 'error.main' : 'success.main'}>
+                      {remainingCapacity} tons
+                    </Typography>
+                  </Grid>
+                </Grid>
+                {isOverCapacity && (
+                  <Alert severity="error" sx={{ mt: 2 }}>
+                    <Typography variant="body2">
+                      <strong>Warning:</strong> Selected jobs exceed vehicle capacity by {Math.abs(remainingCapacity)} tons. 
+                      Please deselect some jobs to proceed.
+                    </Typography>
+                  </Alert>
+                )}
+              </Box>
+              
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Available pending jobs that can be allocated to this vehicle
               </Typography>
@@ -776,10 +845,14 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
                         checked={jobAllocation.selectedJobs.includes(job.id)}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setJobAllocation({
-                              ...jobAllocation,
-                              selectedJobs: [...jobAllocation.selectedJobs, job.id]
-                            });
+                            // Check if adding this job would exceed vehicle capacity
+                            const jobWeight = job.cargoWeight || 0;
+                            if (selectedJobsTonnage + jobWeight <= vehicleCapacity) {
+                              setJobAllocation({
+                                ...jobAllocation,
+                                selectedJobs: [...jobAllocation.selectedJobs, job.id]
+                              });
+                            }
                           } else {
                             setJobAllocation({
                               ...jobAllocation,
@@ -799,6 +872,97 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
                           <Typography variant="body2" color="text.secondary">
                             Cargo: {job.cargoType} ({job.cargoWeight} tons) | Priority: {job.priority}
                           </Typography>
+                          
+                          {/* Pickup Location Details */}
+                          <Box sx={{ mt: 1, p: 1, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                            <Typography variant="body2" color="primary.main" fontWeight="bold">
+                              📍 Pickup Location
+                            </Typography>
+                            <Typography variant="body2" fontWeight="bold">
+                              {job.pickupLocation?.name || 'Company name not available'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {formatAddress(job.pickupLocation).map((line, index) => (
+                                <React.Fragment key={index}>
+                                  {line}
+                                  <br />
+                                </React.Fragment>
+                              ))}
+                            </Typography>
+                            {job.pickupLocation?.contactPerson && (
+                              <Typography variant="body2" color="text.secondary">
+                                Contact: {job.pickupLocation.contactPerson}
+                                {job.pickupLocation.contactPhone && ` (${job.pickupLocation.contactPhone})`}
+                              </Typography>
+                            )}
+                          </Box>
+                          
+                          {/* Delivery Location Details */}
+                          <Box sx={{ mt: 1, p: 1, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                            <Typography variant="body2" color="success.main" fontWeight="bold">
+                              🚚 Delivery Location
+                            </Typography>
+                            <Typography variant="body2" fontWeight="bold">
+                              {job.deliveryLocation?.name || 'Company name not available'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {formatAddress(job.deliveryLocation).map((line, index) => (
+                                <React.Fragment key={index}>
+                                  {line}
+                                  <br />
+                                </React.Fragment>
+                              ))}
+                            </Typography>
+                            {job.deliveryLocation?.contactPerson && (
+                              <Typography variant="body2" color="text.secondary">
+                                Contact: {job.deliveryLocation.contactPerson}
+                                {job.deliveryLocation.contactPhone && ` (${job.deliveryLocation.contactPhone})`}
+                              </Typography>
+                            )}
+                                                        {job.deliveryLocation?.deliveryInstructions && (
+                              <Typography variant="body2" color="warning.main" sx={{ mt: 0.5 }}>
+                                📝 {job.deliveryLocation.deliveryInstructions}
+                              </Typography>
+                            )}
+                          </Box>
+                          
+                          {/* Alternative Delivery Address (if different from main delivery location) */}
+                          {job.useDifferentDeliveryAddress && job.alternativeDeliveryAddress && (
+                            <Box sx={{ mt: 1, p: 1, bgcolor: 'warning.light', borderRadius: 1, border: '1px solid', borderColor: 'warning.main' }}>
+                              <Typography variant="body2" color="warning.dark" fontWeight="bold">
+                                🔄 Alternative Delivery Address
+                              </Typography>
+                              <Typography variant="body2" fontWeight="bold">
+                                {job.alternativeDeliveryAddress.name || 'Company name not available'}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {formatAddress(job.alternativeDeliveryAddress).map((line, index) => (
+                                  <React.Fragment key={index}>
+                                    {line}
+                                    <br />
+                                  </React.Fragment>
+                                ))}
+                              </Typography>
+                              {job.alternativeDeliveryAddress.contactPerson && (
+                                <Typography variant="body2" color="text.secondary">
+                                  Contact: {job.alternativeDeliveryAddress.contactPerson}
+                                  {job.alternativeDeliveryAddress.contactPhone && ` (${job.alternativeDeliveryAddress.contactPhone})`}
+                                </Typography>
+                              )}
+                              {job.alternativeDeliveryAddress.deliveryInstructions && (
+                                <Typography variant="body2" color="warning.main" sx={{ mt: 0.5 }}>
+                                  📝 {job.alternativeDeliveryAddress.deliveryInstructions}
+                                </Typography>
+                              )}
+                            </Box>
+                          )}
+                          
+                          {!jobAllocation.selectedJobs.includes(job.id) && 
+                           selectedJobsTonnage + (job.cargoWeight || 0) > vehicleCapacity && (
+                            <Typography variant="body2" color="error.main" sx={{ mt: 0.5 }}>
+                              ⚠️ Cannot add: Would exceed vehicle capacity
+                            </Typography>
+                          )}
                         </Box>
                       }
                     />
@@ -842,7 +1006,11 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
           <Button onClick={() => setShowJobAllocationDialog(false)}>
             Cancel
           </Button>
-          <Button onClick={handleJobAllocation} variant="contained">
+          <Button 
+            onClick={handleJobAllocation} 
+            variant="contained"
+            disabled={isOverCapacity || selectedJobsTonnage === 0}
+          >
             Allocate Jobs to Vehicle
           </Button>
         </DialogActions>

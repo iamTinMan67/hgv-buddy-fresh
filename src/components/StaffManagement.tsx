@@ -57,6 +57,8 @@ import {
   Security,
   Save,
   DirectionsCar,
+  TableChart,
+  ViewModule,
 } from '@mui/icons-material';
 
 interface StaffManagementProps {
@@ -164,6 +166,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [nameFilter, setNameFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
   
   const [currentStaff, setCurrentStaff] = useState<Partial<StaffMember>>({
     staffId: '',
@@ -200,16 +203,22 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
 
   // Multi-page form navigation
   const handleNextPage = () => {
+          // Attempting to go to next page
     if (validateCurrentPage()) {
+              // Validation passed, moving to next page
       setCurrentPage(prev => Math.min(prev + 1, 5)); // 6 pages total (0-5)
+    } else {
+              // Validation failed, staying on current page
     }
   };
 
   const handlePreviousPage = () => {
+          // Going to previous page
     setCurrentPage(prev => Math.max(prev - 1, 0));
   };
 
   const validateCurrentPage = (): boolean => {
+          // Validating page
     const errors: Record<string, string> = {};
     
     switch (currentPage) {
@@ -233,6 +242,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
         break;
       case 3: // Qualifications and Licenses
         // Optional page - no validation required
+        // Page 3 (Qualifications) - no validation required
         break;
       case 4: // Bank Details
         if (!currentStaff.bankDetails?.accountName) errors.accountName = 'Account name is required';
@@ -242,6 +252,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
         break;
     }
     
+            // Validation errors
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -725,14 +736,27 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
   ]);
 
   const handleAddStaff = () => {
+          // Adding new staff member
+    
     const newStaff: StaffMember = {
       ...currentStaff as StaffMember,
       id: Date.now().toString(),
       lastUpdated: new Date().toISOString(),
     };
-    setStaffMembers([...staffMembers, newStaff]);
-    resetForm();
-    setShowAddDialog(false);
+    
+            // New staff member object
+    
+    setStaffMembers(prevStaff => {
+      const updatedStaff = [...prevStaff, newStaff];
+              // Updated staff members array
+      return updatedStaff;
+    });
+    
+    // Reset form and close dialog after state update
+    setTimeout(() => {
+      resetForm();
+      setShowAddDialog(false);
+    }, 100);
   };
 
   const handleEditStaff = (staff: StaffMember) => {
@@ -887,7 +911,11 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
           <Button
             variant="contained"
             startIcon={<Add />}
-            onClick={() => setShowAddDialog(true)}
+            onClick={() => {
+              // Opening Add Staff Member dialog
+              console.log('Current form state before opening:', currentStaff);
+              setShowAddDialog(true);
+            }}
           >
             Add Staff Member
           </Button>
@@ -961,70 +989,189 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
           </Grid>
         </Box>
 
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Staff ID</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Contact</TableCell>
-                <TableCell>Address</TableCell>
-                <TableCell>Tax Code</TableCell>
-                <TableCell>NI Number</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredStaffMembers.map((staff) => (
-                <TableRow key={staff.id}>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="bold" color="primary">
-                      {staff.staffId}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar sx={{ mr: 2, bgcolor: getRoleColor(staff.role) }}>
-                        {getRoleIcon(staff.role)}
-                      </Avatar>
+        {/* View Toggle */}
+        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant={viewMode === 'table' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => setViewMode('table')}
+              startIcon={<TableChart />}
+            >
+              Table View
+            </Button>
+            <Button
+              variant={viewMode === 'cards' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => setViewMode('cards')}
+              startIcon={<ViewModule />}
+            >
+              Card View
+            </Button>
+          </Box>
+        </Box>
+
+        {viewMode === 'table' ? (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Staff ID</TableCell>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Role</TableCell>
+                  <TableCell>Contact</TableCell>
+                  <TableCell>Address</TableCell>
+                  <TableCell>Tax Code</TableCell>
+                  <TableCell>NI Number</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredStaffMembers.map((staff) => (
+                  <TableRow key={staff.id}>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight="bold" color="primary">
+                        {staff.staffId}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Avatar sx={{ mr: 2, bgcolor: getRoleColor(staff.role) }}>
+                          {getRoleIcon(staff.role)}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body1">
+                            {staff.firstName} {staff.middleName} {staff.familyName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Started: {new Date(staff.startDate).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        icon={getRoleIcon(staff.role)}
+                        label={staff.role.charAt(0).toUpperCase() + staff.role.slice(1)}
+                        color={getRoleColor(staff.role) as any}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
                       <Box>
-                        <Typography variant="body1">
-                          {staff.firstName} {staff.middleName} {staff.familyName}
+                        <Typography variant="body2">
+                          <Phone sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
+                          {staff.contact.phone}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Started: {new Date(staff.startDate).toLocaleDateString()}
+                        <Typography variant="body2">
+                          <PhoneAndroid sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
+                          {staff.contact.mobile}
+                        </Typography>
+                        <Typography variant="body2">
+                          <AlternateEmail sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
+                          {staff.contact.email}
                         </Typography>
                       </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box>
+                        <Typography variant="body2">{staff.address.line1}</Typography>
+                        {staff.address.line2 && (
+                          <Typography variant="body2">{staff.address.line2}</Typography>
+                        )}
+                        <Typography variant="body2">
+                          {staff.address.town}, {staff.address.postCode}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">{staff.taxCode}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">{staff.nationalInsurance}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={staff.isActive ? 'Active' : 'Inactive'}
+                        color={staff.isActive ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEditStaff(staff)}
+                        sx={{ mr: 1 }}
+                      >
+                        <Edit />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDeleteStaff(staff.id)}
+                        color="error"
+                      >
+                        <Delete />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Grid container spacing={3}>
+            {filteredStaffMembers.map((staff) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={staff.id}>
+                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <CardContent sx={{ flexGrow: 1, p: 2 }}>
+                    {/* Header with Avatar and Role */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Avatar sx={{ mr: 2, bgcolor: getRoleColor(staff.role), width: 48, height: 48 }}>
+                        {getRoleIcon(staff.role)}
+                      </Avatar>
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="h6" component="div" gutterBottom>
+                          {staff.firstName} {staff.middleName} {staff.familyName}
+                        </Typography>
+                        <Chip
+                          icon={getRoleIcon(staff.role)}
+                          label={staff.role.charAt(0).toUpperCase() + staff.role.slice(1)}
+                          color={getRoleColor(staff.role) as any}
+                          size="small"
+                        />
+                      </Box>
                     </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      icon={getRoleIcon(staff.role)}
-                      label={staff.role.charAt(0).toUpperCase() + staff.role.slice(1)}
-                      color={getRoleColor(staff.role) as any}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Box>
-                      <Typography variant="body2">
-                        <Phone sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
-                        {staff.contact.phone}
+
+                    {/* Staff ID */}
+                    <Typography variant="body2" color="primary" fontWeight="bold" gutterBottom>
+                      {staff.staffId}
+                    </Typography>
+
+                    {/* Contact Information */}
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        Contact
                       </Typography>
-                      <Typography variant="body2">
-                        <PhoneAndroid sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
-                        {staff.contact.mobile}
-                      </Typography>
-                      <Typography variant="body2">
-                        <AlternateEmail sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
-                        {staff.contact.email}
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Phone sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
+                        <Typography variant="body2">{staff.contact.phone}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <PhoneAndroid sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
+                        <Typography variant="body2">{staff.contact.mobile}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <AlternateEmail sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
+                        <Typography variant="body2" noWrap>{staff.contact.email}</Typography>
+                      </Box>
                     </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box>
+
+                    {/* Address */}
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        Address
+                      </Typography>
                       <Typography variant="body2">{staff.address.line1}</Typography>
                       {staff.address.line2 && (
                         <Typography variant="body2">{staff.address.line2}</Typography>
@@ -1033,41 +1180,60 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                         {staff.address.town}, {staff.address.postCode}
                       </Typography>
                     </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">{staff.taxCode}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">{staff.nationalInsurance}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={staff.isActive ? 'Active' : 'Inactive'}
-                      color={staff.isActive ? 'success' : 'default'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleEditStaff(staff)}
-                      sx={{ mr: 1 }}
-                    >
-                      <Edit />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteStaff(staff.id)}
-                      color="error"
-                    >
-                      <Delete />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+
+                    {/* Employment Details */}
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        Employment
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Tax Code:</strong> {staff.taxCode}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>NI Number:</strong> {staff.nationalInsurance}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Started:</strong> {new Date(staff.startDate).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+
+                    {/* Status */}
+                    <Box sx={{ mb: 2 }}>
+                      <Chip
+                        label={staff.isActive ? 'Active' : 'Inactive'}
+                        color={staff.isActive ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </Box>
+
+                    {/* Actions */}
+                    <Box sx={{ display: 'flex', gap: 1, mt: 'auto' }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<Edit />}
+                        onClick={() => handleEditStaff(staff)}
+                        fullWidth
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        startIcon={<Delete />}
+                        onClick={() => handleDeleteStaff(staff.id)}
+                        fullWidth
+                      >
+                        Delete
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        )}
       </TabPanel>
 
       {/* Reports Tab */}
@@ -2058,7 +2224,17 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
             </Button>
           ) : (
           <Button
-            onClick={editingId ? handleUpdateStaff : handleAddStaff}
+            onClick={() => {
+              console.log('Form submission button clicked!');
+              console.log('Current page:', currentPage);
+              console.log('Editing ID:', editingId);
+              console.log('Current staff data:', currentStaff);
+              if (editingId) {
+                handleUpdateStaff();
+              } else {
+                handleAddStaff();
+              }
+            }}
             variant="contained"
             startIcon={editingId ? <Save /> : <Add />}
           >

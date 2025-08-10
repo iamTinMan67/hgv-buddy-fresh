@@ -477,7 +477,7 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
 
   const handleAddDriver = () => {
     // In a real app, you'd dispatch an action to add the driver
-    console.log('Adding driver:', newDriver);
+          // Adding driver
     setShowAddDialog(false);
     setNewDriver({
       firstName: '',

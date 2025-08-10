@@ -1,11 +1,13 @@
 
 import { useSelector, useDispatch } from "react-redux";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { RootState } from "./store";
 import { setUser } from "./store/slices/authSlice";
-import Layout from "./components/Layout/Layout";
-import Login from "./pages/Auth/Login";
-import Dashboard from "./components/Dashboard";
+import { DynamicComponents, LoadingSpinner, preloadCommonComponents } from "./utils/dynamicImports";
+import ErrorBoundary from "./components/ErrorBoundary";
+
+// Destructure the components we need
+const { Layout, Login, Dashboard, JobAllocationForm } = DynamicComponents;
 
 function App() {
   const dispatch = useDispatch();
@@ -28,18 +30,35 @@ function App() {
     }
   }, [isAuthenticated, dispatch]);
 
+  // Preload common components for better performance
+  useEffect(() => {
+    if (isAuthenticated) {
+      preloadCommonComponents();
+    }
+  }, [isAuthenticated]);
+
   if (!isAuthenticated) {
     return (
-      <Layout>
-        <Login />
-      </Layout>
+      <ErrorBoundary>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Layout>
+            <Login />
+          </Layout>
+        </Suspense>
+      </ErrorBoundary>
     );
   }
 
   return (
-    <Layout>
-      <Dashboard user={user} />
-    </Layout>
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Layout>
+          <Dashboard user={user} />
+          {/* Job Allocation Form with standard pallet dropdown */}
+          <JobAllocationForm onClose={() => {}} />
+        </Layout>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 

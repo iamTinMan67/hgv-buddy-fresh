@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useDispatch } from 'react-redux';
 import {
   Box,
@@ -29,22 +29,26 @@ import {
 } from '@mui/icons-material';
 import { logout } from '../store/slices/authSlice';
 import { AppDispatch } from '../store';
-import Timesheet from './Timesheet';
-import VehicleCheckSheet from './VehicleCheckSheet';
-import FleetManagementHub from './FleetManagementHub';
-import PlanningHub from './PlanningHub';
-// PlanningMainHub import removed - using PlanningHub directly
-import LegalHub from './LegalHub';
-import DriverHub from './DriverHub';
-import StaffManagement from './StaffManagement';
+import { DynamicComponents, LoadingSpinner } from '../utils/dynamicImports';
+import ErrorBoundary from './ErrorBoundary';
 
-import DriverDashboard from './DriverDashboard';
-import DriverPlanner from './DriverPlanner';
-import ReportsHub from './ReportsHub';
-import TrailerPlan from './TrailerPlotter';
-import AccountingHub from './AccountingHub';
-import InvoiceUpload from './InvoiceUpload';
-import ClientHub from './ClientHub';
+// Destructure all the components we need
+const {
+  Timesheet,
+  VehicleCheckSheet,
+  FleetManagementHub,
+  PlanningHub,
+  LegalHub,
+  DriverHub,
+  StaffManagement,
+  DriverDashboard,
+  DriverPlanner,
+  ReportsHub,
+  TrailerPlotter,
+  AccountingHub,
+  InvoiceUpload,
+  ClientHub,
+} = DynamicComponents;
 
 interface User {
   id: string;
@@ -129,7 +133,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             Back to Dashboard
           </Button>
         </Box>
-        <Timesheet onClose={() => setShowTimesheet(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Timesheet onClose={() => setShowTimesheet(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }
@@ -147,7 +155,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             Back to Dashboard
           </Button>
         </Box>
-        <VehicleCheckSheet onClose={() => setShowVehicleCheck(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <VehicleCheckSheet onClose={() => setShowVehicleCheck(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }
@@ -156,7 +168,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   if (showFleetManagement) {
     return (
       <Box sx={{ py: 2, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
-        <FleetManagementHub onClose={() => setShowFleetManagement(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <FleetManagementHub onClose={() => setShowFleetManagement(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }
@@ -165,7 +181,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   if (showLegalHub) {
     return (
       <Box sx={{ py: 2, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
-        <LegalHub onClose={() => setShowLegalHub(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <LegalHub onClose={() => setShowLegalHub(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }
@@ -174,7 +194,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   if (showStaffManagement) {
     return (
       <Box sx={{ py: 2, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
-        <StaffManagement onClose={() => setShowStaffManagement(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <StaffManagement onClose={() => setShowStaffManagement(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }
@@ -183,7 +207,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   if (showDriverHub) {
     return (
       <Box sx={{ py: 2 }}>
-        <DriverHub onClose={() => setShowDriverHub(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <DriverHub onClose={() => setShowDriverHub(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }
@@ -201,25 +229,26 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             Back to Dashboard
           </Button>
         </Box>
-        <PlanningHub onClose={() => setShowPlanningHub(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <PlanningHub onClose={() => setShowPlanningHub(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }
 
-  // Show planning hub if requested
-  if (showPlanningHub) {
-    return (
-      <Box sx={{ py: 2 }}>
-        <PlanningHub onClose={() => setShowPlanningHub(false)} />
-      </Box>
-    );
-  }
+
 
   // Show reports hub if requested
   if (showReportsHub) {
     return (
       <Box sx={{ py: 2 }}>
-        <ReportsHub onClose={() => setShowReportsHub(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <ReportsHub onClose={() => setShowReportsHub(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }
@@ -228,7 +257,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   if (showAccountingHub) {
     return (
       <Box sx={{ py: 2 }}>
-        <AccountingHub onClose={() => setShowAccountingHub(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <AccountingHub onClose={() => setShowAccountingHub(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }
@@ -237,7 +270,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   if (showInvoiceUpload) {
     return (
       <Box sx={{ py: 2 }}>
-        <InvoiceUpload onClose={() => setShowInvoiceUpload(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <InvoiceUpload onClose={() => setShowInvoiceUpload(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }
@@ -246,7 +283,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   if (showClientHub) {
     return (
       <Box sx={{ py: 2 }}>
-        <ClientHub onClose={() => setShowClientHub(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <ClientHub onClose={() => setShowClientHub(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }
@@ -255,7 +296,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   if (showDriverDashboard) {
     return (
       <Box sx={{ py: 2 }}>
-        <DriverDashboard onClose={() => setShowDriverDashboard(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <DriverDashboard onClose={() => setShowDriverDashboard(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }
@@ -264,7 +309,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   if (showDriverPlanner) {
     return (
       <Box sx={{ py: 2 }}>
-        <DriverPlanner onClose={() => setShowDriverPlanner(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <DriverPlanner onClose={() => setShowDriverPlanner(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }
@@ -273,7 +322,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   if (showTrailerPlan) {
     return (
       <Box sx={{ py: 2 }}>
-        <TrailerPlan onClose={() => setShowTrailerPlan(false)} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <TrailerPlotter onClose={() => setShowTrailerPlan(false)} />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     );
   }

@@ -233,7 +233,7 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
       lastUpdated: new Date().toISOString(),
     };
     // In a real app, this would dispatch to Redux or call an API
-    console.log('Adding contact:', newContact);
+          // Adding contact
     setShowAddDialog(false);
     setCurrentContact({
       name: '',
@@ -266,7 +266,7 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
       lastUpdated: new Date().toISOString(),
     };
     // In a real app, this would dispatch to Redux or call an API
-    console.log('Updating contact:', updatedContact);
+          // Updating contact
     setShowEditDialog(false);
     setCurrentContact({
       name: '',
@@ -290,7 +290,7 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
 
   const handleDeleteContact = (id: string) => {
     // In a real app, this would dispatch to Redux or call an API
-    console.log('Deleting contact:', id);
+          // Deleting contact
   };
 
   const getFilteredContacts = () => {
