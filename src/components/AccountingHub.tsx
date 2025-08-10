@@ -26,6 +26,8 @@ import {
   Assessment,
   LocalShipping,
   Payment,
+  Analytics,
+  Report,
 } from '@mui/icons-material';
 
 import BookKeeping from './BookKeeping';
@@ -66,7 +68,7 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
 
   // Main Accounting Hub
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           <Receipt sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -310,26 +312,25 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
-              cursor: 'pointer', 
-              transition: 'all 0.3s ease',
-              transform: 'scale(0.94)',
+              opacity: 0.6,
+              cursor: 'not-allowed',
               '&:hover': {
-                transform: 'translateY(-4px) scale(0.94)',
-                boxShadow: 4,
+                transform: 'none',
+                boxShadow: 1
               }
             }}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
-                  <AccountBalance />
+                  <Analytics />
                 </Avatar>
                 <Box>
-                  <Typography variant="h5" component="div">
+                  <Typography variant="h5" component="div" color="grey.600">
                     Coming Soon
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    New feature in development
+                  <Typography variant="body2" color="grey.500">
+                    Advanced accounting features
                   </Typography>
                 </Box>
               </Box>
@@ -341,19 +342,19 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
                   icon={<TrendingUp />} 
                   label="Feature 1" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
-                  icon={<TrendingDown />} 
+                  icon={<Analytics />} 
                   label="Feature 2" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
-                  icon={<AccountBalance />} 
+                  icon={<Report />} 
                   label="Feature 3" 
                   size="small" 
-                  sx={{ mb: 1 }}
+                  sx={{ mb: 1, opacity: 0.7 }}
                 />
               </Box>
             </CardContent>
@@ -364,26 +365,25 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
-              cursor: 'pointer', 
-              transition: 'all 0.3s ease',
-              transform: 'scale(0.94)',
+              opacity: 0.6,
+              cursor: 'not-allowed',
               '&:hover': {
-                transform: 'translateY(-4px) scale(0.94)',
-                boxShadow: 4,
+                transform: 'none',
+                boxShadow: 1
               }
             }}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'grey.600', mr: 2 }}>
-                  <Receipt />
+                <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
+                  <Analytics />
                 </Avatar>
                 <Box>
-                  <Typography variant="h5" component="div">
+                  <Typography variant="h5" component="div" color="grey.600">
                     Coming Soon
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    New feature in development
+                  <Typography variant="body2" color="grey.500">
+                    Enhanced financial tools
                   </Typography>
                 </Box>
               </Box>
@@ -395,19 +395,19 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
                   icon={<TrendingUp />} 
                   label="Feature 1" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
-                  icon={<TrendingDown />} 
+                  icon={<Analytics />} 
                   label="Feature 2" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
-                  icon={<AccountBalance />} 
+                  icon={<Report />} 
                   label="Feature 3" 
                   size="small" 
-                  sx={{ mb: 1 }}
+                  sx={{ mb: 1, opacity: 0.7 }}
                 />
               </Box>
             </CardContent>

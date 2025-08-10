@@ -30,6 +30,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  FormHelperText,
 } from '@mui/material';
 import {
   Schedule,
@@ -69,6 +70,16 @@ interface HolidayRequest {
 
 const HolidayPlanner: React.FC<HolidayPlannerProps> = ({ onClose }) => {
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newRequest, setNewRequest] = useState({
+    staffId: '',
+    staffName: '',
+    staffRole: 'driver' as 'manager' | 'admin' | 'driver',
+    startDate: '',
+    endDate: '',
+    reason: '',
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  
   const [holidayRequests, setHolidayRequests] = useState<HolidayRequest[]>([
     {
       id: '1',
@@ -123,6 +134,16 @@ const HolidayPlanner: React.FC<HolidayPlannerProps> = ({ onClose }) => {
       submittedDate: '2024-01-15T16:00:00Z'
     }
   ]);
+
+  // Mock staff data - in a real app this would come from a database
+  const availableStaff = [
+    { id: 'EMP-2020-001', name: 'Adam Mustafa', role: 'driver' as const },
+    { id: 'EMP-2019-001', name: 'Jane Manager', role: 'driver' as const },
+    { id: 'EMP-2023-001', name: 'Sarah Johnson', role: 'manager' as const },
+    { id: 'EMP-2023-002', name: 'Michael Smith', role: 'admin' as const },
+    { id: 'EMP-2024-001', name: 'John Driver', role: 'driver' as const },
+    { id: 'EMP-2024-002', name: 'Alice Admin', role: 'admin' as const },
+  ];
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -201,8 +222,101 @@ const HolidayPlanner: React.FC<HolidayPlannerProps> = ({ onClose }) => {
     return holidayRequests.filter(request => request.status === 'pending');
   };
 
+  const calculateDays = (startDate: string, endDate: string) => {
+    if (!startDate || !endDate) return 0;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays + 1; // Include both start and end dates
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!newRequest.staffId) errors.staffId = 'Staff member is required';
+    if (!newRequest.startDate) errors.startDate = 'Start date is required';
+    if (!newRequest.endDate) errors.endDate = 'End date is required';
+    if (!newRequest.reason) errors.reason = 'Reason is required';
+    
+    if (newRequest.startDate && newRequest.endDate) {
+      const start = new Date(newRequest.startDate);
+      const end = new Date(newRequest.endDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (start < today) {
+        errors.startDate = 'Start date cannot be in the past';
+      }
+      if (end < start) {
+        errors.endDate = 'End date must be after start date';
+      }
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleStaffChange = (staffId: string) => {
+    const staff = availableStaff.find(s => s.id === staffId);
+    if (staff) {
+      setNewRequest({
+        ...newRequest,
+        staffId: staff.id,
+        staffName: staff.name,
+        staffRole: staff.role,
+      });
+    }
+  };
+
+  const handleSubmit = () => {
+    if (!validateForm()) return;
+    
+    const daysRequested = calculateDays(newRequest.startDate, newRequest.endDate);
+    
+    const newHolidayRequest: HolidayRequest = {
+      id: Date.now().toString(),
+      staffId: newRequest.staffId,
+      staffName: newRequest.staffName,
+      staffRole: newRequest.staffRole,
+      startDate: newRequest.startDate,
+      endDate: newRequest.endDate,
+      daysRequested,
+      reason: newRequest.reason,
+      status: 'pending',
+      submittedDate: new Date().toISOString(),
+    };
+    
+    setHolidayRequests([...holidayRequests, newHolidayRequest]);
+    
+    // Reset form
+    setNewRequest({
+      staffId: '',
+      staffName: '',
+      staffRole: 'driver',
+      startDate: '',
+      endDate: '',
+      reason: '',
+    });
+    setFormErrors({});
+    setShowAddDialog(false);
+  };
+
+  const handleClose = () => {
+    setShowAddDialog(false);
+    setNewRequest({
+      staffId: '',
+      staffName: '',
+      staffRole: 'driver',
+      startDate: '',
+      endDate: '',
+      reason: '',
+    });
+    setFormErrors({});
+  };
+
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           <Schedule sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -381,15 +495,101 @@ const HolidayPlanner: React.FC<HolidayPlannerProps> = ({ onClose }) => {
       </TableContainer>
 
       {/* Add Holiday Request Dialog */}
-      <Dialog open={showAddDialog} onClose={() => setShowAddDialog(false)} maxWidth="md" fullWidth>
+      <Dialog open={showAddDialog} onClose={handleClose} maxWidth="md" fullWidth>
         <DialogTitle>Add Holiday Request</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            This functionality will be implemented in the next iteration.
-          </Typography>
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth error={!!formErrors.staffId}>
+                <InputLabel>Staff Member</InputLabel>
+                <Select
+                  value={newRequest.staffId}
+                  onChange={(e) => handleStaffChange(e.target.value)}
+                  label="Staff Member"
+                >
+                  {availableStaff.map((staff) => (
+                    <MenuItem key={staff.id} value={staff.id}>
+                      {staff.name} ({staff.id}) - {staff.role}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {formErrors.staffId && <FormHelperText>{formErrors.staffId}</FormHelperText>}
+              </FormControl>
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Staff Role"
+                value={newRequest.staffRole.charAt(0).toUpperCase() + newRequest.staffRole.slice(1)}
+                InputProps={{ readOnly: true }}
+                sx={{ '& .MuiInputBase-input': { color: 'text.secondary' } }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Start Date"
+                type="date"
+                value={newRequest.startDate}
+                onChange={(e) => setNewRequest({ ...newRequest, startDate: e.target.value })}
+                error={!!formErrors.startDate}
+                helperText={formErrors.startDate}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="End Date"
+                type="date"
+                value={newRequest.endDate}
+                onChange={(e) => setNewRequest({ ...newRequest, endDate: e.target.value })}
+                error={!!formErrors.endDate}
+                helperText={formErrors.endDate}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Reason for Holiday"
+                multiline
+                rows={3}
+                value={newRequest.reason}
+                onChange={(e) => setNewRequest({ ...newRequest, reason: e.target.value })}
+                error={!!formErrors.reason}
+                helperText={formErrors.reason}
+                placeholder="Please provide a reason for your holiday request..."
+              />
+            </Grid>
+            
+            {newRequest.startDate && newRequest.endDate && (
+              <Grid item xs={12}>
+                <Alert severity="info">
+                  <Typography variant="body2">
+                    <strong>Days Requested:</strong> {calculateDays(newRequest.startDate, newRequest.endDate)} days
+                    {newRequest.startDate && newRequest.endDate && (
+                      <span> ({new Date(newRequest.startDate).toLocaleDateString()} to {new Date(newRequest.endDate).toLocaleDateString()})</span>
+                    )}
+                  </Typography>
+                </Alert>
+              </Grid>
+            )}
+          </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowAddDialog(false)}>Close</Button>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained"
+            disabled={!newRequest.staffId || !newRequest.startDate || !newRequest.endDate || !newRequest.reason}
+          >
+            Submit Request
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

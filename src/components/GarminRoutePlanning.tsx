@@ -613,7 +613,7 @@ const GarminRoutePlanning: React.FC<GarminRoutePlanningProps> = ({ onClose }) =>
   );
 
   return (
-    <Box>
+    <Box sx={{ py: 2, px: 2 }}>
       {currentView === 'main' && renderMainView()}
       {currentView === 'planning' && renderPlanningView()}
       {currentView === 'active' && renderActiveRoutesView()}

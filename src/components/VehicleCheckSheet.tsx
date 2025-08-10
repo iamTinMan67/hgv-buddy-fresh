@@ -200,7 +200,7 @@ const VehicleCheckSheet: React.FC<VehicleCheckSheetProps> = ({ onClose }) => {
   const hasDefects = failedChecks.length > 0 || defects.reported.trim() !== '';
 
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           Vehicle Defect Report

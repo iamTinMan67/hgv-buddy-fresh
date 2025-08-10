@@ -47,6 +47,7 @@ import {
   AccountBalance,
   Home,
   ErrorOutline,
+  Schedule,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import {
@@ -106,6 +107,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'pending': return 'default';
       case 'scheduled': return 'info';
       case 'in_progress': return 'primary';
       case 'completed': return 'success';
@@ -116,7 +118,8 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'scheduled': return <Pending />;
+      case 'pending': return <Pending />;
+      case 'scheduled': return <Schedule />;
       case 'in_progress': return <PlayArrow />;
       case 'completed': return <Stop />;
       case 'cancelled': return <Stop />;
@@ -283,7 +286,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
   const last7Days = getLast7Days();
 
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h4" gutterBottom>

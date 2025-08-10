@@ -129,12 +129,41 @@ interface StaffMember {
   safetyScore?: number;
   performanceRating?: number;
   notes?: string;
+  // New fields for multi-page form
+  qualifications?: {
+    name: string;
+    issuingBody: string;
+    issueDate: string;
+    expiryDate?: string;
+    documentUrl?: string;
+  }[];
+  licenses?: {
+    type: string;
+    number: string;
+    issuingBody: string;
+    issueDate: string;
+    expiryDate: string;
+    documentUrl?: string;
+  }[];
+  bankDetails?: {
+    accountName: string;
+    accountNumber: string;
+    sortCode: string;
+    bankName: string;
+    buildingSocietyNumber?: string;
+  };
 }
 
 const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  
+  // Filter states
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [nameFilter, setNameFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   
   const [currentStaff, setCurrentStaff] = useState<Partial<StaffMember>>({
     staffId: '',
@@ -148,23 +177,164 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       town: '',
       postCode: '',
     },
-    contact: {
-      phone: '',
-      mobile: '',
-      email: '',
-    },
-    nextOfKin: {
-      name: '',
-      relationship: '',
-      phone: '',
-      email: '',
-    },
+    contact: { phone: '', mobile: '', email: '' },
+    nextOfKin: { name: '', relationship: '', phone: '', email: '' },
     taxCode: '',
     nationalInsurance: '',
     role: 'driver',
     isActive: true,
     startDate: new Date().toISOString().split('T')[0],
+    qualifications: [],
+    licenses: [],
+    bankDetails: {
+      accountName: '',
+      accountNumber: '',
+      sortCode: '',
+      bankName: '',
+      buildingSocietyNumber: '',
+    },
   });
+
+  // Form validation state
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Multi-page form navigation
+  const handleNextPage = () => {
+    if (validateCurrentPage()) {
+      setCurrentPage(prev => Math.min(prev + 1, 5)); // 6 pages total (0-5)
+    }
+  };
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 0));
+  };
+
+  const validateCurrentPage = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    switch (currentPage) {
+      case 0: // Personal, Address and Contact Information
+        if (!currentStaff.firstName) errors.firstName = 'First name is required';
+        if (!currentStaff.familyName) errors.familyName = 'Family name is required';
+        if (!currentStaff.address?.line1) errors.addressLine1 = 'Address line 1 is required';
+        if (!currentStaff.address?.town) errors.town = 'Town is required';
+        if (!currentStaff.address?.postCode) errors.postCode = 'Post code is required';
+        if (!currentStaff.contact?.mobile) errors.mobile = 'Mobile is required';
+        if (!currentStaff.contact?.email) errors.email = 'Email is required';
+        break;
+      case 1: // Next of Kin Information
+        if (!currentStaff.nextOfKin?.name) errors.nextOfKinName = 'Next of kin name is required';
+        if (!currentStaff.nextOfKin?.relationship) errors.relationship = 'Relationship is required';
+        break;
+      case 2: // Employment Details
+        if (!currentStaff.taxCode) errors.taxCode = 'Tax code is required';
+        if (!currentStaff.nationalInsurance) errors.nationalInsurance = 'NI number is required';
+        if (!currentStaff.startDate) errors.startDate = 'Start date is required';
+        break;
+      case 3: // Qualifications and Licenses
+        // Optional page - no validation required
+        break;
+      case 4: // Bank Details
+        if (!currentStaff.bankDetails?.accountName) errors.accountName = 'Account name is required';
+        if (!currentStaff.bankDetails?.accountNumber) errors.accountNumber = 'Account number is required';
+        if (!currentStaff.bankDetails?.sortCode) errors.sortCode = 'Sort code is required';
+        if (!currentStaff.bankDetails?.bankName) errors.bankName = 'Bank name is required';
+        break;
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const resetForm = () => {
+    setCurrentStaff({
+      staffId: '',
+      firstName: '',
+      middleName: '',
+      familyName: '',
+      address: { line1: '', line2: '', line3: '', town: '', postCode: '' },
+      contact: { phone: '', mobile: '', email: '' },
+      nextOfKin: { name: '', relationship: '', phone: '', email: '' },
+      taxCode: '',
+      nationalInsurance: '',
+      role: 'driver',
+      isActive: true,
+      startDate: new Date().toISOString().split('T')[0],
+      qualifications: [],
+      licenses: [],
+      bankDetails: {
+        accountName: '',
+        accountNumber: '',
+        sortCode: '',
+        bankName: '',
+        buildingSocietyNumber: '',
+      },
+    });
+    setCurrentPage(0);
+    setFormErrors({});
+  };
+
+  // Helper functions for qualifications and licenses
+  const addQualification = () => {
+    const newQualification = {
+      name: '',
+      issuingBody: '',
+      issueDate: '',
+      expiryDate: '',
+      documentUrl: '',
+    };
+    setCurrentStaff(prev => ({
+      ...prev,
+      qualifications: [...(prev.qualifications || []), newQualification]
+    }));
+  };
+
+  const updateQualification = (index: number, field: string, value: string) => {
+    setCurrentStaff(prev => ({
+      ...prev,
+      qualifications: prev.qualifications?.map((qual, i) => 
+        i === index ? { ...qual, [field]: value } : qual
+      )
+    }));
+  };
+
+  const removeQualification = (index: number) => {
+    setCurrentStaff(prev => ({
+      ...prev,
+      qualifications: prev.qualifications?.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addLicense = () => {
+    const newLicense = {
+      type: '',
+      number: '',
+      issuingBody: '',
+      issueDate: '',
+      expiryDate: '',
+      documentUrl: '',
+    };
+    setCurrentStaff(prev => ({
+      ...prev,
+      licenses: [...(prev.licenses || []), newLicense]
+    }));
+  };
+
+  const updateLicense = (index: number, field: string, value: string) => {
+    setCurrentStaff(prev => ({
+      ...prev,
+      licenses: prev.licenses?.map((license, i) => 
+        i === index ? { ...license, [field]: value } : license
+      )
+    }));
+  };
+
+  const removeLicense = (index: number) => {
+    setCurrentStaff(prev => ({
+      ...prev,
+      licenses: prev.licenses?.filter((_, i) => i !== index)
+    }));
+  };
 
   // Auto-generate Staff ID when start date changes
   useEffect(() => {
@@ -561,51 +731,56 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       lastUpdated: new Date().toISOString(),
     };
     setStaffMembers([...staffMembers, newStaff]);
-    setCurrentStaff({
-      staffId: '',
-      firstName: '',
-      middleName: '',
-      familyName: '',
-      address: { line1: '', line2: '', line3: '', town: '', postCode: '' },
-      contact: { phone: '', mobile: '', email: '' },
-      nextOfKin: { name: '', relationship: '', phone: '', email: '' },
-      taxCode: '',
-      nationalInsurance: '',
-      role: 'driver',
-      isActive: true,
-      startDate: new Date().toISOString().split('T')[0],
-    });
+    resetForm();
     setShowAddDialog(false);
   };
 
   const handleEditStaff = (staff: StaffMember) => {
-    setCurrentStaff(staff);
+    // Deep clone the staff member to ensure all nested objects are properly copied
+    const staffToEdit = {
+      ...staff,
+      address: { ...staff.address },
+      contact: { ...staff.contact },
+      nextOfKin: { ...staff.nextOfKin },
+      qualifications: staff.qualifications ? [...staff.qualifications] : [],
+      licenses: staff.licenses ? [...staff.licenses] : [],
+      bankDetails: staff.bankDetails ? { ...staff.bankDetails } : {
+        accountName: '',
+        accountNumber: '',
+        sortCode: '',
+        bankName: '',
+        buildingSocietyNumber: '',
+      },
+    };
+    
+    setCurrentStaff(staffToEdit);
     setEditingId(staff.id);
+    setCurrentPage(0); // Reset to first page when editing
     setShowAddDialog(true);
   };
 
   const handleUpdateStaff = () => {
     if (!editingId) return;
+    
+    // Deep clone the current staff data to ensure all nested objects are preserved
+    const updatedStaff: StaffMember = {
+      ...currentStaff as StaffMember,
+      id: editingId,
+      lastUpdated: new Date().toISOString(),
+      address: { ...currentStaff.address! },
+      contact: { ...currentStaff.contact! },
+      nextOfKin: { ...currentStaff.nextOfKin! },
+      qualifications: currentStaff.qualifications ? [...currentStaff.qualifications] : [],
+      licenses: currentStaff.licenses ? [...currentStaff.licenses] : [],
+      bankDetails: currentStaff.bankDetails ? { ...currentStaff.bankDetails } : undefined,
+    };
+    
     const updatedStaffMembers = staffMembers.map(staff =>
-      staff.id === editingId
-        ? { ...currentStaff, id: editingId, lastUpdated: new Date().toISOString() } as StaffMember
-        : staff
+      staff.id === editingId ? updatedStaff : staff
     );
+    
     setStaffMembers(updatedStaffMembers);
-    setCurrentStaff({
-      staffId: '',
-      firstName: '',
-      middleName: '',
-      familyName: '',
-      address: { line1: '', line2: '', line3: '', town: '', postCode: '' },
-      contact: { phone: '', mobile: '', email: '' },
-      nextOfKin: { name: '', relationship: '', phone: '', email: '' },
-      taxCode: '',
-      nationalInsurance: '',
-      role: 'driver',
-      isActive: true,
-      startDate: new Date().toISOString().split('T')[0],
-    });
+    resetForm();
     setEditingId(null);
     setShowAddDialog(false);
   };
@@ -636,11 +811,34 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
     }
   };
 
+  // Filter staff members based on current filters
+  const filteredStaffMembers = staffMembers.filter(staff => {
+    const matchesRole = roleFilter === 'all' || staff.role === roleFilter;
+    const matchesName = nameFilter === '' || 
+      `${staff.firstName} ${staff.middleName} ${staff.familyName}`.toLowerCase().includes(nameFilter.toLowerCase()) ||
+      staff.staffId.toLowerCase().includes(nameFilter.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'active' && staff.isActive) || 
+      (statusFilter === 'inactive' && !staff.isActive);
+    
+    return matchesRole && matchesName && matchesStatus;
+  });
+
   const activeStaff = staffMembers.filter(s => s.isActive).length;
   const totalStaff = staffMembers.length;
 
+  // Page titles for multi-page form
+  const pageTitles = [
+    'Personal, Address & Contact Information',
+    'Next of Kin Information',
+    'Employment Details',
+    'Qualifications & Licenses',
+    'Bank Details',
+    'Review & Submit'
+  ];
+
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           <Business sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -654,45 +852,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
         </IconButton>
       </Box>
 
-      {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-         <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Group sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-              <Typography variant="h6">Total Staff</Typography>
-              <Typography variant="h4" color="primary">
-                {totalStaff}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-         <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Person sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-              <Typography variant="h6">Active Staff</Typography>
-              <Typography variant="h4" color="success.main">
-                {activeStaff}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-         <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Business sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
-              <Typography variant="h6">Staff Management</Typography>
-              <Typography variant="h4" color="info.main">
-                {totalStaff}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Total Staff Members
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+
+
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
@@ -732,6 +893,74 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
           </Button>
         </Box>
 
+
+
+        {/* Filter Controls */}
+        <Box sx={{ mb: 3, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+          <Typography variant="subtitle2" gutterBottom color="primary">
+            Filter Staff Directory
+          </Typography>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Role</InputLabel>
+                <Select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  label="Role"
+                >
+                  <MenuItem value="all">All Roles</MenuItem>
+                  <MenuItem value="manager">Manager</MenuItem>
+                  <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="driver">Driver</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Search by Name or Staff ID"
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                placeholder="Enter name or staff ID..."
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  label="Status"
+                >
+                  <MenuItem value="all">All Status</MenuItem>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    setRoleFilter('all');
+                    setNameFilter('');
+                    setStatusFilter('all');
+                  }}
+                >
+                  Clear Filters
+                </Button>
+                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+                  Showing {filteredStaffMembers.length} of {totalStaff} staff members
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Box>
+
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
@@ -748,7 +977,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {staffMembers.map((staff) => (
+              {filteredStaffMembers.map((staff) => (
                 <TableRow key={staff.id}>
                   <TableCell>
                     <Typography variant="body2" fontWeight="bold" color="primary">
@@ -902,15 +1131,55 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       </TabPanel>
 
       {/* Add/Edit Staff Dialog */}
-      <Dialog open={showAddDialog} onClose={() => setShowAddDialog(false)} maxWidth="md" fullWidth>
+      <Dialog open={showAddDialog} onClose={() => setShowAddDialog(false)} maxWidth="lg" fullWidth>
         <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">
           {editingId ? 'Edit Staff Member' : 'Add New Staff Member'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Page {currentPage + 1} of {pageTitles.length}
+            </Typography>
+          </Box>
+          {/* Progress indicator */}
+          <Box sx={{ mt: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              {pageTitles.map((title, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    flex: 1,
+                    textAlign: 'center',
+                    color: index <= currentPage ? 'primary.main' : 'text.secondary',
+                    fontSize: '0.75rem',
+                    fontWeight: index === currentPage ? 'bold' : 'normal',
+                  }}
+                >
+                  {title}
+                </Box>
+              ))}
+            </Box>
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              {pageTitles.map((_, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    flex: 1,
+                    height: 4,
+                    backgroundColor: index <= currentPage ? 'primary.main' : 'grey.300',
+                    borderRadius: 1,
+                  }}
+                />
+              ))}
+            </Box>
+          </Box>
         </DialogTitle>
         <DialogContent>
+          {/* Page 1: Personal, Address and Contact Information */}
+          {currentPage === 0 && (
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            {/* Personal Information */}
             <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom>
+                <Typography variant="h6" gutterBottom color="primary">
                 Personal Information
               </Typography>
             </Grid>
@@ -919,9 +1188,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                 fullWidth
                 label="Staff ID"
                 value={currentStaff.staffId || ''}
-                InputProps={{
-                  readOnly: true,
-                }}
+                  InputProps={{ readOnly: true }}
                 sx={{ 
                   '& .MuiInputBase-input.Mui-readOnly': { 
                     backgroundColor: 'rgba(0, 0, 0, 0.1)',
@@ -937,60 +1204,33 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                 label="First Name *"
                 value={currentStaff.firstName || ''}
                 onChange={(e) => setCurrentStaff({ ...currentStaff, firstName: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="middleName"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="firstName"
+                  error={!!formErrors.firstName}
+                  helperText={formErrors.firstName}
                 required
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
                 label="Middle Name"
                 value={currentStaff.middleName || ''}
                 onChange={(e) => setCurrentStaff({ ...currentStaff, middleName: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="familyName"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="middleName"
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
                 label="Family Name *"
                 value={currentStaff.familyName || ''}
                 onChange={(e) => setCurrentStaff({ ...currentStaff, familyName: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="addressLine1"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="familyName"
+                  error={!!formErrors.familyName}
+                  helperText={formErrors.familyName}
                 required
               />
             </Grid>
 
-            {/* Address Information */}
             <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                <Typography variant="h6" gutterBottom sx={{ mt: 2 }} color="primary">
                 Address Information
               </Typography>
             </Grid>
@@ -1003,16 +1243,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   address: { ...currentStaff.address!, line1: e.target.value }
                 })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="addressLine2"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="addressLine1"
+                  error={!!formErrors.addressLine1}
+                  helperText={formErrors.addressLine1}
                 required
               />
             </Grid>
@@ -1025,16 +1257,6 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   address: { ...currentStaff.address!, line2: e.target.value }
                 })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="addressLine3"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="addressLine2"
               />
             </Grid>
             <Grid item xs={12}>
@@ -1046,16 +1268,6 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   address: { ...currentStaff.address!, line3: e.target.value }
                 })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="town"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="addressLine3"
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -1067,16 +1279,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   address: { ...currentStaff.address!, town: e.target.value }
                 })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="postCode"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="town"
+                  error={!!formErrors.town}
+                  helperText={formErrors.town}
                 required
               />
             </Grid>
@@ -1089,23 +1293,14 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   address: { ...currentStaff.address!, postCode: e.target.value }
                 })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="phone"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="postCode"
+                  error={!!formErrors.postCode}
+                  helperText={formErrors.postCode}
                 required
               />
             </Grid>
 
-            {/* Contact Information */}
             <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                <Typography variant="h6" gutterBottom sx={{ mt: 2 }} color="primary">
                 Contact Details
               </Typography>
             </Grid>
@@ -1118,16 +1313,6 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   contact: { ...currentStaff.contact!, phone: e.target.value }
                 })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="mobile"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="phone"
               />
             </Grid>
             <Grid item xs={12} md={4}>
@@ -1139,16 +1324,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   contact: { ...currentStaff.contact!, mobile: e.target.value }
                 })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="email"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="mobile"
+                  error={!!formErrors.mobile}
+                  helperText={formErrors.mobile}
                 required
               />
             </Grid>
@@ -1162,23 +1339,19 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   contact: { ...currentStaff.contact!, email: e.target.value }
                 })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="nextOfKinName"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="email"
+                  error={!!formErrors.email}
+                  helperText={formErrors.email}
                 required
               />
             </Grid>
+            </Grid>
+          )}
 
-            {/* Next of Kin */}
+          {/* Page 2: Next of Kin Information */}
+          {currentPage === 1 && (
+            <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                <Typography variant="h6" gutterBottom color="primary">
                 Next of Kin Details
               </Typography>
             </Grid>
@@ -1191,16 +1364,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   nextOfKin: { ...currentStaff.nextOfKin!, name: e.target.value }
                 })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="relationship"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="nextOfKinName"
+                  error={!!formErrors.nextOfKinName}
+                  helperText={formErrors.nextOfKinName}
                 required
               />
             </Grid>
@@ -1213,16 +1378,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   nextOfKin: { ...currentStaff.nextOfKin!, relationship: e.target.value }
                 })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="nextOfKinPhone"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="relationship"
+                  error={!!formErrors.relationship}
+                  helperText={formErrors.relationship}
                 required
               />
             </Grid>
@@ -1235,16 +1392,6 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   nextOfKin: { ...currentStaff.nextOfKin!, phone: e.target.value }
                 })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="nextOfKinEmail"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="nextOfKinPhone"
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -1257,22 +1404,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   ...currentStaff,
                   nextOfKin: { ...currentStaff.nextOfKin!, email: e.target.value }
                 })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="taxCode"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="nextOfKinEmail"
               />
             </Grid>
+            </Grid>
+          )}
 
-            {/* Employment Details */}
+          {/* Page 3: Employment Details */}
+          {currentPage === 2 && (
+            <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                <Typography variant="h6" gutterBottom color="primary">
                 Employment Details
               </Typography>
             </Grid>
@@ -1296,16 +1437,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                 label="Tax Code *"
                 value={currentStaff.taxCode || ''}
                 onChange={(e) => setCurrentStaff({ ...currentStaff, taxCode: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="nationalInsurance"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="taxCode"
+                  error={!!formErrors.taxCode}
+                  helperText={formErrors.taxCode}
                 required
               />
             </Grid>
@@ -1315,16 +1448,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                 label="NI Number *"
                 value={currentStaff.nationalInsurance || ''}
                 onChange={(e) => setCurrentStaff({ ...currentStaff, nationalInsurance: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="startDate"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="nationalInsurance"
+                  error={!!formErrors.nationalInsurance}
+                  helperText={formErrors.nationalInsurance}
                 required
               />
             </Grid>
@@ -1336,16 +1461,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                 value={currentStaff.startDate || ''}
                 onChange={(e) => setCurrentStaff({ ...currentStaff, startDate: e.target.value })}
                 InputLabelProps={{ shrink: true }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextField = document.querySelector('input[name="isActive"]') as HTMLInputElement;
-                    if (nextField) {
-                      nextField.focus();
-                    }
-                  }
-                }}
-                name="startDate"
+                  error={!!formErrors.startDate}
+                  helperText={formErrors.startDate}
                 required
               />
             </Grid>
@@ -1360,19 +1477,594 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                 label="Active"
               />
             </Grid>
+
+            {/* Driver-specific fields */}
+            {currentStaff.role === 'driver' && (
+              <>
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom sx={{ mt: 2 }} color="primary">
+                    Driver-Specific Information
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Employee Number"
+                    value={currentStaff.employeeNumber || ''}
+                    onChange={(e) => setCurrentStaff({ ...currentStaff, employeeNumber: e.target.value })}
+                    placeholder="e.g., EMP001"
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Date of Birth"
+                    type="date"
+                    value={currentStaff.dateOfBirth || ''}
+                    onChange={(e) => setCurrentStaff({ ...currentStaff, dateOfBirth: e.target.value })}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="License Number"
+                    value={currentStaff.licenseNumber || ''}
+                    onChange={(e) => setCurrentStaff({ ...currentStaff, licenseNumber: e.target.value })}
+                    placeholder="e.g., DRIVER123456"
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="License Expiry Date"
+                    type="date"
+                    value={currentStaff.licenseExpiry || ''}
+                    onChange={(e) => setCurrentStaff({ ...currentStaff, licenseExpiry: e.target.value })}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="CPC Card Number"
+                    value={currentStaff.cpcCardNumber || ''}
+                    onChange={(e) => setCurrentStaff({ ...currentStaff, cpcCardNumber: e.target.value })}
+                    placeholder="e.g., CPC123456"
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="CPC Expiry Date"
+                    type="date"
+                    value={currentStaff.cpcExpiry || ''}
+                    onChange={(e) => setCurrentStaff({ ...currentStaff, cpcExpiry: e.target.value })}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Medical Certificate Number"
+                    value={currentStaff.medicalCertificate || ''}
+                    onChange={(e) => setCurrentStaff({ ...currentStaff, medicalCertificate: e.target.value })}
+                    placeholder="e.g., MED123456"
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Medical Certificate Expiry"
+                    type="date"
+                    value={currentStaff.medicalExpiry || ''}
+                    onChange={(e) => setCurrentStaff({ ...currentStaff, medicalExpiry: e.target.value })}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Current Vehicle"
+                    value={currentStaff.currentVehicle || ''}
+                    onChange={(e) => setCurrentStaff({ ...currentStaff, currentVehicle: e.target.value })}
+                    placeholder="e.g., HGV001"
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Notes"
+                    value={currentStaff.notes || ''}
+                    onChange={(e) => setCurrentStaff({ ...currentStaff, notes: e.target.value })}
+                    placeholder="Additional notes about the driver"
+                    multiline
+                    rows={2}
+                  />
+                </Grid>
+              </>
+            )}
           </Grid>
+          )}
+
+          {/* Page 4: Qualifications and Licenses */}
+          {currentPage === 3 && (
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Qualifications & Licenses
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Add any relevant qualifications, licenses, or certifications. You can upload supporting documents.
+                </Typography>
+              </Grid>
+              
+              {/* Qualifications Section */}
+              <Grid item xs={12}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="subtitle1">Qualifications</Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={addQualification}
+                    startIcon={<Add />}
+                  >
+                    Add Qualification
+                  </Button>
+                </Box>
+                {currentStaff.qualifications?.map((qual, index) => (
+                  <Card key={index} sx={{ mb: 2, p: 2 }}>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Qualification Name"
+                          value={qual.name}
+                          onChange={(e) => updateQualification(index, 'name', e.target.value)}
+                          size="small"
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Issuing Body"
+                          value={qual.issuingBody}
+                          onChange={(e) => updateQualification(index, 'issuingBody', e.target.value)}
+                          size="small"
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Issue Date"
+                          type="date"
+                          value={qual.issueDate}
+                          onChange={(e) => updateQualification(index, 'issueDate', e.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                          size="small"
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Expiry Date (Optional)"
+                          type="date"
+                          value={qual.expiryDate}
+                          onChange={(e) => updateQualification(index, 'expiryDate', e.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                          size="small"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label="Document URL (Optional)"
+                          value={qual.documentUrl}
+                          onChange={(e) => updateQualification(index, 'documentUrl', e.target.value)}
+                          size="small"
+                          helperText="Link to uploaded document or certificate"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          size="small"
+                          onClick={() => removeQualification(index)}
+                          startIcon={<Delete />}
+                        >
+                          Remove Qualification
+                        </Button>
+                      </Grid>
+                    </Grid>
+                  </Card>
+                ))}
+              </Grid>
+
+              {/* Licenses Section */}
+              <Grid item xs={12}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="subtitle1">Licenses & Certifications</Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={addLicense}
+                    startIcon={<Add />}
+                  >
+                    Add License
+                  </Button>
+                </Box>
+                {currentStaff.licenses?.map((license, index) => (
+                  <Card key={index} sx={{ mb: 2, p: 2 }}>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="License Type"
+                          value={license.type}
+                          onChange={(e) => updateLicense(index, 'type', e.target.value)}
+                          size="small"
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="License Number"
+                          value={license.number}
+                          onChange={(e) => updateLicense(index, 'number', e.target.value)}
+                          size="small"
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Issuing Body"
+                          value={license.issuingBody}
+                          onChange={(e) => updateLicense(index, 'issuingBody', e.target.value)}
+                          size="small"
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Issue Date"
+                          type="date"
+                          value={license.issueDate}
+                          onChange={(e) => updateLicense(index, 'issueDate', e.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                          size="small"
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Expiry Date"
+                          type="date"
+                          value={license.expiryDate}
+                          onChange={(e) => updateLicense(index, 'expiryDate', e.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                          size="small"
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Document URL (Optional)"
+                          value={license.documentUrl}
+                          onChange={(e) => updateLicense(index, 'documentUrl', e.target.value)}
+                          size="small"
+                          helperText="Link to uploaded document"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          size="small"
+                          onClick={() => removeLicense(index)}
+                          startIcon={<Delete />}
+                        >
+                          Remove License
+                        </Button>
+                      </Grid>
+                    </Grid>
+                  </Card>
+                ))}
+              </Grid>
+            </Grid>
+          )}
+
+          {/* Page 5: Bank Details */}
+          {currentPage === 4 && (
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Bank Details
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Please provide your bank account details for salary payments.
+                </Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Account Name *"
+                  value={currentStaff.bankDetails?.accountName || ''}
+                  onChange={(e) => setCurrentStaff({
+                    ...currentStaff,
+                    bankDetails: { ...currentStaff.bankDetails!, accountName: e.target.value }
+                  })}
+                  error={!!formErrors.accountName}
+                  helperText={formErrors.accountName}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Account Number *"
+                  value={currentStaff.bankDetails?.accountNumber || ''}
+                  onChange={(e) => setCurrentStaff({
+                    ...currentStaff,
+                    bankDetails: { ...currentStaff.bankDetails!, accountNumber: e.target.value }
+                  })}
+                  error={!!formErrors.accountNumber}
+                  helperText={formErrors.accountNumber}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Sort Code *"
+                  value={currentStaff.bankDetails?.sortCode || ''}
+                  onChange={(e) => setCurrentStaff({
+                    ...currentStaff,
+                    bankDetails: { ...currentStaff.bankDetails!, sortCode: e.target.value }
+                  })}
+                  error={!!formErrors.sortCode}
+                  helperText={formErrors.sortCode}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Bank Name *"
+                  value={currentStaff.bankDetails?.bankName || ''}
+                  onChange={(e) => setCurrentStaff({
+                    ...currentStaff,
+                    bankDetails: { ...currentStaff.bankDetails!, bankName: e.target.value }
+                  })}
+                  error={!!formErrors.bankName}
+                  helperText={formErrors.bankName}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Building Society Number (Optional)"
+                  value={currentStaff.bankDetails?.buildingSocietyNumber || ''}
+                  onChange={(e) => setCurrentStaff({
+                    ...currentStaff,
+                    bankDetails: { ...currentStaff.bankDetails!, buildingSocietyNumber: e.target.value }
+                  })}
+                />
+              </Grid>
+            </Grid>
+          )}
+
+          {/* Page 6: Review and Submit */}
+          {currentPage === 5 && (
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Review & Submit
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Please review all the information before submitting.
+                </Typography>
+              </Grid>
+              
+              {/* Personal Information Review */}
+              <Grid item xs={12}>
+                <Card sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom color="primary">
+                      Personal Information
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={6}>
+                        <Typography variant="body2"><strong>Staff ID:</strong> {currentStaff.staffId}</Typography>
+                        <Typography variant="body2"><strong>Name:</strong> {currentStaff.firstName} {currentStaff.middleName} {currentStaff.familyName}</Typography>
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <Typography variant="body2"><strong>Role:</strong> {currentStaff.role}</Typography>
+                        <Typography variant="body2"><strong>Start Date:</strong> {currentStaff.startDate}</Typography>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Address Review */}
+              <Grid item xs={12}>
+                <Card sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom color="primary">
+                      Address Information
+                    </Typography>
+                    <Typography variant="body2">
+                      {currentStaff.address?.line1}<br />
+                      {currentStaff.address?.line2 && <>{currentStaff.address.line2}<br /></>}
+                      {currentStaff.address?.line3 && <>{currentStaff.address.line3}<br /></>}
+                      {currentStaff.address?.town}, {currentStaff.address?.postCode}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Contact Review */}
+              <Grid item xs={12}>
+                <Card sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom color="primary">
+                      Contact Details
+                    </Typography>
+                    <Typography variant="body2"><strong>Phone:</strong> {currentStaff.contact?.phone || 'Not provided'}</Typography>
+                    <Typography variant="body2"><strong>Mobile:</strong> {currentStaff.contact?.mobile}</Typography>
+                    <Typography variant="body2"><strong>Email:</strong> {currentStaff.contact?.email}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Next of Kin Review */}
+              <Grid item xs={12}>
+                <Card sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom color="primary">
+                      Next of Kin
+                    </Typography>
+                    <Typography variant="body2"><strong>Name:</strong> {currentStaff.nextOfKin?.name}</Typography>
+                    <Typography variant="body2"><strong>Relationship:</strong> {currentStaff.nextOfKin?.relationship}</Typography>
+                    <Typography variant="body2"><strong>Phone:</strong> {currentStaff.nextOfKin?.phone || 'Not provided'}</Typography>
+                    <Typography variant="body2"><strong>Email:</strong> {currentStaff.nextOfKin?.email || 'Not provided'}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Employment Review */}
+              <Grid item xs={12}>
+                <Card sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom color="primary">
+                      Employment Details
+                    </Typography>
+                    <Typography variant="body2"><strong>Tax Code:</strong> {currentStaff.taxCode}</Typography>
+                    <Typography variant="body2"><strong>NI Number:</strong> {currentStaff.nationalInsurance}</Typography>
+                    <Typography variant="body2"><strong>Status:</strong> {currentStaff.isActive ? 'Active' : 'Inactive'}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Driver-Specific Review */}
+              {currentStaff.role === 'driver' && (
+                <Grid item xs={12}>
+                  <Card sx={{ mb: 2 }}>
+                    <CardContent>
+                      <Typography variant="subtitle1" gutterBottom color="primary">
+                        Driver-Specific Information
+                      </Typography>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} md={6}>
+                          <Typography variant="body2"><strong>Employee Number:</strong> {currentStaff.employeeNumber || 'Not provided'}</Typography>
+                          <Typography variant="body2"><strong>Date of Birth:</strong> {currentStaff.dateOfBirth || 'Not provided'}</Typography>
+                          <Typography variant="body2"><strong>License Number:</strong> {currentStaff.licenseNumber || 'Not provided'}</Typography>
+                          <Typography variant="body2"><strong>License Expiry:</strong> {currentStaff.licenseExpiry || 'Not provided'}</Typography>
+                          <Typography variant="body2"><strong>CPC Card Number:</strong> {currentStaff.cpcCardNumber || 'Not provided'}</Typography>
+                          <Typography variant="body2"><strong>CPC Expiry:</strong> {currentStaff.cpcExpiry || 'Not provided'}</Typography>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <Typography variant="body2"><strong>Medical Certificate:</strong> {currentStaff.medicalCertificate || 'Not provided'}</Typography>
+                          <Typography variant="body2"><strong>Medical Expiry:</strong> {currentStaff.medicalExpiry || 'Not provided'}</Typography>
+                          <Typography variant="body2"><strong>Current Vehicle:</strong> {currentStaff.currentVehicle || 'Not assigned'}</Typography>
+                          <Typography variant="body2"><strong>Notes:</strong> {currentStaff.notes || 'No notes'}</Typography>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+
+              {/* Qualifications Review */}
+              {currentStaff.qualifications && currentStaff.qualifications.length > 0 && (
+                <Grid item xs={12}>
+                  <Card sx={{ mb: 2 }}>
+                    <CardContent>
+                      <Typography variant="subtitle1" gutterBottom color="primary">
+                        Qualifications ({currentStaff.qualifications.length})
+                      </Typography>
+                      {currentStaff.qualifications.map((qual, index) => (
+                        <Box key={index} sx={{ mb: 1 }}>
+                          <Typography variant="body2">
+                            <strong>{qual.name}</strong> - {qual.issuingBody}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Issued: {qual.issueDate} {qual.expiryDate && `| Expires: ${qual.expiryDate}`}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+
+              {/* Licenses Review */}
+              {currentStaff.licenses && currentStaff.licenses.length > 0 && (
+                <Grid item xs={12}>
+                  <Card sx={{ mb: 2 }}>
+                    <CardContent>
+                      <Typography variant="subtitle1" gutterBottom color="primary">
+                        Licenses ({currentStaff.licenses.length})
+                      </Typography>
+                      {currentStaff.licenses.map((license, index) => (
+                        <Box key={index} sx={{ mb: 1 }}>
+                          <Typography variant="body2">
+                            <strong>{license.type}</strong> - {license.number}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {license.issuingBody} | Issued: {license.issueDate} | Expires: {license.expiryDate}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+
+              {/* Bank Details Review */}
+              <Grid item xs={12}>
+                <Card sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom color="primary">
+                      Bank Details
+                    </Typography>
+                    <Typography variant="body2"><strong>Account Name:</strong> {currentStaff.bankDetails?.accountName}</Typography>
+                    <Typography variant="body2"><strong>Account Number:</strong> {currentStaff.bankDetails?.accountNumber}</Typography>
+                    <Typography variant="body2"><strong>Sort Code:</strong> {currentStaff.bankDetails?.sortCode}</Typography>
+                    <Typography variant="body2"><strong>Bank:</strong> {currentStaff.bankDetails?.bankName}</Typography>
+                    {currentStaff.bankDetails?.buildingSocietyNumber && (
+                      <Typography variant="body2"><strong>Building Society Number:</strong> {currentStaff.bankDetails.buildingSocietyNumber}</Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowAddDialog(false)}>
             Cancel
           </Button>
+          {currentPage > 0 && (
+            <Button onClick={handlePreviousPage}>
+              Previous
+            </Button>
+          )}
+          {currentPage < 5 ? (
+            <Button onClick={handleNextPage} variant="contained">
+              Next
+            </Button>
+          ) : (
           <Button
             onClick={editingId ? handleUpdateStaff : handleAddStaff}
             variant="contained"
             startIcon={editingId ? <Save /> : <Add />}
           >
-            {editingId ? 'Update' : 'Add Staff Member'}
+              {editingId ? 'Update Staff Member' : 'Add Staff Member'}
           </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>

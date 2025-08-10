@@ -402,7 +402,7 @@ const Reports: React.FC<ReportsProps> = ({ onClose }) => {
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ py: 2, px: 2 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1">

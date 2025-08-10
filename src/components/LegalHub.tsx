@@ -114,11 +114,11 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
-              cursor: 'pointer', 
-              transition: 'all 0.3s ease',
+              opacity: 0.6,
+              cursor: 'not-allowed',
               '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: 4,
+                transform: 'none',
+                boxShadow: 1
               }
             }}
           >
@@ -128,11 +128,11 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
                   <Gavel />
                 </Avatar>
                 <Box>
-                  <Typography variant="h5" component="div">
+                  <Typography variant="h5" component="div" color="grey.600">
                     Coming Soon
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Additional legal features
+                  <Typography variant="body2" color="grey.500">
+                    Legal documentation
                   </Typography>
                 </Box>
               </Box>
@@ -144,19 +144,19 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
                   icon={<TrendingUp />} 
                   label="Feature 1" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
                   icon={<Analytics />} 
                   label="Feature 2" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
                   icon={<Report />} 
                   label="Feature 3" 
                   size="small" 
-                  sx={{ mb: 1 }}
+                  sx={{ mb: 1, opacity: 0.7 }}
                 />
               </Box>
             </CardContent>
@@ -167,24 +167,24 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
-              cursor: 'pointer', 
-              transition: 'all 0.3s ease',
+              opacity: 0.6,
+              cursor: 'not-allowed',
               '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: 4,
+                transform: 'none',
+                boxShadow: 1
               }
             }}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'grey.600', mr: 2 }}>
+                <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
                   <Gavel />
                 </Avatar>
                 <Box>
-                  <Typography variant="h5" component="div">
+                  <Typography variant="h5" component="div" color="grey.600">
                     Coming Soon
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="grey.500">
                     Relevant Legislation
                   </Typography>
                 </Box>
@@ -197,19 +197,19 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
                   icon={<TrendingUp />} 
                   label="Feature 1" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
                   icon={<Analytics />} 
                   label="Feature 2" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
                   icon={<Report />} 
                   label="Feature 3" 
                   size="small" 
-                  sx={{ mb: 1 }}
+                  sx={{ mb: 1, opacity: 0.7 }}
                 />
               </Box>
             </CardContent>

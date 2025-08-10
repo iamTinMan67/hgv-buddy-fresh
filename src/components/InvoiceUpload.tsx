@@ -298,7 +298,7 @@ const InvoiceUpload: React.FC<InvoiceUploadProps> = ({ onClose }) => {
   };
 
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <IconButton onClick={onClose} sx={{ mr: 2 }}>
           <Home />

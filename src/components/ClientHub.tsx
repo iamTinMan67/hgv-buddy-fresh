@@ -39,7 +39,7 @@ const ClientHub: React.FC<ClientHubProps> = ({ onClose }) => {
 
   // Main Client Hub
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1">
           Client Hub
@@ -59,8 +59,9 @@ const ClientHub: React.FC<ClientHubProps> = ({ onClose }) => {
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
               '&:hover': {
-                transform: 'translateY(-4px)',
+                transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
               }
             }}
@@ -113,8 +114,9 @@ const ClientHub: React.FC<ClientHubProps> = ({ onClose }) => {
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
               '&:hover': {
-                transform: 'translateY(-4px)',
+                transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
               }
             }}
@@ -167,8 +169,9 @@ const ClientHub: React.FC<ClientHubProps> = ({ onClose }) => {
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
               '&:hover': {
-                transform: 'translateY(-4px)',
+                transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
               }
             }}

@@ -318,53 +318,7 @@ const ClientInvoices: React.FC<ClientInvoicesProps> = ({ onClose }) => {
         </IconButton>
       </Box>
 
-      {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Receipt sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-              <Typography variant="h6">Total Invoices</Typography>
-              <Typography variant="h4" color="primary">
-                {totalInvoices}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <CheckCircle sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-              <Typography variant="h6">Paid</Typography>
-              <Typography variant="h4" color="success.main">
-                {paidInvoices}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Warning sx={{ fontSize: 40, color: 'error.main', mb: 1 }} />
-              <Typography variant="h6">Overdue</Typography>
-              <Typography variant="h4" color="error.main">
-                {overdueInvoices}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <AttachMoney sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
-              <Typography variant="h6">Total Amount</Typography>
-              <Typography variant="h4" color="info.main">
-                £{totalAmount.toLocaleString()}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>

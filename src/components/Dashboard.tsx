@@ -36,6 +36,7 @@ import PlanningHub from './PlanningHub';
 // PlanningMainHub import removed - using PlanningHub directly
 import LegalHub from './LegalHub';
 import DriverHub from './DriverHub';
+import StaffManagement from './StaffManagement';
 
 import DriverDashboard from './DriverDashboard';
 import DriverPlanner from './DriverPlanner';
@@ -64,6 +65,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [showFleetManagement, setShowFleetManagement] = useState(false);
   const [showLegalHub, setShowLegalHub] = useState(false);
   const [showDriverHub, setShowDriverHub] = useState(false);
+  const [showStaffManagement, setShowStaffManagement] = useState(false);
   const [showPlanningHub, setShowPlanningHub] = useState(false);
   // showPlanningMainHub state removed - using showPlanningHub directly
   const [showReportsHub, setShowReportsHub] = useState(false);
@@ -164,6 +166,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     return (
       <Box sx={{ py: 2, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
         <LegalHub onClose={() => setShowLegalHub(false)} />
+      </Box>
+    );
+  }
+
+  // Show staff management if requested
+  if (showStaffManagement) {
+    return (
+      <Box sx={{ py: 2, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
+        <StaffManagement onClose={() => setShowStaffManagement(false)} />
       </Box>
     );
   }
@@ -458,45 +469,91 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         ) : (
           // Admin Dashboard (Admin & Owner)
           <>
-            <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)' }}>
-                <CardContent sx={{ textAlign: 'center' }}>
+            {/* Main 3-Card Dashboard Row */}
+            <Grid item xs={12} md={4}>
+              <Card sx={{ 
+                transform: 'scale(0.94)',
+                height: '280px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
                   <LocalShipping sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-                  <Typography variant="h6">Manage Fleet</Typography>
+                  <Typography variant="h6">Fleet Management</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Monitor all vehicles
+                    Monitor all vehicles, track defects, and manage maintenance
                   </Typography>
+                </CardContent>
+                <Box sx={{ p: 2, textAlign: 'center' }}>
                   <Button 
                     variant="contained" 
-                    sx={{ mt: 2 }}
+                    fullWidth
                     onClick={() => setShowFleetManagement(true)}
                   >
                     Fleet Hub
                   </Button>
-                </CardContent>
+                </Box>
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)' }}>
-                <CardContent sx={{ textAlign: 'center' }}>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ 
+                transform: 'scale(0.94)',
+                height: '280px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
                   <Person sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
-                  <Typography variant="h6">Staff Data</Typography>
+                  <Typography variant="h6">Staff Hub</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Manage staff and wages
+                    Manage staff, wages, qualifications, and employment details
                   </Typography>
+                </CardContent>
+                <Box sx={{ p: 2, textAlign: 'center' }}>
                   <Button 
                     variant="contained" 
                     color="secondary" 
-                    sx={{ mt: 2 }}
-                    onClick={() => setShowDriverHub(true)}
+                    fullWidth
+                    onClick={() => setShowStaffManagement(true)}
                   >
                     Staff Hub
                   </Button>
-                </CardContent>
+                </Box>
               </Card>
             </Grid>
 
+            <Grid item xs={12} md={4}>
+              <Card sx={{ 
+                transform: 'scale(0.94)',
+                height: '280px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
+                  <Assessment sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
+                  <Typography variant="h6">Legal Hub</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Legal compliance, regulations, and driver hours tracking
+                  </Typography>
+                </CardContent>
+                <Box sx={{ p: 2, textAlign: 'center' }}>
+                  <Button 
+                    variant="contained" 
+                    color="success" 
+                    fullWidth
+                    onClick={() => setShowLegalHub(true)}
+                  >
+                    Legal Hub
+                  </Button>
+                </Box>
+              </Card>
+            </Grid>
+
+            {/* Additional Tools Row */}
             <Grid item xs={12} md={6} lg={4}>
               <Card sx={{ transform: 'scale(0.94)' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
@@ -560,26 +617,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <Grid item xs={12} md={6} lg={4}>
               <Card sx={{ transform: 'scale(0.94)' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
-                  <Assessment sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-                  <Typography variant="h6">Legal</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Legal compliance and regulations
-                  </Typography>
-                  <Button 
-                    variant="contained" 
-                    color="success" 
-                    sx={{ mt: 2 }}
-                    onClick={() => setShowLegalHub(true)}
-                  >
-                    Legal Hub
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)' }}>
-                <CardContent sx={{ textAlign: 'center' }}>
                   <Business sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
                   <Typography variant="h6">Clients</Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -592,6 +629,88 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     onClick={() => setShowClientHub(true)}
                   >
                     Client Hub
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Coming Soon Cards Row */}
+            <Grid item xs={12} md={6} lg={4}>
+              <Card sx={{ 
+                transform: 'scale(0.94)',
+                opacity: 0.6,
+                cursor: 'not-allowed',
+                '&:hover': {
+                  transform: 'scale(0.94)',
+                  boxShadow: 1
+                }
+              }}>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Schedule sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
+                  <Typography variant="h6" color="grey.600">Coming Soon</Typography>
+                  <Typography variant="body2" color="grey.500">
+                    Additional features and tools
+                  </Typography>
+                  <Button 
+                    variant="outlined" 
+                    disabled
+                    sx={{ mt: 2 }}
+                  >
+                    Unavailable
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6} lg={4}>
+              <Card sx={{ 
+                transform: 'scale(0.94)',
+                opacity: 0.6,
+                cursor: 'not-allowed',
+                '&:hover': {
+                  transform: 'scale(0.94)',
+                  boxShadow: 1
+                }
+              }}>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Assessment sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
+                  <Typography variant="h6" color="grey.600">Coming Soon</Typography>
+                  <Typography variant="body2" color="grey.500">
+                    Advanced analytics and reporting
+                  </Typography>
+                  <Button 
+                    variant="outlined" 
+                    disabled
+                    sx={{ mt: 2 }}
+                  >
+                    Unavailable
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6} lg={4}>
+              <Card sx={{ 
+                transform: 'scale(0.94)',
+                opacity: 0.6,
+                cursor: 'not-allowed',
+                '&:hover': {
+                  transform: 'scale(0.94)',
+                  boxShadow: 1
+                }
+              }}>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Business sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
+                  <Typography variant="h6" color="grey.600">Coming Soon</Typography>
+                  <Typography variant="body2" color="grey.500">
+                    Enhanced client management
+                  </Typography>
+                  <Button 
+                    variant="outlined" 
+                    disabled
+                    sx={{ mt: 2 }}
+                  >
+                    Unavailable
                   </Button>
                 </CardContent>
               </Card>

@@ -33,6 +33,8 @@ import {
   Edit,
   Assessment,
   Receipt,
+  Analytics,
+  Report,
 } from '@mui/icons-material';
 
 import DailyPlanner from './DailyPlanner';
@@ -94,7 +96,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
       {/* Sub-Portal Navigation */}
       <Grid container spacing={3}>
         {/* Job Allocation Card */}
-        <Grid item xs={12} md={6} lg={4}>
+        <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
@@ -149,7 +151,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
         </Grid>
 
         {/* Daily Planner Card */}
-        <Grid item xs={12} md={6} lg={4}>
+        <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
@@ -206,7 +208,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
         </Grid>
 
         {/* Route Planning Card */}
-        <Grid item xs={12} md={6} lg={4}>
+        <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
@@ -265,7 +267,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
 
 
         {/* Trailer Planner Card */}
-        <Grid item xs={12} md={6} lg={4}>
+        <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
@@ -320,7 +322,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
         </Grid>
 
         {/* Garmin Route Planning Card */}
-        <Grid item xs={12} md={6} lg={4}>
+        <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
@@ -375,29 +377,28 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
         </Grid>
 
         {/* Coming Soon Card for consistent layout */}
-        <Grid item xs={12} md={6} lg={4}>
+        <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
-              cursor: 'pointer', 
-              transition: 'all 0.3s ease',
-              transform: 'scale(0.94)',
+              opacity: 0.6,
+              cursor: 'not-allowed',
               '&:hover': {
-                transform: 'translateY(-4px) scale(0.94)',
-                boxShadow: 4,
+                transform: 'none',
+                boxShadow: 1
               }
             }}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
-                  <Schedule />
+                  <Analytics />
                 </Avatar>
                 <Box>
-                  <Typography variant="h5" component="div">
+                  <Typography variant="h5" component="div" color="grey.600">
                     Coming Soon
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Additional planning features
+                  <Typography variant="body2" color="grey.500">
+                    Advanced planning features
                   </Typography>
                 </Box>
               </Box>
@@ -409,19 +410,19 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
                   icon={<TrendingUp />} 
                   label="Feature 1" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
-                  icon={<Assessment />} 
+                  icon={<Analytics />} 
                   label="Feature 2" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
-                  icon={<Receipt />} 
+                  icon={<Report />} 
                   label="Feature 3" 
                   size="small" 
-                  sx={{ mb: 1 }}
+                  sx={{ mb: 1, opacity: 0.7 }}
                 />
               </Box>
             </CardContent>

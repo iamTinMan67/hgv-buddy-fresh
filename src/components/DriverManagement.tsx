@@ -53,7 +53,9 @@ import {
   Schedule,
   Work,
   DirectionsCar as DirectionsCarIcon,
+  Person,
 } from '@mui/icons-material';
+import DriverDetails from './DriverDetails';
 
 interface DriverManagementProps {
   onClose: () => void;
@@ -86,7 +88,12 @@ interface Driver {
   lastName: string;
   email: string;
   phone: string;
-  address: string;
+  addressLine1: string;
+  addressLine2: string;
+  addressLine3: string;
+  town: string;
+  city: string;
+  postcode: string;
   dateOfBirth: string;
   employeeNumber: string;
   hireDate: string;
@@ -152,6 +159,7 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [showDriverDetails, setShowDriverDetails] = useState(false);
 
   // Mock driver data
   const [drivers] = useState<Driver[]>([
@@ -161,7 +169,12 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
       lastName: 'Mustafa',
       email: 'adam.mustafa@company.com',
       phone: '+44 7700 900123',
-      address: '123 Main Street, London, SW1A 1AA',
+              addressLine1: '123 Main Street',
+        addressLine2: '',
+        addressLine3: '',
+        town: 'London',
+        city: 'London',
+        postcode: 'SW1A 1AA',
       dateOfBirth: '1985-03-15',
       employeeNumber: 'EMP001',
       hireDate: '2020-01-15',
@@ -191,7 +204,12 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
       lastName: 'Manager',
       email: 'jane.manager@company.com',
       phone: '+44 7700 900125',
-      address: '456 High Street, Manchester, M1 1AA',
+              addressLine1: '456 High Street',
+        addressLine2: '',
+        addressLine3: '',
+        town: 'Manchester',
+        city: 'Manchester',
+        postcode: 'M1 1AA',
       dateOfBirth: '1988-07-22',
       employeeNumber: 'EMP002',
       hireDate: '2019-06-01',
@@ -221,7 +239,12 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
       lastName: 'Wilson',
       email: 'mike.wilson@company.com',
       phone: '+44 7700 900127',
-      address: '789 Park Lane, Birmingham, B1 1AA',
+              addressLine1: '789 Park Lane',
+        addressLine2: '',
+        addressLine3: '',
+        town: 'Birmingham',
+        city: 'Birmingham',
+        postcode: 'B1 1AA',
       dateOfBirth: '1990-11-08',
       employeeNumber: 'EMP003',
       hireDate: '2021-03-10',
@@ -332,7 +355,12 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
     lastName: '',
     email: '',
     phone: '',
-    address: '',
+    addressLine1: '',
+    addressLine2: '',
+    addressLine3: '',
+    town: '',
+    city: '',
+    postcode: '',
     dateOfBirth: '',
     employeeNumber: '',
     hireDate: new Date().toISOString().split('T')[0],
@@ -456,7 +484,12 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
       lastName: '',
       email: '',
       phone: '',
-      address: '',
+      addressLine1: '',
+      addressLine2: '',
+      addressLine3: '',
+      town: '',
+      city: '',
+      postcode: '',
       dateOfBirth: '',
       employeeNumber: '',
       hireDate: new Date().toISOString().split('T')[0],
@@ -486,6 +519,11 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
     setShowViewDialog(true);
   };
 
+  const openDriverDetails = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setShowDriverDetails(true);
+  };
+
   // Calculate statistics
   const totalDrivers = drivers.length;
   const activeDrivers = drivers.filter(d => d.status === 'active').length;
@@ -508,7 +546,7 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
   );
 
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           Driver Management
@@ -531,90 +569,11 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
         </Box>
       </Box>
 
-      {/* Driver Statistics */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary">
-                {totalDrivers}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Drivers
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main">
-                {activeDrivers}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Active Drivers
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main">
-                {suspendedDrivers}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Suspended
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="error.main">
-                {expiringLicenses}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Expiring Licenses
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="error.main">
-                {expiringCPC}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Expiring CPC
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="error.main">
-                {expiringMedical}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Expiring Medical
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
 
-      {/* Critical Alerts */}
-      {criticalDrivers.length > 0 && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          <Typography variant="body2">
-            <strong>Critical Alert:</strong> {criticalDrivers.length} drivers have critical issues requiring immediate attention!
-          </Typography>
-        </Alert>
-      )}
+
+
+
+      
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -627,7 +586,7 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
               fontWeight: 'bold',
               '&.Mui-selected': {
                 color: 'yellow',
-              },
+            },
               '&:hover': {
                 color: 'yellow',
               }
@@ -639,9 +598,6 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
         >
           <Tab label="All Drivers" />
           <Tab label="Active Drivers" />
-          <Tab label="Qualifications" />
-          <Tab label="Performance" />
-          <Tab label="Safety Records" />
           <Tab label="Driver Status" />
           <Tab label="Terminated Drivers" />
         </Tabs>
@@ -829,59 +785,7 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
         </Grid>
       </TabPanel>
 
-      {/* Qualifications Tab */}
-      <TabPanel value={tabValue} index={2}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  License Expiry Alerts
-                </Typography>
-                <List>
-                  {drivers
-                    .filter(driver => new Date(driver.licenseExpiry) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
-                    .map(driver => (
-                      <ListItem key={driver.id}>
-                        <ListItemIcon>
-                          <Warning color="warning" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={`${driver.firstName} ${driver.lastName}`}
-                          secondary={`License expires: ${new Date(driver.licenseExpiry).toLocaleDateString()}`}
-                        />
-                      </ListItem>
-                    ))}
-                </List>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  CPC Expiry Alerts
-                </Typography>
-                <List>
-                  {drivers
-                    .filter(driver => new Date(driver.cpcExpiry) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
-                    .map(driver => (
-                      <ListItem key={driver.id}>
-                        <ListItemIcon>
-                          <Warning color="warning" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={`${driver.firstName} ${driver.lastName}`}
-                          secondary={`CPC expires: ${new Date(driver.cpcExpiry).toLocaleDateString()}`}
-                        />
-                      </ListItem>
-                    ))}
-                </List>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </TabPanel>
+
 
       {/* Performance Tab */}
       <TabPanel value={tabValue} index={3}>
@@ -947,69 +851,10 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
         </Grid>
       </TabPanel>
 
-      {/* Safety Records Tab */}
-      <TabPanel value={tabValue} index={4}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Safety Performance
-                </Typography>
-                <List>
-                  {drivers
-                    .sort((a, b) => b.safetyScore - a.safetyScore)
-                    .map(driver => (
-                      <ListItem key={driver.id}>
-                        <ListItemIcon>
-                          {driver.safetyScore >= 95 ? (
-                            <CheckCircle color="success" />
-                          ) : driver.safetyScore >= 85 ? (
-                            <Circle color="info" />
-                          ) : driver.safetyScore >= 75 ? (
-                            <Warning color="warning" />
-                          ) : (
-                            <ErrorIcon color="error" />
-                          )}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={`${driver.firstName} ${driver.lastName}`}
-                          secondary={`Safety Score: ${driver.safetyScore}%`}
-                        />
-                      </ListItem>
-                    ))}
-                </List>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Safety Statistics
-                </Typography>
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="body2" gutterBottom>
-                    Average Safety Score: {Math.round(drivers.reduce((sum, d) => sum + d.safetyScore, 0) / drivers.length)}%
-                  </Typography>
-                  <Typography variant="body2" gutterBottom>
-                    Drivers with 95%+ Safety: {drivers.filter(d => d.safetyScore >= 95).length}
-                  </Typography>
-                  <Typography variant="body2" gutterBottom>
-                    Drivers Needing Improvement: {drivers.filter(d => d.safetyScore < 85).length}
-                  </Typography>
-                  <Typography variant="body2" gutterBottom>
-                    Suspended Drivers: {drivers.filter(d => d.status === 'suspended').length}
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </TabPanel>
+
 
       {/* Driver Status Tab */}
-      <TabPanel value={tabValue} index={5}>
+      <TabPanel value={tabValue} index={2}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h6">Driver Status Management</Typography>
           <Button
@@ -1069,7 +914,7 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
       </TabPanel>
 
       {/* Terminated Drivers Tab */}
-      <TabPanel value={tabValue} index={6}>
+      <TabPanel value={tabValue} index={3}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h6">Terminated Driver Data Compliance</Typography>
           <Button
@@ -1194,14 +1039,52 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
                 onChange={(e) => setNewDriver({ ...newDriver, phone: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Address"
-                multiline
-                rows={2}
-                value={newDriver.address}
-                onChange={(e) => setNewDriver({ ...newDriver, address: e.target.value })}
+                label="Address Line 1"
+                value={newDriver.addressLine1}
+                onChange={(e) => setNewDriver({ ...newDriver, addressLine1: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Address Line 2"
+                value={newDriver.addressLine2}
+                onChange={(e) => setNewDriver({ ...newDriver, addressLine2: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Address Line 3"
+                value={newDriver.addressLine3}
+                onChange={(e) => setNewDriver({ ...newDriver, addressLine3: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Town"
+                value={newDriver.town}
+                onChange={(e) => setNewDriver({ ...newDriver, town: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="City"
+                value={newDriver.city}
+                onChange={(e) => setNewDriver({ ...newDriver, city: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Post Code"
+                value={newDriver.postcode}
+                onChange={(e) => setNewDriver({ ...newDriver, postcode: e.target.value })}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -1372,9 +1255,16 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
                 <Typography variant="body2" gutterBottom>
                   <strong>Phone:</strong> {selectedDriver.phone}
                 </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Address:</strong> {selectedDriver.address}
-                </Typography>
+                                  <Typography variant="body2" gutterBottom>
+                    <strong>Address:</strong> {[
+                      selectedDriver.addressLine1,
+                      selectedDriver.addressLine2,
+                      selectedDriver.addressLine3,
+                      selectedDriver.town,
+                      selectedDriver.city,
+                      selectedDriver.postcode
+                    ].filter(Boolean).join(', ')}
+                  </Typography>
                 <Typography variant="body2" gutterBottom>
                   <strong>Date of Birth:</strong> {new Date(selectedDriver.dateOfBirth).toLocaleDateString()}
                 </Typography>

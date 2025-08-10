@@ -25,6 +25,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  FormHelperText,
   Tabs,
   Tab,
   Tooltip,
@@ -34,7 +35,8 @@ import {
   ListItemIcon,
   Divider,
   LinearProgress,
-
+  Alert,
+  Checkbox,
 } from '@mui/material';
 import {
   Add,
@@ -53,6 +55,9 @@ import {
   Refresh,
   Home,
   ErrorOutline,
+  Schedule,
+  Cancel,
+  LocalShipping,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import {
@@ -60,6 +65,7 @@ import {
   JobStatus,
   updateScheduleJobStatus,
   updateJobStatus,
+  addDailySchedule,
 } from '../store/slices/jobSlice';
 
 interface DailyPlannerProps {
@@ -72,17 +78,31 @@ interface TabPanelProps {
   value: number;
 }
 
+interface NewSchedule {
+  vehicleId: string;
+  runTitle: string;
+  date: string;
+  routePlanId: string;
+  jobs: string[];
+  notes: string;
+}
+
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
+
   return (
     <div
       role="tabpanel"
       hidden={value !== index}
-      id={`planner-tabpanel-${index}`}
-      aria-labelledby={`planner-tab-${index}`}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
     </div>
   );
 }
@@ -91,12 +111,22 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { dailySchedules, jobs } = useSelector((state: RootState) => state.job);
   const { user } = useSelector((state: RootState) => state.auth);
+
   const [tabValue, setTabValue] = useState(0);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<DailySchedule | null>(null);
   const [selectedJob, setSelectedJob] = useState<{ scheduleId: string; jobId: string } | null>(null);
-
+  const [newSchedule, setNewSchedule] = useState<NewSchedule>({
+    vehicleId: 'V001', // Default to Vehicle 1
+    runTitle: '',
+    date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Today + 1
+    routePlanId: '',
+    jobs: [],
+    notes: '',
+  });
   const [statusUpdate, setStatusUpdate] = useState({
     status: 'in_progress' as JobStatus,
     actualStartTime: '',
@@ -104,60 +134,103 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
     notes: '',
   });
 
+  // Mock data for vehicles (in a real app, this would come from Redux store)
+  const vehicles = [
+    { id: 'V001', name: 'HGV-001', type: 'Rigid Truck' },
+    { id: 'V002', name: 'HGV-002', type: 'Articulated Lorry' },
+    { id: 'V003', name: 'HGV-003', type: 'Box Van' },
+  ];
+
+  // Mock data for available jobs (pending jobs that can be scheduled)
+  const availableJobs = jobs.filter(job => job.status === 'pending');
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'info';
-      case 'in_progress': return 'primary';
-      case 'completed': return 'success';
-      case 'cancelled': return 'error';
-      default: return 'default';
+      case 'scheduled':
+        return 'primary';
+      case 'in_progress':
+        return 'warning';
+      case 'completed':
+        return 'success';
+      case 'cancelled':
+        return 'error';
+      case 'pending':
+        return 'default';
+      default:
+        return 'default';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'scheduled': return <Pending />;
-      case 'in_progress': return <PlayArrow />;
-      case 'completed': return <CheckCircle />;
-      case 'cancelled': return <Stop />;
-      default: return <Pending />;
+      case 'scheduled':
+        return <Schedule />;
+      case 'in_progress':
+        return <Assignment />;
+      case 'completed':
+        return <CheckCircle />;
+      case 'cancelled':
+        return <Cancel />;
+      case 'pending':
+        return <Pending />;
+      default:
+        return <Schedule />;
     }
   };
 
   const getJobStatusColor = (status: JobStatus) => {
     switch (status) {
-      case 'pending': return 'default';
-      case 'assigned': return 'info';
-      case 'in_progress': return 'primary';
-      case 'attempted': return 'warning';
-      case 'rescheduled': return 'secondary';
-      case 'completed': return 'success';
-      case 'failed': return 'error';
-      case 'refused': return 'error';
-      case 'cancelled': return 'error';
-      default: return 'default';
+      case 'pending':
+        return 'default';
+      case 'scheduled':
+        return 'primary';
+      case 'in_progress':
+        return 'warning';
+      case 'completed':
+        return 'success';
+      case 'failed':
+        return 'error';
+      case 'attempted':
+        return 'info';
+      case 'rescheduled':
+        return 'secondary';
+      case 'refused':
+        return 'error';
+      case 'cancelled':
+        return 'error';
+      default:
+        return 'default';
     }
   };
 
   const getJobStatusIcon = (status: JobStatus) => {
     switch (status) {
-      case 'pending': return <Pending />;
-      case 'assigned': return <Assignment />;
-      case 'in_progress': return <PlayArrow />;
-      case 'attempted': return <Warning />;
-      case 'rescheduled': return <Refresh />;
-      case 'completed': return <CheckCircle />;
-      case 'failed': return <ErrorOutline />;
-      case 'refused': return <Stop />;
-      case 'cancelled': return <Stop />;
-      default: return <Pending />;
+      case 'pending':
+        return <Pending />;
+      case 'scheduled':
+        return <Schedule />;
+      case 'in_progress':
+        return <Assignment />;
+      case 'completed':
+        return <CheckCircle />;
+      case 'failed':
+        return <Cancel />;
+      case 'attempted':
+        return <Update />;
+      case 'rescheduled':
+        return <Schedule />;
+      case 'refused':
+        return <Cancel />;
+      case 'cancelled':
+        return <Cancel />;
+      default:
+        return <Schedule />;
     }
   };
 
-
-
   const openEditDialog = (schedule: DailySchedule) => {
     setSelectedSchedule(schedule);
+    setShowEditDialog(true);
   };
 
   const openViewDialog = (schedule: DailySchedule) => {
@@ -202,8 +275,58 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
     }
   };
 
+  // Function to auto-populate run title from first selected job's city
+  const updateRunTitle = (selectedJobIds: string[]) => {
+    if (selectedJobIds.length > 0) {
+      const firstJob = availableJobs.find(job => job.id === selectedJobIds[0]);
+      if (firstJob && firstJob.deliveryLocation && firstJob.deliveryLocation.address) {
+        // Extract city from address (assuming format like "City, Postcode" or just "City")
+        const addressParts = firstJob.deliveryLocation.address.split(',');
+        const city = addressParts[0].trim();
+        setNewSchedule(prev => ({ ...prev, runTitle: city }));
+      }
+    } else {
+      setNewSchedule(prev => ({ ...prev, runTitle: '' }));
+    }
+  };
+
+  const handleAddSchedule = () => {
+    const schedule: DailySchedule = {
+      id: Date.now().toString(),
+      vehicleId: newSchedule.vehicleId,
+      driverId: undefined, // No driver assigned initially
+      date: newSchedule.date,
+      routePlanId: newSchedule.routePlanId,
+      jobs: newSchedule.jobs.map(jobId => ({
+        jobId,
+        scheduledTime: '09:00', // Default time, would be configurable
+        estimatedDuration: 120, // Default duration, would come from job
+        status: 'scheduled' as JobStatus,
+      })),
+      totalJobs: newSchedule.jobs.length,
+      completedJobs: 0,
+      totalDistance: 0,
+      totalDuration: newSchedule.jobs.length * 120, // Default calculation
+      status: 'scheduled',
+      notes: newSchedule.notes,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    dispatch(addDailySchedule(schedule));
+    setShowAddDialog(false);
+    setNewSchedule({
+      vehicleId: 'V001', // Reset to default Vehicle 1
+      runTitle: '',
+      date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Reset to Today + 1
+      routePlanId: '',
+      jobs: [],
+      notes: '',
+    });
+  };
+
   // Calculate statistics
   const totalSchedules = dailySchedules.length;
+  const pendingSchedules = dailySchedules.filter(schedule => schedule.status === 'pending').length;
   const scheduledSchedules = dailySchedules.filter(schedule => schedule.status === 'scheduled').length;
   const inProgressSchedules = dailySchedules.filter(schedule => schedule.status === 'in_progress').length;
   const completedSchedules = dailySchedules.filter(schedule => schedule.status === 'completed').length;
@@ -216,7 +339,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
     : dailySchedules;
 
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           Daily Planner
@@ -226,7 +349,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
             <Button
               startIcon={<Add />}
               variant="contained"
-              onClick={() => {}}
+              onClick={() => setShowAddDialog(true)}
               sx={{ mr: 2 }}
             >
               Create Schedule
@@ -243,7 +366,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
 
       {/* Schedule Statistics */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={1.7}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" color="primary">
@@ -255,7 +378,19 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={1.7}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="default">
+                {pendingSchedules}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Pending
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={1.7}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" color="info.main">
@@ -267,10 +402,10 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={1.7}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary.main">
+              <Typography variant="h4" color="warning.main">
                 {inProgressSchedules}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -279,7 +414,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={1.7}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" color="success.main">
@@ -291,7 +426,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={1.7}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" color="warning.main">
@@ -303,7 +438,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={1.7}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" color="success.main">
@@ -339,6 +474,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
         >
           <Tab label="Today's Schedules" />
           <Tab label="All Schedules" />
+          <Tab label="Pending Deliveries" />
           <Tab label="Timeline View" />
         </Tabs>
       </Box>
@@ -518,8 +654,121 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
         </TableContainer>
       </TabPanel>
 
-      {/* Timeline View Tab */}
+      {/* Pending Deliveries Tab */}
       <TabPanel value={tabValue} index={2}>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Pending Jobs Available for Scheduling
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            These jobs are ready to be assigned to vehicles and drivers. Select jobs to create a new schedule.
+          </Typography>
+        </Box>
+        
+        {availableJobs.length === 0 ? (
+          <Alert severity="info">
+            No pending jobs available for scheduling. All jobs have been assigned or completed.
+          </Alert>
+        ) : (
+          <Grid container spacing={3}>
+            {availableJobs.map((job) => (
+              <Grid item xs={12} md={6} lg={4} key={job.id}>
+                <Card>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6" color="primary">
+                        {job.jobNumber}
+                      </Typography>
+                      <Chip
+                        icon={<Pending />}
+                        label="Pending"
+                        color="default"
+                        size="small"
+                      />
+                    </Box>
+                    <Typography variant="body1" fontWeight="bold" gutterBottom>
+                      {job.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {job.description}
+                    </Typography>
+                    
+                    <Divider sx={{ my: 2 }} />
+                    
+                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                      <Grid item xs={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Customer
+                        </Typography>
+                        <Typography variant="body2">
+                          {job.customerName}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Priority
+                        </Typography>
+                        <Chip
+                          label={job.priority}
+                          size="small"
+                          color={job.priority === 'high' ? 'error' : job.priority === 'medium' ? 'warning' : 'success'}
+                        />
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Pickup
+                        </Typography>
+                        <Typography variant="body2">
+                          {job.pickupLocation.name}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Delivery
+                        </Typography>
+                        <Typography variant="body2">
+                          {job.deliveryLocation.name}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                    
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Visibility />}
+                        onClick={() => {
+                          // View job details
+                        }}
+                      >
+                        View Details
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={<LocalShipping />}
+                        onClick={() => {
+                          // Add to schedule creation
+                          setNewSchedule(prev => ({
+                            ...prev,
+                            jobs: [...prev.jobs, job.id]
+                          }));
+                          setShowAddDialog(true);
+                        }}
+                      >
+                        Add to Schedule
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        )}
+      </TabPanel>
+
+      {/* Timeline View Tab */}
+      <TabPanel value={tabValue} index={3}>
         <Grid container spacing={3}>
           {userSchedules
             .filter(schedule => schedule.date === new Date().toISOString().split('T')[0])
@@ -606,69 +855,202 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
         </Grid>
       </TabPanel>
 
+      {/* Add Schedule Dialog */}
+      <Dialog open={showAddDialog} onClose={() => setShowAddDialog(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Typography variant="h5" component="div">
+            Create New Schedule
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Vehicle</InputLabel>
+                <Select
+                  value={newSchedule.vehicleId}
+                  onChange={(e) => setNewSchedule({ ...newSchedule, vehicleId: e.target.value })}
+                  label="Vehicle"
+                >
+                  {vehicles.map((vehicle) => (
+                    <MenuItem key={vehicle.id} value={vehicle.id}>
+                      {vehicle.name} - {vehicle.type}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>Default: Vehicle 1 in the fleet</FormHelperText>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Run Title"
+                value={newSchedule.runTitle}
+                onChange={(e) => setNewSchedule({ ...newSchedule, runTitle: e.target.value })}
+                placeholder="Auto-populated from first job city"
+                InputProps={{
+                  readOnly: true,
+                }}
+                helperText="Auto-populated from the first selected job's delivery city"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Date"
+                type="date"
+                value={newSchedule.date}
+                onChange={(e) => setNewSchedule({ ...newSchedule, date: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                helperText="Default: Tomorrow's date"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Route Plan ID (Optional)"
+                value={newSchedule.routePlanId}
+                onChange={(e) => setNewSchedule({ ...newSchedule, routePlanId: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Select Jobs to Schedule</InputLabel>
+                <Select
+                  multiple
+                  value={newSchedule.jobs}
+                  onChange={(e) => {
+                    const selectedJobs = typeof e.target.value === 'string' ? [e.target.value] : e.target.value;
+                    // Filter out duplicates
+                    const uniqueJobs = selectedJobs.filter((jobId, index, arr) => arr.indexOf(jobId) === index);
+                    setNewSchedule({ ...newSchedule, jobs: uniqueJobs });
+                    updateRunTitle(uniqueJobs);
+                  }}
+                  label="Select Jobs to Schedule"
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((jobId) => {
+                        const job = availableJobs.find(j => j.id === jobId);
+                        return (
+                          <Chip 
+                            key={jobId} 
+                            label={job?.jobNumber || jobId} 
+                            size="small"
+                            onDelete={() => {
+                              const updatedJobs = newSchedule.jobs.filter(id => id !== jobId);
+                              setNewSchedule({ ...newSchedule, jobs: updatedJobs });
+                              updateRunTitle(updatedJobs);
+                            }}
+                            deleteIcon={<Cancel />}
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
+                >
+                  {availableJobs.filter(job => !newSchedule.jobs.includes(job.id)).map((job) => (
+                    <MenuItem key={job.id} value={job.id}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Checkbox checked={false} />
+                        <Box>
+                          <Typography variant="body2" fontWeight="bold">
+                            {job.jobNumber}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {job.title} - {job.customerName}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>
+                  Select jobs to schedule. Each job can only be added once. Use the X button on chips to remove jobs.
+                </FormHelperText>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Notes"
+                multiline
+                rows={3}
+                value={newSchedule.notes}
+                onChange={(e) => setNewSchedule({ ...newSchedule, notes: e.target.value })}
+                placeholder="Additional notes for this schedule..."
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowAddDialog(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleAddSchedule} 
+            variant="contained"
+            disabled={!newSchedule.vehicleId || newSchedule.jobs.length === 0}
+          >
+            Create Schedule
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* View Schedule Dialog */}
       {selectedSchedule && (
-        <Dialog open={showViewDialog} onClose={() => setShowViewDialog(false)} maxWidth="md" fullWidth>
+        <Dialog open={showViewDialog} onClose={() => setShowViewDialog(false)} maxWidth="lg" fullWidth>
           <DialogTitle>
-            Schedule Details: {selectedSchedule.vehicleId}
+            <Typography variant="h5" component="div">
+              Schedule Details
+            </Typography>
           </DialogTitle>
           <DialogContent>
-            <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <Typography variant="h6" gutterBottom>
                   Schedule Information
                 </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Vehicle:</strong> {selectedSchedule.vehicleId}
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Driver:</strong> Driver {selectedSchedule.driverId}
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Date:</strong> {new Date(selectedSchedule.date).toLocaleDateString()}
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Status:</strong> 
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Vehicle ID
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedSchedule.vehicleId}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Driver ID
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedSchedule.driverId}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Date
+                  </Typography>
+                  <Typography variant="body1">
+                    {new Date(selectedSchedule.date).toLocaleDateString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Status
+                  </Typography>
                   <Chip
                     icon={getStatusIcon(selectedSchedule.status)}
                     label={selectedSchedule.status.replace('_', ' ')}
                     color={getStatusColor(selectedSchedule.status) as any}
                     size="small"
-                    sx={{ ml: 1 }}
                   />
-                </Typography>
+                </Box>
               </Grid>
               <Grid item xs={12} md={6}>
                 <Typography variant="h6" gutterBottom>
-                  Progress Summary
+                  Jobs in Schedule
                 </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Total Jobs:</strong> {selectedSchedule.totalJobs}
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Completed Jobs:</strong> {selectedSchedule.completedJobs}
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Total Duration:</strong> {Math.round(selectedSchedule.totalDuration / 60)}h {selectedSchedule.totalDuration % 60}m
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Total Distance:</strong> {selectedSchedule.totalDistance} miles
-                </Typography>
-                <Box sx={{ mt: 2 }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={selectedSchedule.totalJobs > 0 ? (selectedSchedule.completedJobs / selectedSchedule.totalJobs) * 100 : 0}
-                  />
-                  <Typography variant="caption">
-                    {Math.round((selectedSchedule.completedJobs / selectedSchedule.totalJobs) * 100)}% Complete
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>
-                  Scheduled Jobs
-                </Typography>
-                <TableContainer>
+                <TableContainer component={Paper}>
                   <Table size="small">
                     <TableHead>
                       <TableRow>

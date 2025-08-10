@@ -21,6 +21,9 @@ import {
   Description,
   Edit,
   ViewInAr,
+  Analytics,
+  TrendingUp,
+  Report,
 } from '@mui/icons-material';
 
 import PlanningHub from './PlanningHub';
@@ -118,49 +121,49 @@ const JobAssignmentHub: React.FC<JobAssignmentHubProps> = ({ onClose }) => {
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
-              opacity: 0.3,
-              cursor: 'default',
-              transition: 'all 0.3s ease',
-              height: '280px',
-              display: 'flex',
-              flexDirection: 'column',
+              opacity: 0.6,
+              cursor: 'not-allowed',
+              '&:hover': {
+                transform: 'none',
+                boxShadow: 1
+              }
             }}
           >
-            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+            <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'grey.400', mr: 2 }}>
-                  <Notes />
+                <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
+                  <Analytics />
                 </Avatar>
                 <Box>
-                  <Typography variant="h5" component="div" sx={{ color: 'grey.500' }}>
+                  <Typography variant="h5" component="div" color="grey.600">
                     Coming Soon
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Consignment Notes
+                  <Typography variant="body2" color="grey.500">
+                    Consignment notes and tracking
                   </Typography>
                 </Box>
               </Box>
               
               <Divider sx={{ my: 2 }} />
               
-              <Box sx={{ mt: 2, flexGrow: 1, minHeight: '60px' }}>
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
                 <Chip 
-                  icon={<Description />} 
+                  icon={<TrendingUp />} 
                   label="Feature 1" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
-                  icon={<Edit />} 
+                  icon={<Analytics />} 
                   label="Feature 2" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
-                  icon={<ViewInAr />} 
+                  icon={<Report />} 
                   label="Feature 3" 
                   size="small" 
-                  sx={{ mb: 1, opacity: 0.5 }}
+                  sx={{ mb: 1, opacity: 0.7 }}
                 />
               </Box>
             </CardContent>

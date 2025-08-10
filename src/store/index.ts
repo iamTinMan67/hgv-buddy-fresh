@@ -4,6 +4,7 @@ import wageReducer from './slices/wageSlice';
 import vehicleReducer from './slices/vehicleSlice';
 import jobReducer from './slices/jobSlice';
 import fuelReducer from './slices/fuelSlice';
+import driverVehicleAllocationReducer from './slices/driverVehicleAllocationSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     vehicle: vehicleReducer,
     job: jobReducer,
     fuel: fuelReducer,
+    driverVehicleAllocation: driverVehicleAllocationReducer,
   },
 });
 

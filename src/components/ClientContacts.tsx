@@ -34,6 +34,7 @@ import {
   PhoneAndroid,
   AlternateEmail,
   Home,
+  LocationOn,
 } from '@mui/icons-material';
 
 interface ClientContactsProps {
@@ -48,7 +49,10 @@ interface ClientContact {
   email: string;
   phone: string;
   mobile: string;
-  address: string;
+  addressLine1: string;
+  addressLine2: string;
+  addressLine3: string;
+  town: string;
   city: string;
   postcode: string;
   country: string;
@@ -70,7 +74,10 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
     email: '',
     phone: '',
     mobile: '',
-    address: '',
+    addressLine1: '',
+    addressLine2: '',
+    addressLine3: '',
+    town: '',
     city: '',
     postcode: '',
     country: 'UK',
@@ -89,7 +96,10 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
       email: 'john.smith@abctransport.com',
       phone: '020 7123 4567',
       mobile: '07700 900123',
-      address: '123 Transport Way',
+      addressLine1: '123 Transport Way',
+      addressLine2: '',
+      addressLine3: '',
+      town: '',
       city: 'London',
       postcode: 'SW1A 1AA',
       country: 'UK',
@@ -107,7 +117,10 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
       email: 'sarah.johnson@xyzlogistics.co.uk',
       phone: '0161 234 5678',
       mobile: '07800 123456',
-      address: '456 Industrial Estate',
+      addressLine1: '456 Industrial Estate',
+      addressLine2: '',
+      addressLine3: '',
+      town: '',
       city: 'Manchester',
       postcode: 'M1 1AA',
       country: 'UK',
@@ -125,7 +138,10 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
       email: 'mike.wilson@truckparts.com',
       phone: '0121 345 6789',
       mobile: '07900 654321',
-      address: '789 Warehouse Road',
+      addressLine1: '789 Warehouse Road',
+      addressLine2: '',
+      addressLine3: '',
+      town: '',
       city: 'Birmingham',
       postcode: 'B1 1AA',
       country: 'UK',
@@ -143,7 +159,10 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
       email: 'emma.davis@fastfreight.co.uk',
       phone: '0113 456 7890',
       mobile: '07600 987654',
-      address: '321 Business Park',
+      addressLine1: '321 Business Park',
+      addressLine2: '',
+      addressLine3: '',
+      town: '',
       city: 'Leeds',
       postcode: 'LS1 1AA',
       country: 'UK',
@@ -161,7 +180,10 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
       email: 'david.brown@nationalhaulage.com',
       phone: '0141 567 8901',
       mobile: '07500 112233',
-      address: '654 Transport Hub',
+      addressLine1: '654 Transport Hub',
+      addressLine2: '',
+      addressLine3: '',
+      town: '',
       city: 'Glasgow',
       postcode: 'G1 1AA',
       country: 'UK',
@@ -220,7 +242,10 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
       email: '',
       phone: '',
       mobile: '',
-      address: '',
+      addressLine1: '',
+      addressLine2: '',
+      addressLine3: '',
+      town: '',
       city: '',
       postcode: '',
       country: 'UK',
@@ -250,7 +275,10 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
       email: '',
       phone: '',
       mobile: '',
-      address: '',
+      addressLine1: '',
+      addressLine2: '',
+      addressLine3: '',
+      town: '',
       city: '',
       postcode: '',
       country: 'UK',
@@ -277,7 +305,7 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1">
           Client Contacts
@@ -379,6 +407,37 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
                   </Box>
                 </Box>
 
+                {/* Address Display */}
+                {(contact.addressLine1 || contact.town || contact.city || contact.postcode) && (
+                  <Box sx={{ mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                      <LocationOn sx={{ fontSize: 16, mr: 1, color: 'text.secondary', mt: 0.2 }} />
+                      <Box>
+                        {contact.addressLine1 && (
+                          <Typography variant="body2" sx={{ mb: 0.5 }}>
+                            {contact.addressLine1}
+                          </Typography>
+                        )}
+                        {contact.addressLine2 && (
+                          <Typography variant="body2" sx={{ mb: 0.5 }}>
+                            {contact.addressLine2}
+                          </Typography>
+                        )}
+                        {contact.addressLine3 && (
+                          <Typography variant="body2" sx={{ mb: 0.5 }}>
+                            {contact.addressLine3}
+                          </Typography>
+                        )}
+                        {(contact.town || contact.city || contact.postcode) && (
+                          <Typography variant="body2" color="text.secondary">
+                            {[contact.town, contact.city, contact.postcode].filter(Boolean).join(', ')}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  </Box>
+                )}
+
                 <Box sx={{ mb: 2 }}>
                   <Chip 
                     icon={getCategoryIcon(contact.category)}
@@ -474,9 +533,33 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Address"
-                value={currentContact.address}
-                onChange={(e) => setCurrentContact({ ...currentContact, address: e.target.value })}
+                label="Address Line 1"
+                value={currentContact.addressLine1}
+                onChange={(e) => setCurrentContact({ ...currentContact, addressLine1: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Address Line 2"
+                value={currentContact.addressLine2}
+                onChange={(e) => setCurrentContact({ ...currentContact, addressLine2: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Address Line 3"
+                value={currentContact.addressLine3}
+                onChange={(e) => setCurrentContact({ ...currentContact, addressLine3: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Town"
+                value={currentContact.town}
+                onChange={(e) => setCurrentContact({ ...currentContact, town: e.target.value })}
               />
             </Grid>
             <Grid item xs={12} md={4}>
@@ -607,9 +690,33 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Address"
-                value={currentContact.address}
-                onChange={(e) => setCurrentContact({ ...currentContact, address: e.target.value })}
+                label="Address Line 1"
+                value={currentContact.addressLine1}
+                onChange={(e) => setCurrentContact({ ...currentContact, addressLine1: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Address Line 2"
+                value={currentContact.addressLine2}
+                onChange={(e) => setCurrentContact({ ...currentContact, addressLine2: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Address Line 3"
+                value={currentContact.addressLine3}
+                onChange={(e) => setCurrentContact({ ...currentContact, addressLine3: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Town"
+                value={currentContact.town}
+                onChange={(e) => setCurrentContact({ ...currentContact, town: e.target.value })}
               />
             </Grid>
             <Grid item xs={12} md={4}>

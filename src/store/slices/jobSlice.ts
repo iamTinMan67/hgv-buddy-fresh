@@ -24,8 +24,8 @@ export interface JobAssignment {
   title: string;
   description: string;
   customerName: string;
-  customerPhone: string;
-  customerEmail: string;
+  customerPhone?: string;
+  customerEmail?: string;
   priority: JobPriority;
   status: JobStatus;
   assignedDriver?: string;
@@ -92,8 +92,8 @@ export interface RoutePlan {
 
 export interface DailySchedule {
   id: string;
-  vehicleId: string;
-  driverId: string;
+  vehicleId?: string;
+  driverId?: string;
   date: string;
   routePlanId?: string;
   jobs: {
@@ -109,7 +109,7 @@ export interface DailySchedule {
   completedJobs: number;
   totalDistance: number;
   totalDuration: number;
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
   notes?: string;
   createdAt: string;
   updatedAt: string;

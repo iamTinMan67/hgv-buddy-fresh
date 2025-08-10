@@ -159,7 +159,7 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
   };
 
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           <DirectionsCar sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -173,61 +173,7 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
           </IconButton>
       </Box>
 
-      {/* Fleet Statistics */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <LocalShipping sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-              <Typography variant="h4" component="div">
-                {fleetStatus.totalVehicles}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Vehicles
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <CheckCircle sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-              <Typography variant="h4" component="div">
-                {fleetStatus.available}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Available
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Warning sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
-              <Typography variant="h4" component="div">
-                {defectReports.filter(r => r.status === 'pending').length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Pending Reports
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Error sx={{ fontSize: 40, color: 'error.main', mb: 1 }} />
-              <Typography variant="h4" component="div">
-                {defectReports.filter(r => r.priority === 'critical').length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Critical Issues
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>

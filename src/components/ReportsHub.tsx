@@ -20,24 +20,27 @@ import {
   Analytics,
   Report,
   Home,
+  ListAlt,
 } from '@mui/icons-material';
 
 import WageSlipsReport from './reports/WageSlipsReport';
 import FuelReport from './reports/FuelReport';
 import PurchaseOrdersReport from './reports/PurchaseOrdersReport';
 import InvoicesReport from './reports/InvoicesReport';
+import ManifestsReport from './reports/ManifestsReport';
 
 interface ReportsHubProps {
   onClose: () => void;
 }
 
 const ReportsHub: React.FC<ReportsHubProps> = ({ onClose }) => {
-  const [currentView, setCurrentView] = useState<'main' | 'wageSlips' | 'fuel' | 'purchaseOrders' | 'invoices'>('main');
+  const [currentView, setCurrentView] = useState<'main' | 'wageSlips' | 'fuel' | 'purchaseOrders' | 'invoices' | 'manifests'>('main');
 
   const handleNavigateToWageSlips = () => setCurrentView('wageSlips');
   const handleNavigateToFuel = () => setCurrentView('fuel');
   const handleNavigateToPurchaseOrders = () => setCurrentView('purchaseOrders');
   const handleNavigateToInvoices = () => setCurrentView('invoices');
+  const handleNavigateToManifests = () => setCurrentView('manifests');
   const handleBackToMain = () => setCurrentView('main');
 
   if (currentView === 'wageSlips') {
@@ -56,9 +59,13 @@ const ReportsHub: React.FC<ReportsHubProps> = ({ onClose }) => {
     return <InvoicesReport onClose={handleBackToMain} />;
   }
 
+  if (currentView === 'manifests') {
+    return <ManifestsReport onClose={handleBackToMain} />;
+  }
+
   // Main Reports Hub
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           <Assessment sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -74,6 +81,61 @@ const ReportsHub: React.FC<ReportsHubProps> = ({ onClose }) => {
 
       {/* Sub-Portal Navigation */}
       <Grid container spacing={3}>
+        {/* Manifests Card */}
+        <Grid item xs={12} md={6} lg={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
+              '&:hover': {
+                transform: 'translateY(-4px) scale(0.94)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={handleNavigateToManifests}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
+                  <ListAlt />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Manifests
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Print manifests by date, vehicle, or fleet
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<TrendingUp />} 
+                  label="Date Based" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Analytics />} 
+                  label="Vehicle Specific" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Report />} 
+                  label="Fleet Wide" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Wage Slips Card */}
         <Grid item xs={12} md={6} lg={4}>
           <Card 
@@ -294,78 +356,29 @@ const ReportsHub: React.FC<ReportsHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
-        {/* Coming Soon Card for consistent layout */}
-        <Grid item xs={12} md={6} lg={4}>
-          <Card 
-            sx={{ 
-              opacity: 0.3,
-              cursor: 'default',
-              transition: 'all 0.3s ease',
-              transform: 'scale(0.94)',
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'grey.400', mr: 2 }}>
-                  <Assessment />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" component="div" sx={{ color: 'grey.500' }}>
-                    Coming Soon
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Additional report features
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
-                <Chip 
-                  icon={<TrendingUp />} 
-                  label="Future" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
-                />
-                <Chip 
-                  icon={<Analytics />} 
-                  label="Features" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
-                />
-                <Chip 
-                  icon={<Report />} 
-                  label="Reports" 
-                  size="small" 
-                  sx={{ mb: 1, opacity: 0.5 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
         {/* Second Coming Soon Card for consistent layout */}
-        <Grid item xs={12} md={6} lg={4}>
+        <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
-              opacity: 0.3,
-              cursor: 'default',
-              transition: 'all 0.3s ease',
-              transform: 'scale(0.94)',
+              opacity: 0.6,
+              cursor: 'not-allowed',
+              '&:hover': {
+                transform: 'none',
+                boxShadow: 1
+              }
             }}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'grey.400', mr: 2 }}>
-                  <Assessment />
+                <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
+                  <Analytics />
                 </Avatar>
                 <Box>
-                  <Typography variant="h5" component="div" sx={{ color: 'grey.500' }}>
+                  <Typography variant="h5" component="div" color="grey.600">
                     Coming Soon
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Advanced analytics
+                  <Typography variant="body2" color="grey.500">
+                    Enhanced analytics
                   </Typography>
                 </Box>
               </Box>
@@ -375,21 +388,21 @@ const ReportsHub: React.FC<ReportsHubProps> = ({ onClose }) => {
               <Box sx={{ mt: 2, minHeight: '60px' }}>
                 <Chip 
                   icon={<TrendingUp />} 
-                  label="Future" 
+                  label="Feature 1" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
                   icon={<Analytics />} 
-                  label="Features" 
+                  label="Feature 2" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.5 }}
+                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
                 />
                 <Chip 
                   icon={<Report />} 
-                  label="Reports" 
+                  label="Feature 3" 
                   size="small" 
-                  sx={{ mb: 1, opacity: 0.5 }}
+                  sx={{ mb: 1, opacity: 0.7 }}
                 />
               </Box>
             </CardContent>

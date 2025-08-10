@@ -204,7 +204,7 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
   const totalJobsInRoutes = filteredRoutes.reduce((sum, route) => sum + route.jobs.length, 0);
 
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           Route Planning

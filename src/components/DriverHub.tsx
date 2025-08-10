@@ -60,7 +60,7 @@ const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
 
   // Main Driver Hub
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           <Person sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -82,11 +82,9 @@ const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
-              height: '280px',
-              display: 'flex',
-              flexDirection: 'column',
+              transform: 'scale(0.94)',
               '&:hover': {
-                transform: 'translateY(-4px)',
+                transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
               }
             }}
@@ -139,11 +137,9 @@ const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
-              height: '280px',
-              display: 'flex',
-              flexDirection: 'column',
+              transform: 'scale(0.94)',
               '&:hover': {
-                transform: 'translateY(-4px)',
+                transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
               }
             }}
@@ -196,11 +192,9 @@ const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
             sx={{ 
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
-              height: '280px',
-              display: 'flex',
-              flexDirection: 'column',
+              transform: 'scale(0.94)',
               '&:hover': {
-                transform: 'translateY(-4px)',
+                transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
               }
             }}
