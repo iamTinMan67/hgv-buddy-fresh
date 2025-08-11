@@ -10,17 +10,6 @@ import {
   Chip,
   IconButton,
 } from '@mui/material';
-import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  Avatar,
-  Divider,
-  Chip,
-  IconButton,
-} from '@mui/material';
 import { 
   CalendarToday, 
   Home, 
@@ -48,34 +37,33 @@ import DailyPlanner from './DailyPlanner';
 import RoutePlanning from './RoutePlanning';
 import GarminRoutePlanning from './GarminRoutePlanning';
 import TrailerPlanner from './TrailerPlanner';
+import JobAllocationForm from './JobAllocationForm';
 
 interface PlanningHubProps {
   onClose: () => void;
 }
 
 const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
-  const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'trailer'>('main');
-
-  const handleNavigateToDaily = () => setCurrentView('daily');
-  const handleNavigateToRoute = () => setCurrentView('route');
-  const handleNavigateToGarmin = () => setCurrentView('garmin');
-  const handleNavigateToTrailer = () => setCurrentView('trailer');
-  const handleBackToMain = () => setCurrentView('main');
+  const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'trailer' | 'job'>('main');
 
   if (currentView === 'daily') {
-    return <DailyPlanner onClose={handleBackToMain} />;
+    return <DailyPlanner onClose={() => setCurrentView('main')} />;
   }
 
   if (currentView === 'route') {
-    return <RoutePlanning onClose={handleBackToMain} />;
+    return <RoutePlanning onClose={() => setCurrentView('main')} />;
   }
 
   if (currentView === 'garmin') {
-    return <GarminRoutePlanning onClose={handleBackToMain} />;
+    return <GarminRoutePlanning onClose={() => setCurrentView('main')} />;
   }
 
   if (currentView === 'trailer') {
-    return <TrailerPlanner onClose={handleBackToMain} />;
+    return <TrailerPlanner onClose={() => setCurrentView('main')} />;
+  }
+
+  if (currentView === 'job') {
+    return <JobAllocationForm onClose={() => setCurrentView('main')} />;
   }
 
   // Main Planning Hub
@@ -108,7 +96,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
                 boxShadow: 4,
               }
             }}
-            onClick={handleNavigateToDaily}
+            onClick={() => setCurrentView('daily')}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -163,7 +151,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
                 boxShadow: 4,
               }
             }}
-            onClick={handleNavigateToRoute}
+            onClick={() => setCurrentView('route')}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -218,7 +206,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
                 boxShadow: 4,
               }
             }}
-            onClick={handleNavigateToTrailer}
+            onClick={() => setCurrentView('trailer')}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -261,6 +249,61 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
+        {/* Add A New Job Card */}
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
+              '&:hover': {
+                transform: 'translateY(-4px) scale(0.94)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={() => setCurrentView('job')}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
+                  <Assessment />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Add A New Job
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Create and allocate new jobs
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<Edit />} 
+                  label="Job Creation" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }} 
+                />
+                <Chip 
+                  icon={<Person />} 
+                  label="Driver Assignment" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }} 
+                />
+                <Chip 
+                  icon={<DirectionsCar />} 
+                  label="Vehicle Allocation" 
+                  size="small" 
+                  sx={{ mb: 1 }} 
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Garmin Route Planning Card */}
         <Grid item xs={12} md={4}>
           <Card 
@@ -273,7 +316,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
                 boxShadow: 4,
               }
             }}
-            onClick={handleNavigateToGarmin}
+            onClick={() => setCurrentView('garmin')}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -285,7 +328,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
                     Garmin Routes
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Advanced navigation with Garmin
+                    GPS route planning and optimization
                   </Typography>
                 </Box>
               </Box>
@@ -295,19 +338,19 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               <Box sx={{ mt: 2, minHeight: '60px' }}>
                 <Chip 
                   icon={<Traffic />} 
-                  label="Live Traffic" 
+                  label="Traffic Analysis" 
                   size="small" 
                   sx={{ mr: 1, mb: 1 }} 
                 />
                 <Chip 
                   icon={<Speed />} 
-                  label="Real-time ETA" 
+                  label="Speed Optimization" 
                   size="small" 
                   sx={{ mr: 1, mb: 1 }} 
                 />
                 <Chip 
                   icon={<Warning />} 
-                  label="HGV Alerts" 
+                  label="Hazards" 
                   size="small" 
                   sx={{ mb: 1 }} 
                 />
@@ -316,29 +359,30 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
-        {/* Coming Soon Card for consistent layout */}
+        {/* Additional Planning Tools */}
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
-              opacity: 0.6,
-              cursor: 'not-allowed',
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
               '&:hover': {
-                transform: 'none',
-                boxShadow: 1
+                transform: 'translateY(-4px) scale(0.94)',
+                boxShadow: 4,
               }
             }}
           >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
+                <Avatar sx={{ bgcolor: 'error.main', mr: 2 }}>
                   <Analytics />
                 </Avatar>
                 <Box>
-                  <Typography variant="h5" component="div" color="grey.600">
-                    Coming Soon
+                  <Typography variant="h5" component="div">
+                    Planning Analytics
                   </Typography>
-                  <Typography variant="body2" color="grey.500">
-                    Advanced planning features
+                  <Typography variant="body2" color="text.secondary">
+                    Performance metrics and insights
                   </Typography>
                 </Box>
               </Box>
@@ -347,30 +391,28 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               
               <Box sx={{ mt: 2, minHeight: '60px' }}>
                 <Chip 
-                  icon={<TrendingUp />} 
-                  label="Feature 1" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.7 }} 
-                />
-                <Chip 
-                  icon={<Analytics />} 
-                  label="Feature 2" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.7 }} 
-                />
-                <Chip 
                   icon={<Report />} 
-                  label="Feature 3" 
+                  label="Reports" 
                   size="small" 
-                  sx={{ mb: 1, opacity: 0.7 }} 
+                  sx={{ mr: 1, mb: 1 }} 
+                />
+                <Chip 
+                  icon={<TrendingUp />} 
+                  label="Trends" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }} 
+                />
+                <Chip 
+                  icon={<Assessment />} 
+                  label="KPIs" 
+                  size="small" 
+                  sx={{ mb: 1 }} 
                 />
               </Box>
             </CardContent>
           </Card>
         </Grid>
-
       </Grid>
-
     </Box>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
   Typography,
@@ -34,31 +34,34 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import { Search } from '@mui/icons-material';
+import { Search, LocationOn as LocationIcon, Add } from '@mui/icons-material';
 import { jobIdGenerator } from '../utils/jobIdGenerator';
-import { AppDispatch } from '../store';
+import { AppDispatch, RootState } from '../store';
 import { addJob, addDailySchedule, updateJob } from '../store/slices/jobSlice';
 import { JobAssignment, JobStatus, JobLocation, JobPriority } from '../store/slices/jobSlice';
+import { PalletPricingService, LoadDimensions, LoadAssessment } from '../services/palletPricingService';
+import { DeliveryAddress, fetchDeliveryAddresses } from '../store/slices/deliveryAddressesSlice';
 import {
   Assignment,
   Home,
   Save,
   Cancel,
-  Add,
   Delete,
   Edit,
   PersonAdd,
 } from '@mui/icons-material';
 
-  // Standard pallet options
+  // Dynamic pallet options from Pallet Script
   const palletOptions = [
-    { label: "Full Plot (1200x1200x2200mm, 1200kg)", length: 1200, width: 1200, height: 2200, weight: 1200, cost: 65.00 },
-    { label: "Light Plot (1200x1200x2200mm, 750kg)", length: 1200, width: 1200, height: 2200, weight: 750, cost: 60.00 },
-    { label: "Euro Half (1200x1200x2200mm, 500kg)", length: 1200, width: 1200, height: 2200, weight: 500, cost: 55.00 },
-    { label: "Half Plot (1200x800x800mm, 500kg)", length: 1200, width: 800, height: 800, weight: 500, cost: 50.00 },
-    { label: "Quarter Plot (1200x1000x800mm, 250kg)", length: 1200, width: 1000, height: 800, weight: 250, cost: 45.00 },
-    { label: "Mini Plot (1200x1200x600mm, 150kg)", length: 1200, width: 1200, height: 600, weight: 150, cost: 40.00 },
-    { label: "Custom", length: 0, width: 0, height: 0, weight: 0, cost: 0 },
+    ...PalletPricingService.getStandardPlots().map(plot => ({
+      label: `${plot.name} (${plot.length}x${plot.width}x${plot.height}mm, ${plot.weight}kg)`,
+      length: plot.length,
+      width: plot.width,
+      height: plot.height,
+      weight: plot.weight,
+      cost: plot.baseCost
+    })),
+    { label: "Custom", length: 0, width: 0, height: 0, weight: 0, cost: 0 }
   ];
 
 interface PalletItem {
@@ -73,7 +76,7 @@ interface PalletItem {
   totalVolume: number;
 }
 
-interface JobConsignmentFormProps {
+interface JobAllocationFormProps {
   onClose: () => void;
   initialData?: any;
   isEditing?: boolean;
@@ -118,60 +121,55 @@ interface JobConsignmentData {
   estimatedCost: number;
 }
 
-interface Client {
+interface Contact {
   id: string;
   name: string;
   company: string;
+  position: string;
+  contactType: 'Client' | 'Supplier' | 'Partner' | 'Prospect';
+  addresses: {
+    id: string;
+    name: string;
   addressLine1: string;
   addressLine2: string;
   addressLine3: string;
   town: string;
   city: string;
   postcode: string;
+    isDefault: boolean;
+  }[];
   phone: string;
   email: string;
 }
 
-const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initialData, isEditing = false }) => {
+const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialData, isEditing = false }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [activeStep, setActiveStep] = useState(0);
-  
-  // Pallet selection state
-  const [selectedPallet, setSelectedPallet] = useState("Custom");
-  // Add dimension fields to formData if not present
+  const [selectedPallet, setSelectedPallet] = useState<string>('');
   const [dimensions, setDimensions] = useState({
-    length: 0,
-    width: 0,
-    height: 0,
+    length: '',
+    width: '',
+    height: '',
+    weight: ''
   });
-
-  // When pallet is selected, autofill dimensions, weight, and cargo type unless 'Custom'
-  useEffect(() => {
-    const pallet = palletOptions.find(p => p.label === selectedPallet);
-    if (pallet && pallet.label !== "Custom") {
-      setDimensions({ length: pallet.length, width: pallet.width, height: pallet.height });
-      setFormData(prev => ({ 
-        ...prev, 
-        cargoWeight: pallet.weight,
-        cargoType: pallet.label 
-      }));
-    }
-  }, [selectedPallet]);
-  
-  // Get tomorrow's date for default values
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowString = tomorrow.toISOString().split('T')[0];
-
-  // Pallet items state
+  const [loadAssessment, setLoadAssessment] = useState<LoadAssessment | null>(null);
+  const [showFieldHints, setShowFieldHints] = useState<Record<string, boolean>>({});
   const [palletItems, setPalletItems] = useState<PalletItem[]>([]);
   const [selectedPalletForCounter, setSelectedPalletForCounter] = useState<string>('');
   const [palletQuantity, setPalletQuantity] = useState<number>(1);
 
-  // Calculate totals from pallet items
-  const totalCost = palletItems.reduce((sum, item) => sum + item.totalCost, 0);
-  const totalWeight = palletItems.reduce((sum, item) => sum + item.totalWeight, 0);
-  const totalVolume = palletItems.reduce((sum, item) => sum + item.totalVolume, 0);
+  // Delivery address integration state
+  const [selectedPickupAddressId, setSelectedPickupAddressId] = useState<string>('');
+  const [selectedDeliveryAddressId, setSelectedDeliveryAddressId] = useState<string>('');
+  const [showDeliveryAddressesDialog, setShowDeliveryAddressesDialog] = useState(false);
+
+  // Get delivery addresses from Redux store
+  const { addresses: deliveryAddresses } = useSelector((state: RootState) => state.deliveryAddresses);
+
+  // Get tomorrow's date for default values
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowString = tomorrow.toISOString().split('T')[0];
 
   // Add pallet item to counter
   const addPalletItem = () => {
@@ -219,17 +217,37 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
   };
 
   // Mock clients data
-  const clients: Client[] = [
+  const clients: Contact[] = [
     {
       id: '1',
       name: 'John Smith',
       company: 'ABC Transport Ltd',
+      position: 'Manager',
+      contactType: 'Client',
+      addresses: [
+        {
+          id: '1',
+          name: 'Main Office',
       addressLine1: '123 Transport Way',
       addressLine2: '',
       addressLine3: '',
       town: 'Westminster',
       city: 'London',
       postcode: 'SW1A 1AA',
+          isDefault: true,
+    },
+    {
+      id: '2',
+          name: 'Branch Office',
+      addressLine1: '456 Industrial Estate',
+      addressLine2: 'Unit 12',
+      addressLine3: '',
+      town: 'Salford',
+      city: 'Manchester',
+      postcode: 'M1 1AA',
+          isDefault: false,
+        },
+      ],
       phone: '020 7123 4567',
       email: 'john.smith@abctransport.com'
     },
@@ -237,12 +255,32 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
       id: '2',
       name: 'Sarah Johnson',
       company: 'XYZ Logistics',
-      addressLine1: '456 Industrial Estate',
-      addressLine2: 'Unit 12',
-      addressLine3: '',
-      town: 'Salford',
-      city: 'Manchester',
-      postcode: 'M1 1AA',
+      position: 'Logistics Coordinator',
+      contactType: 'Supplier',
+      addresses: [
+        {
+          id: '3',
+          name: 'Headquarters',
+          addressLine1: '789 Business Park',
+          addressLine2: 'Building A',
+          addressLine3: 'Floor 3',
+          town: 'Digbeth',
+          city: 'Birmingham',
+          postcode: 'B1 1AA',
+          isDefault: true,
+        },
+        {
+          id: '4',
+          name: 'Regional Office',
+          addressLine1: '321 Innovation Drive',
+          addressLine2: 'Suite 15',
+          addressLine3: '',
+          town: 'Bristol',
+          city: 'Bristol',
+          postcode: 'BS1 1AA',
+          isDefault: false,
+        },
+      ],
       phone: '0161 234 5678',
       email: 'sarah.johnson@xyzlogistics.co.uk'
     },
@@ -250,14 +288,67 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
       id: '3',
       name: 'David Wilson',
       company: 'Wilson Freight Services',
+      position: 'Freight Specialist',
+      contactType: 'Partner',
+      addresses: [
+        {
+          id: '5',
+          name: 'Corporate Office',
       addressLine1: '789 Business Park',
       addressLine2: 'Building A',
       addressLine3: 'Floor 3',
       town: 'Digbeth',
       city: 'Birmingham',
       postcode: 'B1 1AA',
+          isDefault: true,
+        },
+        {
+          id: '6',
+          name: 'Regional Office',
+          addressLine1: '321 Innovation Drive',
+          addressLine2: 'Suite 15',
+          addressLine3: '',
+          town: 'Bristol',
+          city: 'Bristol',
+          postcode: 'BS1 1AA',
+          isDefault: false,
+        },
+      ],
       phone: '0121 345 6789',
       email: 'david.wilson@wilsonfreight.co.uk'
+    },
+    {
+      id: '4',
+      name: 'Emma Thompson',
+      company: 'Thompson Transport Solutions',
+      position: 'Business Development Manager',
+      contactType: 'Prospect',
+      addresses: [
+        {
+          id: '7',
+          name: 'Main Office',
+          addressLine1: '123 Transport Way',
+          addressLine2: '',
+          addressLine3: '',
+          town: 'Westminster',
+          city: 'London',
+          postcode: 'SW1A 1AA',
+          isDefault: true,
+        },
+        {
+          id: '8',
+          name: 'Branch Office',
+          addressLine1: '456 Industrial Estate',
+          addressLine2: 'Unit 12',
+          addressLine3: '',
+          town: 'Salford',
+          city: 'Manchester',
+          postcode: 'M1 1AA',
+          isDefault: false,
+        },
+      ],
+      phone: '0117 456 7890',
+      email: 'emma.thompson@thompsontransport.co.uk'
     }
   ];
 
@@ -313,6 +404,33 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
     estimatedCost: 0,
   });
 
+  // Assess load when dimensions change using Pallet Script logic
+  useEffect(() => {
+    const length = parseFloat(dimensions.length);
+    const width = parseFloat(dimensions.width);
+    const height = parseFloat(dimensions.height);
+    const weight = parseFloat(dimensions.weight);
+    
+    if (length > 0 && width > 0 && height > 0 && weight > 0) {
+      const loadDimensions: LoadDimensions = {
+        length,
+        width,
+        height,
+        weight,
+        notes: formData.notes || ''
+      };
+      
+      const assessment = PalletPricingService.assessLoad(loadDimensions);
+      setLoadAssessment(assessment);
+      
+      // Update estimated cost based on Pallet Script calculation
+      setFormData(prev => ({
+        ...prev,
+        estimatedCost: assessment.totalCost
+      }));
+    }
+  }, [dimensions, formData.notes]);
+
   // Postcode lookup state
   const [pickupPostcodeResults, setPickupPostcodeResults] = useState<PostcodeLookupResult[]>([]);
   const [deliveryPostcodeResults, setDeliveryPostcodeResults] = useState<PostcodeLookupResult[]>([]);
@@ -324,19 +442,34 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
   const [useAlternateDeliveryAddress, setUseAlternateDeliveryAddress] = useState(false);
 
   // Selected client state
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Contact | null>(null);
 
   // Client form dialog state
   const [showClientForm, setShowClientForm] = useState(false);
-  const [newClient, setNewClient] = useState<Omit<Client, 'id'>>({
+  
+  // Pickup contact fields visibility state
+  const [showPickupContactFields, setShowPickupContactFields] = useState(false);
+  
+  // Delivery contact fields visibility state
+  const [showDeliveryContactFields, setShowDeliveryContactFields] = useState(false);
+  const [newClient, setNewClient] = useState<Omit<Contact, 'id'>>({
     name: '',
     company: '',
+    position: '',
+    contactType: 'Client',
+    addresses: [
+      {
+        id: '',
+        name: '',
     addressLine1: '',
     addressLine2: '',
     addressLine3: '',
     town: '',
     city: '',
     postcode: '',
+        isDefault: true,
+      },
+    ],
     phone: '',
     email: '',
   });
@@ -437,6 +570,11 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
     }
   }, [isEditing, initialData]);
 
+  // Fetch delivery addresses when component mounts
+  useEffect(() => {
+    dispatch(fetchDeliveryAddresses());
+  }, [dispatch]);
+
   // Reset pallet items when form is closed
   const handleClose = () => {
     setPalletItems([]);
@@ -462,6 +600,11 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
   };
 
   const handleSubmit = () => {
+    // Calculate totals from pallet items
+    const totalCost = palletItems.reduce((sum, item) => sum + item.totalCost, 0);
+    const totalWeight = palletItems.reduce((sum, item) => sum + item.totalWeight, 0);
+    const totalVolume = palletItems.reduce((sum, item) => sum + item.totalVolume, 0);
+
     // Convert form data to JobAssignment format
     const jobAssignment: JobAssignment = {
       id: formData.jobId,
@@ -617,37 +760,51 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
   };
 
   const handleClientChange = (clientName: string) => {
+    console.log('handleClientChange called with:', clientName);
     const selectedClient = clients.find(client => client.name === clientName);
+    console.log('Selected client:', selectedClient);
+    
     if (selectedClient) {
-      const fullAddress = `${selectedClient.addressLine1}, ${selectedClient.city}, ${selectedClient.postcode}`;
+      const defaultAddress = selectedClient.addresses.find(addr => addr.isDefault) || selectedClient.addresses[0];
+      console.log('Default address:', defaultAddress);
+      
+      const fullAddress = `${defaultAddress.addressLine1}, ${defaultAddress.city}, ${defaultAddress.postcode}`;
       const formattedAddress = fullAddress.replace(/, /g, ',\n');
-      setFormData(prev => ({
-        ...prev,
-        clientName: clientName,
-        pickupAddress: {
-          addressLine1: selectedClient.addressLine1,
-          addressLine2: selectedClient.addressLine2,
-          addressLine3: selectedClient.addressLine3,
-          town: selectedClient.town,
-          city: selectedClient.city,
-          postcode: selectedClient.postcode,
-          contactName: selectedClient.name,
-          contactPhone: selectedClient.phone,
-          contactEmail: selectedClient.email,
-        },
-        deliveryAddress: {
-          addressLine1: selectedClient.addressLine1,
-          addressLine2: selectedClient.addressLine2,
-          addressLine3: selectedClient.addressLine3,
-          town: selectedClient.town,
-          city: selectedClient.city,
-          postcode: selectedClient.postcode,
-          contactName: selectedClient.name,
-          contactPhone: selectedClient.phone,
-          contactEmail: selectedClient.email,
-        },
-
-      }));
+      
+      const newPickupAddress = {
+        addressLine1: defaultAddress.addressLine1,
+        addressLine2: defaultAddress.addressLine2 || '',
+        addressLine3: defaultAddress.addressLine3 || '',
+        town: defaultAddress.town,
+        city: defaultAddress.city,
+        postcode: defaultAddress.postcode,
+        contactName: selectedClient.name,
+        contactPhone: selectedClient.phone,
+        contactEmail: selectedClient.email,
+      };
+      
+      console.log('New pickup address to set:', newPickupAddress);
+      
+      setFormData(prev => {
+        const newData = {
+          ...prev,
+          clientName: clientName,
+          pickupAddress: newPickupAddress,
+          deliveryAddress: {
+            addressLine1: defaultAddress.addressLine1,
+            addressLine2: defaultAddress.addressLine2 || '',
+            addressLine3: defaultAddress.addressLine3 || '',
+            town: defaultAddress.town,
+            city: defaultAddress.city,
+            postcode: defaultAddress.postcode,
+            contactName: selectedClient.name,
+            contactPhone: selectedClient.phone,
+            contactEmail: selectedClient.email,
+          },
+        };
+        console.log('New formData:', newData);
+        return newData;
+      });
       
       // Focus on pickup location field after client selection
       setTimeout(() => {
@@ -657,6 +814,7 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
         }
       }, 100);
     } else {
+      console.log('No client found, clearing addresses');
       setFormData(prev => ({
         ...prev,
         clientName: clientName,
@@ -682,7 +840,6 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
           contactPhone: '',
           contactEmail: '',
         },
-
       }));
       
       // Focus on pickup location field even if no client is selected
@@ -694,6 +851,22 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
       }, 100);
     }
   };
+
+  // Add useEffect to monitor formData changes
+  useEffect(() => {
+    console.log('formData.pickupAddress changed:', formData.pickupAddress);
+  }, [formData.pickupAddress]);
+
+  // Add useEffect to monitor clientName changes
+  useEffect(() => {
+    console.log('formData.clientName changed:', formData.clientName);
+  }, [formData.clientName]);
+
+  // Add useEffect to log initial state
+  useEffect(() => {
+    console.log('Initial formData:', formData);
+    console.log('Initial clients:', clients);
+  }, []);
 
   // Postcode lookup functions
   const handlePostcodeLookup = async (postcode: string, addressType: 'pickup' | 'delivery') => {
@@ -834,12 +1007,21 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
     setNewClient({
       name: '',
       company: '',
+      position: '',
+      contactType: 'Client',
+      addresses: [
+        {
+          id: '',
+          name: '',
       addressLine1: '',
       addressLine2: '',
       addressLine3: '',
       town: '',
       city: '',
       postcode: '',
+          isDefault: true,
+        },
+      ],
       phone: '',
       email: '',
     });
@@ -847,7 +1029,7 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
 
   const handleClientFormSubmit = () => {
     // Create a new client with a generated ID
-    const newClientWithId: Client = {
+    const newClientWithId: Contact = {
       ...newClient,
       id: `client-${Date.now()}`,
     };
@@ -863,30 +1045,235 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
     // dispatch(addClient(newClientWithId));
   };
 
-  const handleNewClientInputChange = (field: keyof Omit<Client, 'id'>, value: string) => {
+  const handleNewClientInputChange = (field: keyof Omit<Contact, 'id'>, value: string | number, addressIndex?: number, addressField?: string) => {
+    if (field === 'addresses' && addressIndex !== undefined && addressField) {
+      setNewClient(prev => ({
+        ...prev,
+        addresses: prev.addresses.map((addr, index) => 
+          index === addressIndex 
+            ? { ...addr, [addressField]: value }
+            : addr
+        )
+      }));
+    } else {
     setNewClient(prev => ({
       ...prev,
       [field]: value
     }));
+    }
   };
+
+  const togglePickupContactFields = () => {
+    setShowPickupContactFields(prev => !prev);
+  };
+
+  const toggleDeliveryContactFields = () => {
+    setShowDeliveryContactFields(prev => !prev);
+  };
+
+  // Field hints from Pallet Script
+  const getFieldHints = (fieldName: string): string[] => {
+    return PalletPricingService.getFieldHints()[fieldName] || [];
+  };
+
+  const toggleFieldHints = (fieldName: string) => {
+    setShowFieldHints(prev => ({
+      ...prev,
+      [fieldName]: !prev[fieldName]
+    }));
+  };
+
+  // Debug logging
+      console.log('JobAllocationForm: Rendering form with props:', { isEditing, hasInitialData: !!initialData });
+
+  // Delivery address selection handlers
+  const handlePickupAddressSelect = (addressId: string) => {
+    setSelectedPickupAddressId(addressId);
+    if (addressId) {
+      // Check if it's a client address or general address
+      if (addressId.startsWith('client-')) {
+        // It's a client address
+        const clientAddressId = addressId.replace('client-', '');
+        const selectedClient = clients.find(client => client.name === formData.clientName);
+        if (selectedClient) {
+          const clientAddress = selectedClient.addresses.find(addr => addr.id === clientAddressId);
+          if (clientAddress) {
+            setFormData(prev => ({
+              ...prev,
+              pickupAddress: {
+                addressLine1: clientAddress.addressLine1,
+                addressLine2: clientAddress.addressLine2 || '',
+                addressLine3: clientAddress.addressLine3 || '',
+                town: clientAddress.town,
+                city: clientAddress.city || '',
+                postcode: clientAddress.postcode,
+                contactName: selectedClient.name,
+                contactPhone: selectedClient.phone || '',
+                contactEmail: selectedClient.email || '',
+              }
+            }));
+          }
+        }
+      } else {
+        // It's a general address
+        const selectedAddress = deliveryAddresses.find(addr => addr.id === addressId);
+        if (selectedAddress) {
+          setFormData(prev => ({
+            ...prev,
+            pickupAddress: {
+              addressLine1: selectedAddress.address.line1,
+              addressLine2: selectedAddress.address.line2 || '',
+              addressLine3: selectedAddress.address.line3 || '',
+              town: selectedAddress.address.town,
+              city: selectedAddress.address.city || '',
+              postcode: selectedAddress.address.postcode,
+              contactName: selectedAddress.contactPerson || '',
+              contactPhone: selectedAddress.contactPhone || '',
+              contactEmail: '',
+            }
+          }));
+        }
+      }
+    }
+  };
+
+  const handleDeliveryAddressSelect = (addressId: string) => {
+    setSelectedDeliveryAddressId(addressId);
+    if (addressId) {
+      // Check if it's a client address or general address
+      if (addressId.startsWith('client-')) {
+        // It's a client address
+        const clientAddressId = addressId.replace('client-', '');
+        const selectedClient = clients.find(client => client.name === formData.clientName);
+        if (selectedClient) {
+          const clientAddress = selectedClient.addresses.find(addr => addr.id === clientAddressId);
+          if (clientAddress) {
+            setFormData(prev => ({
+              ...prev,
+              deliveryAddress: {
+                addressLine1: clientAddress.addressLine1,
+                addressLine2: clientAddress.addressLine2 || '',
+                addressLine3: clientAddress.addressLine3 || '',
+                town: clientAddress.town,
+                city: clientAddress.city || '',
+                postcode: clientAddress.postcode,
+                contactName: selectedClient.name,
+                contactPhone: selectedClient.phone || '',
+                contactEmail: selectedClient.email || '',
+              }
+            }));
+          }
+        }
+      } else {
+        // It's a general address
+        const selectedAddress = deliveryAddresses.find(addr => addr.id === addressId);
+        if (selectedAddress) {
+          setFormData(prev => ({
+            ...prev,
+            deliveryAddress: {
+              addressLine1: selectedAddress.address.line1,
+              addressLine2: selectedAddress.address.line2 || '',
+              addressLine3: selectedAddress.address.line3 || '',
+              town: selectedAddress.address.town,
+              city: selectedAddress.address.city || '',
+              postcode: selectedAddress.address.postcode,
+              contactName: selectedAddress.contactPerson || '',
+              contactPhone: selectedAddress.contactPhone || '',
+              contactEmail: '',
+            }
+          }));
+        }
+      }
+    }
+  };
+
+  // Calculate totals from pallet items for display
+  const totalCost = palletItems.reduce((sum, item) => sum + item.totalCost, 0);
+  const totalWeight = palletItems.reduce((sum, item) => sum + item.totalWeight, 0);
+  const totalVolume = palletItems.reduce((sum, item) => sum + item.totalVolume, 0);
+
+  // Get client-specific addresses for pickup and delivery
+  const getClientAddresses = (clientName: string) => {
+    const selectedClient = clients.find(client => client.name === clientName);
+    return selectedClient ? selectedClient.addresses : [];
+  };
+
+  // Use useMemo to recalculate filtered addresses when clientName or deliveryAddresses change
+  const filteredPickupAddresses = React.useMemo(() => {
+    const clientAddresses = getClientAddresses(formData.clientName);
+    console.log('filteredPickupAddresses - clientName:', formData.clientName);
+    console.log('filteredPickupAddresses - clientAddresses:', clientAddresses);
+    console.log('filteredPickupAddresses - deliveryAddresses:', deliveryAddresses);
+    
+    const result = [
+      ...clientAddresses.map(addr => ({
+        id: `client-${addr.id}`,
+        name: `${addr.name} (${formData.clientName})`,
+        address: {
+          line1: addr.addressLine1,
+          line2: addr.addressLine2,
+          line3: addr.addressLine3,
+          town: addr.town,
+          city: addr.city,
+          postcode: addr.postcode
+        },
+        contactPerson: formData.clientName,
+        contactPhone: '',
+        contactEmail: ''
+      })),
+      ...deliveryAddresses.filter(addr => !clientAddresses.some(clientAddr => 
+        clientAddr.addressLine1 === addr.address.line1 && 
+        clientAddr.postcode === addr.address.postcode
+      ))
+    ];
+    
+    console.log('filteredPickupAddresses - final result:', result);
+    return result;
+  }, [formData.clientName, deliveryAddresses]);
+
+  const filteredDeliveryAddresses = React.useMemo(() => {
+    const clientAddresses = getClientAddresses(formData.clientName);
+    console.log('filteredDeliveryAddresses - clientName:', formData.clientName);
+    console.log('filteredDeliveryAddresses - clientAddresses:', clientAddresses);
+    
+    const result = [
+      ...clientAddresses.map(addr => ({
+        id: `client-${addr.id}`,
+        name: `${addr.name} (${formData.clientName})`,
+        address: {
+          line1: addr.addressLine1,
+          line2: addr.addressLine2,
+          line3: addr.addressLine3,
+          town: addr.town,
+          city: addr.city,
+          postcode: addr.postcode
+        },
+        contactPerson: formData.clientName,
+        contactPhone: '',
+        contactEmail: ''
+      })),
+      ...deliveryAddresses.filter(addr => !clientAddresses.some(clientAddr => 
+        clientAddr.addressLine1 === addr.address.line1 && 
+        clientAddr.postcode === addr.address.postcode
+      ))
+    ];
+    
+    console.log('filteredDeliveryAddresses - final result:', result);
+    return result;
+  }, [formData.clientName, deliveryAddresses]);
 
   return (
     <Box sx={{ p: 3, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1" sx={{ color: 'white' }}>
-          <Assignment sx={{ mr: 1, verticalAlign: 'middle' }} />
-          {isEditing ? 'Edit Job Consignment' : 'Job Consignment Form'}
-        </Typography>
-        <IconButton
-          onClick={onClose}
-          sx={{ color: 'yellow' }}
-        >
-          <Home />
-        </IconButton>
-      </Box>
-
       <Card sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', color: 'white' }}>
         <CardContent>
+          <Typography variant="h4" component="h1" gutterBottom sx={{ color: 'white', mb: 3 }}>
+            {isEditing ? 'Edit Job Consignment' : 'New Job Consignment'}
+          </Typography>
+          
+          <Typography variant="body1" sx={{ color: 'yellow', mb: 3, fontStyle: 'italic' }}>
+            💡 Integrated with Pallet Script for dynamic pricing and load assessment
+          </Typography>
+
           <Stepper activeStep={activeStep} orientation="vertical" sx={{ color: 'white' }}>
             {steps.map((step, index) => (
               <Step key={step}>
@@ -913,7 +1300,7 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                               </MenuItem>
                               {clients.map((client) => (
                                 <MenuItem key={client.id} value={client.name}>
-                                  {client.name} - {client.company}
+                                  {client.name} - {client.position} at {client.company} ({client.contactType})
                                 </MenuItem>
                               ))}
                             </Select>
@@ -929,11 +1316,15 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                                   color: 'white'
                                 }
                               }}
-                              title="Add New Client"
+                              title="Add New Contact"
                             >
                               <PersonAdd />
                             </IconButton>
                           </Box>
+                          {/* Debug display */}
+                          <Typography variant="caption" sx={{ color: 'yellow', fontSize: '10px', mt: 1, display: 'block' }}>
+                            Debug - Current Client: {formData.clientName || 'None selected'}
+                          </Typography>
                         </Grid>
                         
 
@@ -965,9 +1356,25 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                           <Grid container spacing={2}>
                             {/* Pickup Contact Fields */}
                             <Grid item xs={12} md={3.44}>
-                              <Typography variant="h6" gutterBottom sx={{ color: 'white', mb: 2 }}>
-                                Pickup Contact Information
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                                <Typography variant="h6" sx={{ color: 'white' }}>
+                                Pickup Contact
                               </Typography>
+                                <IconButton
+                                  onClick={togglePickupContactFields}
+                                  sx={{ 
+                                    color: 'primary.main',
+                                    '&:hover': {
+                                      backgroundColor: 'primary.main',
+                                      color: 'white'
+                                    }
+                                  }}
+                                  title={showPickupContactFields ? 'Hide Contact Fields' : 'Edit Contact Fields'}
+                                >
+                                  <Edit />
+                                </IconButton>
+                              </Box>
+                              {showPickupContactFields && (
                               <Grid container spacing={2}>
                                 <Grid item xs={12}>
                                   <TextField
@@ -1039,13 +1446,30 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                                   />
                                 </Grid>
                               </Grid>
+                              )}
                             </Grid>
 
                             {/* Delivery Contact Fields */}
                             <Grid item xs={12} md={3.44}>
-                              <Typography variant="h6" gutterBottom sx={{ color: 'white', mb: 2 }}>
-                                Delivery Contact Information
-                              </Typography>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                                <Typography variant="h6" sx={{ color: 'white' }}>
+                                  Delivery Contact
+                                </Typography>
+                                <IconButton
+                                  onClick={toggleDeliveryContactFields}
+                                  sx={{ 
+                                    color: 'primary.main',
+                                    '&:hover': {
+                                      backgroundColor: 'primary.main',
+                                      color: 'white'
+                                    }
+                                  }}
+                                  title={showDeliveryContactFields ? 'Hide Contact Fields' : 'Edit Contact Fields'}
+                                >
+                                  <Edit />
+                                </IconButton>
+                              </Box>
+                              {showDeliveryContactFields && (
                               <Grid container spacing={2}>
                                 <Grid item xs={12}>
                                   <TextField
@@ -1117,10 +1541,105 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                                   />
                                 </Grid>
                               </Grid>
+                              )}
                             </Grid>
                           </Grid>
                         </Grid>
                         
+
+                        
+                        {/* Address Selection */}
+                        <Grid item xs={12}>
+                          <Grid container spacing={2}>
+                            <Grid item xs={12} md={3.44}>
+                              <FormControl fullWidth sx={{ minHeight: '80px', '& .MuiInputLabel-root': { transform: 'translate(14px, -9px) scale(0.75)' } }}>
+                                <InputLabel id="pickup-address-label" sx={{ color: 'grey.400' }}>Select Pickup Address</InputLabel>
+                                <Select
+                                  labelId="pickup-address-label"
+                                  id="pickup-address-select"
+                                  value={selectedPickupAddressId || ''}
+                                  onChange={(e) => handlePickupAddressSelect(e.target.value as string)}
+                                  displayEmpty
+                                  sx={{
+                                    color: 'white',
+                                    height: '56px',
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' },
+                                    '& .MuiSelect-select': { paddingTop: '16px', paddingBottom: '16px' }
+                                  }}
+                                >
+                                  <MenuItem value="" sx={{ color: 'grey.400' }}>
+                                    <em>Enter manually or select saved address</em>
+                                  </MenuItem>
+                                  {filteredPickupAddresses.map((address) => (
+                                    <MenuItem key={address.id} value={address.id} sx={{ color: 'white' }}>
+                                      {address.name} - {address.address.line1}, {address.address.town}
+                                    </MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+                              {/* Debug display */}
+                              <Typography variant="caption" sx={{ color: 'yellow', fontSize: '10px', mt: 1, display: 'block' }}>
+                                Debug - Available Pickup Addresses: {filteredPickupAddresses.length} addresses
+                              </Typography>
+                              {filteredPickupAddresses.length > 0 && (
+                                <Typography variant="caption" sx={{ color: 'yellow', fontSize: '8px', mt: 1, display: 'block' }}>
+                                  {filteredPickupAddresses.map(addr => `${addr.name}: ${addr.address.line1}`).join(', ')}
+                                </Typography>
+                              )}
+                            </Grid>
+                            <Grid item xs={12} md={3.44}>
+                              <FormControl fullWidth sx={{ minHeight: '80px', '& .MuiInputLabel-root': { transform: 'translate(14px, -9px) scale(0.75)' } }}>
+                                <InputLabel id="delivery-address-label" sx={{ color: 'grey.400' }}>Select Delivery Address</InputLabel>
+                                <Select
+                                  labelId="delivery-address-label"
+                                  id="delivery-address-select"
+                                  value={selectedDeliveryAddressId || ''}
+                                  onChange={(e) => handleDeliveryAddressSelect(e.target.value as string)}
+                                  displayEmpty
+                                  sx={{
+                                    color: 'white',
+                                    height: '56px',
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' },
+                                    '& .MuiSelect-select': { paddingTop: '16px', paddingBottom: '16px' }
+                                  }}
+                                >
+                                  <MenuItem value="">
+                                    <em>Enter manually or select saved address</em>
+                                  </MenuItem>
+                                  {filteredDeliveryAddresses.map((address) => (
+                                    <MenuItem key={address.id} value={address.id}>
+                                      {address.name} - {address.address.line1}, {address.address.town}
+                                    </MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+                              {/* Debug display */}
+                              <Typography variant="caption" sx={{ color: 'yellow', fontSize: '10px', mt: 1, display: 'block' }}>
+                                Debug - Available Delivery Addresses: {filteredDeliveryAddresses.length} addresses
+                              </Typography>
+                              {filteredDeliveryAddresses.length > 0 && (
+                                <Typography variant="caption" sx={{ color: 'yellow', fontSize: '8px', mt: 1, display: 'block' }}>
+                                  {filteredDeliveryAddresses.map(addr => `${addr.name}: ${addr.address.line1}`).join(', ')}
+                                </Typography>
+                              )}
+                            </Grid>
+                            <Grid item xs={12} md={3.44}>
+                              <Button
+                                variant="outlined"
+                                startIcon={<LocationIcon />}
+                                onClick={() => setShowDeliveryAddressesDialog(true)}
+                                sx={{ 
+                                  color: 'grey.400', 
+                                  borderColor: 'grey.600',
+                                  height: '56px',
+                                  width: '100%'
+                                }}
+                              >
+                                Manage Addresses
+                              </Button>
+                            </Grid>
+                          </Grid>
+                        </Grid>
 
                         
                         {/* Pickup and Delivery Location - Aligned with contact fields */}
@@ -1168,6 +1687,10 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                                   '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
                                 }}
                               />
+                              {/* Debug display */}
+                              <Typography variant="caption" sx={{ color: 'yellow', fontSize: '10px', mt: 1, display: 'block' }}>
+                                Debug - Pickup Address: {JSON.stringify(formData.pickupAddress)}
+                              </Typography>
                             </Grid>
                             <Grid item xs={12} md={3.44}>
                               <TextField
@@ -1216,7 +1739,7 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                         </Grid>
                         
 
-                        
+
                         {/* Pickup and Delivery Postcodes with Lookup */}
                         <Grid item xs={12}>
                           <Grid container spacing={2}>
@@ -1576,7 +2099,7 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                             </Select>
                           </FormControl>
                         </Grid>
-                        {/* Dimension fields */}
+                        {/* Dimension fields with Pallet Script hints */}
                         <Grid item xs={12} md={2}>
                           <TextField
                             fullWidth
@@ -1584,12 +2107,37 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                             label="Length (mm)"
                             value={dimensions.length}
                             onChange={e => {
-                              setDimensions(d => ({ ...d, length: Number(e.target.value) }));
+                              const newLength = e.target.value;
+                              setDimensions(d => ({ ...d, length: newLength }));
                               setSelectedPallet("Custom");
+                              // Update volume using Pallet Script calculation
+                              if (newLength && dimensions.width && dimensions.height) {
+                                const volume = PalletPricingService.calculateVolume(Number(newLength), Number(dimensions.width), Number(dimensions.height));
+                                setFormData(prev => ({ ...prev, cargoVolume: volume }));
+                              }
                             }}
                             name="length"
+                            onMouseEnter={() => toggleFieldHints('length')}
+                            onMouseLeave={() => toggleFieldHints('length')}
                             sx={{ '& .MuiOutlinedInput-root': { color: 'white' }, '& .MuiInputLabel-root': { color: 'grey.400' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' } }}
                           />
+                          {showFieldHints.length && (
+                            <Box sx={{ 
+                              position: 'absolute', 
+                              zIndex: 1000, 
+                              bgcolor: 'rgba(0, 0, 0, 0.9)', 
+                              p: 1, 
+                              borderRadius: 1, 
+                              mt: 1,
+                              maxWidth: 300
+                            }}>
+                              {getFieldHints('length').map((hint, idx) => (
+                                <Typography key={idx} variant="caption" sx={{ color: 'yellow', display: 'block', mb: 0.5 }}>
+                                  • {hint}
+                                </Typography>
+                              ))}
+                            </Box>
+                          )}
                         </Grid>
                         <Grid item xs={12} md={2}>
                           <TextField
@@ -1598,12 +2146,37 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                             label="Width (mm)"
                             value={dimensions.width}
                             onChange={e => {
-                              setDimensions(d => ({ ...d, width: Number(e.target.value) }));
+                              const newWidth = e.target.value;
+                              setDimensions(d => ({ ...d, width: newWidth }));
                               setSelectedPallet("Custom");
+                              // Update volume using Pallet Script calculation
+                              if (dimensions.length && newWidth && dimensions.height) {
+                                const volume = PalletPricingService.calculateVolume(Number(dimensions.length), Number(newWidth), Number(dimensions.height));
+                                setFormData(prev => ({ ...prev, cargoVolume: volume }));
+                              }
                             }}
                             name="width"
+                            onMouseEnter={() => toggleFieldHints('width')}
+                            onMouseLeave={() => toggleFieldHints('width')}
                             sx={{ '& .MuiOutlinedInput-root': { color: 'white' }, '& .MuiInputLabel-root': { color: 'grey.400' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' } }}
                           />
+                          {showFieldHints.width && (
+                            <Box sx={{ 
+                              position: 'absolute', 
+                              zIndex: 1000, 
+                              bgcolor: 'rgba(0, 0, 0, 0.9)', 
+                              p: 1, 
+                              borderRadius: 1, 
+                              mt: 1,
+                              maxWidth: 300
+                            }}>
+                              {getFieldHints('width').map((hint, idx) => (
+                                <Typography key={idx} variant="caption" sx={{ color: 'yellow', display: 'block', mb: 0.5 }}>
+                                  • {hint}
+                                </Typography>
+                              ))}
+                            </Box>
+                          )}
                         </Grid>
                         <Grid item xs={12} md={2}>
                           <TextField
@@ -1612,12 +2185,36 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                             label="Height (mm)"
                             value={dimensions.height}
                             onChange={e => {
-                              setDimensions(d => ({ ...d, height: Number(e.target.value) }));
+                              const newHeight = e.target.value;
+                              setDimensions(d => ({ ...d, height: newHeight }));
                               setSelectedPallet("Custom");
+                              // Update volume using Pallet Script calculation
+                              if (dimensions.length && dimensions.width && newHeight) {
+                                const volume = PalletPricingService.calculateVolume(Number(dimensions.length), Number(dimensions.width), Number(newHeight));
+                                setFormData(prev => ({ ...prev, cargoVolume: volume }));
+                              }
                             }}
                             name="height"
+                            onMouseEnter={() => toggleFieldHints('height')}
+                            onMouseLeave={() => toggleFieldHints('height')}
                             sx={{ '& .MuiOutlinedInput-root': { color: 'white' }, '& .MuiInputLabel-root': { color: 'grey.400' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' } }}
                           />
+                          {showFieldHints.height && (
+                            <Box sx={{ 
+                              position: 'absolute', 
+                              bgcolor: 'rgba(0, 0, 0, 0.9)', 
+                              p: 1, 
+                              borderRadius: 1, 
+                              mt: 1,
+                              maxWidth: 300
+                            }}>
+                              {getFieldHints('height').map((hint, idx) => (
+                                <Typography key={idx} variant="caption" sx={{ color: 'yellow', display: 'block', mb: 0.5 }}>
+                                  • {hint}
+                                </Typography>
+                              ))}
+                            </Box>
+                          )}
                         </Grid>
                         <Grid item xs={12} md={2}>
                           <TextField
@@ -1657,6 +2254,87 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                             }}
                           />
                         </Grid>
+
+                        {/* Load Assessment from Pallet Script */}
+                        {loadAssessment && (
+                          <Grid item xs={12}>
+                            <Box sx={{ 
+                              border: '1px solid rgba(76, 175, 80, 0.5)', 
+                              borderRadius: 2, 
+                              p: 2, 
+                              mb: 2,
+                              bgcolor: 'rgba(76, 175, 80, 0.1)'
+                            }}>
+                              <Typography variant="h6" sx={{ color: 'success.main', mb: 2 }}>
+                                📋 Pallet Script Assessment
+                              </Typography>
+                              
+                              <Grid container spacing={2}>
+                                <Grid item xs={12} md={6}>
+                                  <Typography variant="subtitle2" sx={{ color: 'grey.400' }}>
+                                    Recommended Plot: <span style={{ color: 'white' }}>{loadAssessment.recommendedPlot}</span>
+                                  </Typography>
+                                  <Typography variant="subtitle2" sx={{ color: 'grey.400' }}>
+                                    Base Cost: <span style={{ color: 'success.main' }}>£{loadAssessment?.calculatedCost?.toFixed(2) || '0.00'}</span>
+                                  </Typography>
+                                </Grid>
+                                
+                                <Grid item xs={12} md={6}>
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                    <Chip 
+                                      label={loadAssessment.isOversized ? "Oversized" : "Standard Size"} 
+                                      color={loadAssessment.isOversized ? "error" : "success"} 
+                                      size="small" 
+                                    />
+                                    <Chip 
+                                      label={loadAssessment.isProtruding ? "Protruding" : "Within Height"} 
+                                      color={loadAssessment.isProtruding ? "warning" : "success"} 
+                                      size="small" 
+                                    />
+                                    <Chip 
+                                      label={loadAssessment.isBalanced ? "Balanced" : "Unbalanced"} 
+                                      color={loadAssessment.isBalanced ? "success" : "error"} 
+                                      size="small" 
+                                    />
+                                  </Box>
+                                </Grid>
+
+                                {loadAssessment.additionalCharges.length > 0 && (
+                                  <Grid item xs={12}>
+                                    <Typography variant="subtitle2" sx={{ color: 'warning.main', mb: 1 }}>
+                                      Additional Charges:
+                                    </Typography>
+                                    {loadAssessment.additionalCharges.map((charge, idx) => (
+                                      <Typography key={idx} variant="body2" sx={{ color: 'white', ml: 2 }}>
+                                        • {charge}
+                                      </Typography>
+                                    ))}
+                                  </Grid>
+                                )}
+
+                                <Grid item xs={12}>
+                                  <Box sx={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    alignItems: 'center',
+                                    py: 1,
+                                    px: 2,
+                                    bgcolor: 'rgba(76, 175, 80, 0.2)',
+                                    borderRadius: 1,
+                                    border: '1px solid rgba(76, 175, 80, 0.5)'
+                                  }}>
+                                    <Typography variant="h6" sx={{ color: 'success.main', fontWeight: 'bold' }}>
+                                      TOTAL COST (Pallet Script)
+                                    </Typography>
+                                    <Typography variant="h6" sx={{ color: 'success.main', fontWeight: 'bold' }}>
+                                      £{loadAssessment?.totalCost?.toFixed(2) || '0.00'}
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              </Grid>
+                            </Box>
+                          </Grid>
+                        )}
 
                         {/* Pallet Counter Section */}
                         <Grid item xs={12}>
@@ -1964,6 +2642,18 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                             <Typography variant="body1" sx={{ color: 'white' }}>
                               {formData.cargoType} - {formData.cargoWeight}kg, {formData.cargoVolume}m³
                             </Typography>
+                            {loadAssessment && (
+                              <Box sx={{ mt: 1, p: 1, bgcolor: 'rgba(76, 175, 80, 0.1)', borderRadius: 1 }}>
+                                <Typography variant="body2" sx={{ color: 'success.main', fontWeight: 'bold' }}>
+                                  Pallet Script: {loadAssessment.recommendedPlot} - £{loadAssessment.totalCost.toFixed(2)}
+                                </Typography>
+                                {loadAssessment.additionalCharges.length > 0 && (
+                                  <Typography variant="caption" sx={{ color: 'warning.main' }}>
+                                    + {loadAssessment.additionalCharges.join(', ')}
+                                  </Typography>
+                                )}
+                              </Box>
+                            )}
                           </Grid>
 
                           {/* Pallet Counter Summary */}
@@ -2064,7 +2754,7 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
         fullWidth
       >
         <DialogTitle sx={{ color: 'white', backgroundColor: 'grey.800' }}>
-          Add New Client
+          Add New Contact
         </DialogTitle>
         <DialogContent sx={{ backgroundColor: 'grey.800', pt: 2 }}>
           <Grid container spacing={2}>
@@ -2094,12 +2784,43 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
                 }}
               />
             </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Position"
+                value={newClient.position}
+                onChange={(e) => handleNewClientInputChange('position', e.target.value)}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': { color: 'white' },
+                  '& .MuiInputLabel-root': { color: 'grey.400' },
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel sx={{ color: 'grey.400' }}>Contact Type</InputLabel>
+                <Select
+                  value={newClient.contactType}
+                  onChange={(e) => handleNewClientInputChange('contactType', e.target.value)}
+                  sx={{ 
+                    '& .MuiOutlinedInput-root': { color: 'white' },
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                  }}
+                >
+                  <MenuItem value="Client">Client</MenuItem>
+                  <MenuItem value="Supplier">Supplier</MenuItem>
+                  <MenuItem value="Partner">Partner</MenuItem>
+                  <MenuItem value="Prospect">Prospect</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
             <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Address Line 1"
-                value={newClient.addressLine1}
-                onChange={(e) => handleNewClientInputChange('addressLine1', e.target.value)}
+                value={newClient.addresses[0].addressLine1}
+                onChange={(e) => handleNewClientInputChange('addresses', e.target.value, 0, 'addressLine1')}
                 sx={{ 
                   '& .MuiOutlinedInput-root': { color: 'white' },
                   '& .MuiInputLabel-root': { color: 'grey.400' },
@@ -2111,8 +2832,8 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
               <TextField
                 fullWidth
                 label="Address Line 2"
-                value={newClient.addressLine2}
-                onChange={(e) => handleNewClientInputChange('addressLine2', e.target.value)}
+                value={newClient.addresses[0].addressLine2}
+                onChange={(e) => handleNewClientInputChange('addresses', e.target.value, 0, 'addressLine2')}
                 sx={{ 
                   '& .MuiOutlinedInput-root': { color: 'white' },
                   '& .MuiInputLabel-root': { color: 'grey.400' },
@@ -2124,8 +2845,8 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
               <TextField
                 fullWidth
                 label="Address Line 3"
-                value={newClient.addressLine3}
-                onChange={(e) => handleNewClientInputChange('addressLine3', e.target.value)}
+                value={newClient.addresses[0].addressLine3}
+                onChange={(e) => handleNewClientInputChange('addresses', e.target.value, 0, 'addressLine3')}
                 sx={{ 
                   '& .MuiOutlinedInput-root': { color: 'white' },
                   '& .MuiInputLabel-root': { color: 'grey.400' },
@@ -2137,8 +2858,8 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
               <TextField
                 fullWidth
                 label="Town"
-                value={newClient.town}
-                onChange={(e) => handleNewClientInputChange('town', e.target.value)}
+                value={newClient.addresses[0].town}
+                onChange={(e) => handleNewClientInputChange('addresses', e.target.value, 0, 'town')}
                 sx={{ 
                   '& .MuiOutlinedInput-root': { color: 'white' },
                   '& .MuiInputLabel-root': { color: 'grey.400' },
@@ -2150,8 +2871,8 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
               <TextField
                 fullWidth
                 label="City"
-                value={newClient.city}
-                onChange={(e) => handleNewClientInputChange('city', e.target.value)}
+                value={newClient.addresses[0].city}
+                onChange={(e) => handleNewClientInputChange('addresses', e.target.value, 0, 'city')}
                 sx={{ 
                   '& .MuiOutlinedInput-root': { color: 'white' },
                   '& .MuiInputLabel-root': { color: 'grey.400' },
@@ -2163,8 +2884,8 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
               <TextField
                 fullWidth
                 label="Postcode"
-                value={newClient.postcode}
-                onChange={(e) => handleNewClientInputChange('postcode', e.target.value)}
+                value={newClient.addresses[0].postcode}
+                onChange={(e) => handleNewClientInputChange('addresses', e.target.value, 0, 'postcode')}
                 sx={{ 
                   '& .MuiOutlinedInput-root': { color: 'white' },
                   '& .MuiInputLabel-root': { color: 'grey.400' },
@@ -2207,9 +2928,9 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
           <Button 
             onClick={handleClientFormSubmit} 
             variant="contained"
-            disabled={!newClient.name.trim() || !newClient.company.trim()}
+            disabled={!newClient.name.trim() || !newClient.company.trim() || !newClient.position.trim() || !newClient.contactType}
           >
-            Add Client
+            Add Contact
           </Button>
         </DialogActions>
       </Dialog>
@@ -2217,4 +2938,4 @@ const JobConsignmentForm: React.FC<JobConsignmentFormProps> = ({ onClose, initia
   );
 };
 
-export default JobConsignmentForm;
+export default JobAllocationForm;

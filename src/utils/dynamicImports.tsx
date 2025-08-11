@@ -65,19 +65,18 @@ export const DynamicComponents = {
 // Preloading functions for better performance
 export const preloadComponent = (componentName: keyof typeof DynamicComponents) => {
   const component = DynamicComponents[componentName];
-  if (component && typeof component === 'object' && '_init' in component) {
-    // Trigger the lazy loading
-    (component as any)._init();
+  if (component && typeof component === 'object') {
+    // For React.lazy components, we can't directly trigger loading
+    // The component will load when it's first rendered
+    console.log(`Component ${componentName} is available for loading`);
   }
 };
 
 // Preload commonly used components
 export const preloadCommonComponents = () => {
-  // Preload components that are likely to be used soon
-  setTimeout(() => preloadComponent('Dashboard'), 1000);
-  setTimeout(() => preloadComponent('Layout'), 1500);
-  setTimeout(() => preloadComponent('PlanningHub'), 2000);
-  setTimeout(() => preloadComponent('FleetManagementHub'), 2500);
+  // Note: React.lazy components are loaded automatically when first rendered
+  // This function is kept for future optimization strategies
+  console.log('Common components will be loaded on demand');
 };
 
 // Loading component for Suspense fallback

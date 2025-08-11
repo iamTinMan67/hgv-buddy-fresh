@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import JobConsignmentForm from './JobAllocationForm';
+import JobAllocationForm from './JobAllocationForm';
 import {
   Box,
   Typography,
@@ -2009,7 +2009,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
             </Typography>
           </DialogTitle>
           <DialogContent>
-            <JobConsignmentForm 
+            <JobAllocationForm 
               onClose={() => setShowEditJobDialog(false)}
               initialData={jobToEdit}
               isEditing={true}

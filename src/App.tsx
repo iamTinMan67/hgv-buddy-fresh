@@ -7,7 +7,7 @@ import { DynamicComponents, LoadingSpinner, preloadCommonComponents } from "./ut
 import ErrorBoundary from "./components/ErrorBoundary";
 
 // Destructure the components we need
-const { Layout, Login, Dashboard, JobAllocationForm } = DynamicComponents;
+const { Layout, Login, Dashboard } = DynamicComponents;
 
 function App() {
   const dispatch = useDispatch();
@@ -54,8 +54,6 @@ function App() {
       <Suspense fallback={<LoadingSpinner />}>
         <Layout>
           <Dashboard user={user} />
-          {/* Job Allocation Form with standard pallet dropdown */}
-          <JobAllocationForm onClose={() => {}} />
         </Layout>
       </Suspense>
     </ErrorBoundary>
