@@ -172,7 +172,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       <Box sx={{ py: 2, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
         <ErrorBoundary>
           <Suspense fallback={<LoadingSpinner />}>
-            <FleetManagementHub onClose={() => setShowFleetManagement(false)} />
+            <FleetManagementHub onClose={() => setShowFleetManagement(false)} userRole={user?.role} />
           </Suspense>
         </ErrorBoundary>
       </Box>

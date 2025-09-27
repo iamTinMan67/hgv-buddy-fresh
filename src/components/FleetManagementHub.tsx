@@ -65,14 +65,25 @@ const generatePlaceholderCards = (functionalCards: number, comingSoonCards: numb
 
 interface FleetManagementHubProps {
   onClose: () => void;
+  userRole?: 'admin' | 'driver' | 'owner';
 }
 
-const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
+const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose, userRole = 'admin' }) => {
   const [currentView, setCurrentView] = useState<'main' | 'fleet' | 'fuel' | 'drivers' | 'routePlanning'>('main');
   
-  // Define the cards configuration
-  const functionalCards = 7; // All active cards
-  const comingSoonCards = 2; // Maintenance Hub, Analytics Dashboard
+  // Define the cards configuration based on user role
+  const getCardConfiguration = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return { functionalCards: 4, comingSoonCards: 2 }; // Fleet, Drivers, Fuel, Route Planning + 2 coming soon
+      case 'driver':
+        return { functionalCards: 3, comingSoonCards: 2 }; // Fleet, Drivers, Fuel + 2 coming soon
+      default:
+        return { functionalCards: 4, comingSoonCards: 2 };
+    }
+  };
+  
+  const { functionalCards, comingSoonCards } = getCardConfiguration(userRole);
   const columnsPerRow = 3;
   
   // Generate placeholder cards to complete incomplete rows
@@ -291,60 +302,62 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
-        {/* Route Planning Card */}
-        <Grid item xs={12} md={4}>
-          <Card 
-            sx={{ 
-              cursor: 'pointer', 
-              transition: 'all 0.3s ease',
-              transform: 'scale(0.94)',
-              '&:hover': {
-                transform: 'translateY(-4px) scale(0.94)',
-                boxShadow: 4,
-              }
-            }}
-            onClick={() => setCurrentView('routePlanning')}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
-                  <Route />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" component="div">
-                    Route Planning
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Optimize delivery routes and navigation
-                  </Typography>
+        {/* Route Planning Card - Admin only */}
+        {userRole === 'admin' && (
+          <Grid item xs={12} md={4}>
+            <Card 
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.3s ease',
+                transform: 'scale(0.94)',
+                '&:hover': {
+                  transform: 'translateY(-4px) scale(0.94)',
+                  boxShadow: 4,
+                }
+              }}
+              onClick={() => setCurrentView('routePlanning')}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
+                    <Route />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" component="div">
+                      Route Planning
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Optimize delivery routes and navigation
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
-                <Chip 
-                  icon={<Route />} 
-                  label="Route Optimization" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                />
-                <Chip 
-                  icon={<Map />} 
-                  label="Navigation" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                />
-                <Chip 
-                  icon={<Assessment />} 
-                  label="Efficiency" 
-                  size="small" 
-                  sx={{ mb: 1 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+                
+                <Divider sx={{ my: 2 }} />
+                
+                <Box sx={{ mt: 2, minHeight: '60px' }}>
+                  <Chip 
+                    icon={<Route />} 
+                    label="Route Optimization" 
+                    size="small" 
+                    sx={{ mr: 1, mb: 1 }}
+                  />
+                  <Chip 
+                    icon={<Map />} 
+                    label="Navigation" 
+                    size="small" 
+                    sx={{ mr: 1, mb: 1 }}
+                  />
+                  <Chip 
+                    icon={<Assessment />} 
+                    label="Efficiency" 
+                    size="small" 
+                    sx={{ mb: 1 }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
 
         {/* Dynamic Coming Soon Cards */}
         {(() => {
