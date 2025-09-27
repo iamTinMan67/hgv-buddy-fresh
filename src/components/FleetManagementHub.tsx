@@ -44,10 +44,8 @@ const generatePlaceholderCards = (functionalCards: number, comingSoonCards: numb
   // Only add placeholders to complete the current row, never start a new row
   const placeholdersNeeded = columnsPerRow - cardsInCurrentRow;
   
-  // Ensure we don't add more placeholders than needed to complete the current row
-  const maxPlaceholders = Math.min(placeholdersNeeded, columnsPerRow - cardsInCurrentRow);
-  
-  return Array.from({ length: maxPlaceholders }, (_, index) => ({
+  // Never add more placeholders than needed to complete the current row
+  return Array.from({ length: placeholdersNeeded }, (_, index) => ({
     id: `placeholder-${index}`,
     title: 'Coming Soon',
     description: 'Additional features and tools',
@@ -64,12 +62,18 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
   const [currentView, setCurrentView] = useState<'main' | 'fleet' | 'fuel' | 'drivers' | 'routePlanning'>('main');
   
   // Define the cards configuration
-  const functionalCards = 4; // Fleet, Drivers, Fuel, Route Planning
+  const functionalCards = 7; // All active cards
   const comingSoonCards = 2; // Maintenance Hub, Analytics Dashboard
   const columnsPerRow = 3;
   
   // Generate placeholder cards to complete incomplete rows
   const placeholderCards = generatePlaceholderCards(functionalCards, comingSoonCards, columnsPerRow);
+  
+  // Debug: Log the card counts
+  console.log('Functional cards:', functionalCards);
+  console.log('Coming soon cards:', comingSoonCards);
+  console.log('Placeholder cards:', placeholderCards.length);
+  console.log('Total cards:', functionalCards + comingSoonCards + placeholderCards.length);
 
 
   const handleNavigateToFleet = () => setCurrentView('fleet');
