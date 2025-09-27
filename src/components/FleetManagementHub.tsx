@@ -29,12 +29,43 @@ import FuelManagement from './FuelManagement';
 import DriverManagement from './DriverManagement';
 import RoutePlanning from './RoutePlanning';
 
+// Utility function to generate placeholder cards
+const generatePlaceholderCards = (functionalCards: number, comingSoonCards: number, columnsPerRow: number = 3) => {
+  const totalCards = functionalCards + comingSoonCards;
+  const currentRow = Math.floor(totalCards / columnsPerRow);
+  const cardsInCurrentRow = totalCards % columnsPerRow;
+  
+  // If current row is complete (cardsInCurrentRow === 0), don't add any placeholders
+  if (cardsInCurrentRow === 0) {
+    return [];
+  }
+  
+  // Calculate how many placeholders needed to complete the current row
+  const placeholdersNeeded = columnsPerRow - cardsInCurrentRow;
+  
+  return Array.from({ length: placeholdersNeeded }, (_, index) => ({
+    id: `placeholder-${index}`,
+    title: 'Coming Soon',
+    description: 'Additional features and tools',
+    icon: <Analytics />,
+    features: ['Feature 1', 'Feature 2', 'Feature 3']
+  }));
+};
+
 interface FleetManagementHubProps {
   onClose: () => void;
 }
 
 const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
   const [currentView, setCurrentView] = useState<'main' | 'fleet' | 'fuel' | 'drivers' | 'routePlanning'>('main');
+  
+  // Define the cards configuration
+  const functionalCards = 3; // Fleet, Drivers, Fuel
+  const comingSoonCards = 2; // Maintenance Hub, Analytics Dashboard
+  const columnsPerRow = 3;
+  
+  // Generate placeholder cards to complete incomplete rows
+  const placeholderCards = generatePlaceholderCards(functionalCards, comingSoonCards, columnsPerRow);
 
 
   const handleNavigateToFleet = () => setCurrentView('fleet');
@@ -359,6 +390,54 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
+        {/* Placeholder cards to complete incomplete rows */}
+        {placeholderCards.map((placeholder) => (
+          <Grid item xs={12} md={4} key={placeholder.id}>
+            <Card 
+              sx={{ 
+                cursor: 'default', 
+                transition: 'all 0.3s ease',
+                transform: 'scale(0.94)',
+                opacity: 0.7,
+                '&:hover': {
+                  transform: 'translateY(-4px) scale(0.94)',
+                  boxShadow: 4,
+                }
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
+                    {placeholder.icon}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" component="div">
+                      {placeholder.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {placeholder.description}
+                    </Typography>
+                  </Box>
+                </Box>
+                
+                <Divider sx={{ my: 2 }} />
+                
+                <Box sx={{ mt: 2, minHeight: '60px' }}>
+                  {placeholder.features.map((feature, index) => (
+                    <Chip 
+                      key={index}
+                      icon={<Analytics />} 
+                      label={feature} 
+                      size="small" 
+                      sx={{ mr: 1, mb: 1 }}
+                      color="default"
+                    />
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
 
       </Grid>
 

@@ -32,6 +32,29 @@ import {
 
 import BookKeeping from './BookKeeping';
 import ReportsHub from './ReportsHub';
+
+// Utility function to generate placeholder cards
+const generatePlaceholderCards = (functionalCards: number, comingSoonCards: number, columnsPerRow: number = 3) => {
+  const totalCards = functionalCards + comingSoonCards;
+  const currentRow = Math.floor(totalCards / columnsPerRow);
+  const cardsInCurrentRow = totalCards % columnsPerRow;
+  
+  // If current row is complete (cardsInCurrentRow === 0), don't add any placeholders
+  if (cardsInCurrentRow === 0) {
+    return [];
+  }
+  
+  // Calculate how many placeholders needed to complete the current row
+  const placeholdersNeeded = columnsPerRow - cardsInCurrentRow;
+  
+  return Array.from({ length: placeholdersNeeded }, (_, index) => ({
+    id: `placeholder-${index}`,
+    title: 'Coming Soon',
+    description: 'Additional features and tools',
+    icon: <Analytics />,
+    features: ['Feature 1', 'Feature 2', 'Feature 3']
+  }));
+};
 import FuelManagement from './FuelManagement';
 import WageManagement from './WageManagement';
 
@@ -46,6 +69,14 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
   const [showReportsHub, setShowReportsHub] = useState(false);
   const [showFuelHub, setShowFuelHub] = useState(false);
   const [showWagesHub, setShowWagesHub] = useState(false);
+  
+  // Define the cards configuration
+  const functionalCards = 4; // Book Keeping, Reports, Invoice Upload, Fuel
+  const comingSoonCards = 2; // Coming Soon Card 1, Coming Soon Card 2
+  const columnsPerRow = 3;
+  
+  // Generate placeholder cards to complete incomplete rows
+  const placeholderCards = generatePlaceholderCards(functionalCards, comingSoonCards, columnsPerRow);
 
 
 
