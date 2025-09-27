@@ -12,25 +12,26 @@ const { Layout, Login, Dashboard } = DynamicComponents;
 function App() {
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
-  const [hasAutoLoggedIn, setHasAutoLoggedIn] = useState(false);
 
-  // Auto-login for development - bypasses login screen (only once)
-  useEffect(() => {
-    if (!isAuthenticated && !hasAutoLoggedIn) {
-      // Auto-login as admin for development with full access
-      const defaultUser = {
-        id: 'dev-1',
-        email: 'developer@hgvbuddy.com',
-        firstName: 'Developer',
-        lastName: 'Admin',
-        role: 'admin' as const,
-      };
-      
-      dispatch(setUser(defaultUser));
-      setHasAutoLoggedIn(true);
-      console.log('🛠️ Development Mode: Auto-logged in as Admin with full access');
-    }
-  }, [isAuthenticated, dispatch, hasAutoLoggedIn]);
+  // Auto-login for development - DISABLED for testing logout
+  // useEffect(() => {
+  //   const hasAutoLoggedIn = localStorage.getItem('hasAutoLoggedIn');
+  //   
+  //   if (!isAuthenticated && !hasAutoLoggedIn) {
+  //     // Auto-login as admin for development with full access
+  //     const defaultUser = {
+  //       id: 'dev-1',
+  //       email: 'developer@hgvbuddy.com',
+  //       firstName: 'Developer',
+  //       lastName: 'Admin',
+  //       role: 'admin' as const,
+  //     };
+  //     
+  //     dispatch(setUser(defaultUser));
+  //     localStorage.setItem('hasAutoLoggedIn', 'true');
+  //     console.log('🛠️ Development Mode: Auto-logged in as Admin with full access');
+  //   }
+  // }, [isAuthenticated, dispatch]);
 
   // Preload common components for better performance
   useEffect(() => {

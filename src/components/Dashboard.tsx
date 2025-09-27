@@ -84,6 +84,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
   const handleLogout = () => {
     dispatch(logout());
+    // Clear the auto-login flag so user can be auto-logged in again if needed
+    localStorage.removeItem('hasAutoLoggedIn');
   };
 
   const getRoleColor = (role: string) => {
