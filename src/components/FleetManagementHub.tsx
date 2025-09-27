@@ -22,6 +22,8 @@ import {
   Schedule,
   Assessment,
   AttachMoney,
+  Route,
+  Map,
 } from '@mui/icons-material';
 
 import FleetManagement from './FleetManagement';
@@ -39,10 +41,13 @@ const generatePlaceholderCards = (functionalCards: number, comingSoonCards: numb
     return [];
   }
   
-  // Calculate how many placeholders needed to complete the current row
+  // Only add placeholders to complete the current row, never start a new row
   const placeholdersNeeded = columnsPerRow - cardsInCurrentRow;
   
-  return Array.from({ length: placeholdersNeeded }, (_, index) => ({
+  // Ensure we don't add more placeholders than needed to complete the current row
+  const maxPlaceholders = Math.min(placeholdersNeeded, columnsPerRow - cardsInCurrentRow);
+  
+  return Array.from({ length: maxPlaceholders }, (_, index) => ({
     id: `placeholder-${index}`,
     title: 'Coming Soon',
     description: 'Additional features and tools',
@@ -59,7 +64,7 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
   const [currentView, setCurrentView] = useState<'main' | 'fleet' | 'fuel' | 'drivers' | 'routePlanning'>('main');
   
   // Define the cards configuration
-  const functionalCards = 3; // Fleet, Drivers, Fuel
+  const functionalCards = 4; // Fleet, Drivers, Fuel, Route Planning
   const comingSoonCards = 2; // Maintenance Hub, Analytics Dashboard
   const columnsPerRow = 3;
   
@@ -265,6 +270,61 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
                 <Chip 
                   icon={<Assessment />} 
                   label="Reports" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Route Planning Card */}
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
+              '&:hover': {
+                transform: 'translateY(-4px) scale(0.94)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={() => setCurrentView('routePlanning')}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
+                  <Route />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Route Planning
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Optimize delivery routes and navigation
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<Route />} 
+                  label="Route Optimization" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Map />} 
+                  label="Navigation" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Assessment />} 
+                  label="Efficiency" 
                   size="small" 
                   sx={{ mb: 1 }}
                 />
