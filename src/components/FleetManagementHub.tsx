@@ -32,7 +32,6 @@ import RoutePlanning from './RoutePlanning';
 // Utility function to generate placeholder cards
 const generatePlaceholderCards = (functionalCards: number, comingSoonCards: number, columnsPerRow: number = 3) => {
   const totalCards = functionalCards + comingSoonCards;
-  const currentRow = Math.floor(totalCards / columnsPerRow);
   const cardsInCurrentRow = totalCards % columnsPerRow;
   
   // If current row is complete (cardsInCurrentRow === 0), don't add any placeholders
@@ -274,170 +273,76 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
-        {/* Coming Soon Card 1 */}
-        <Grid item xs={12} md={4}>
-          <Card 
-            sx={{ 
-              cursor: 'default', 
-              transition: 'all 0.3s ease',
-              transform: 'scale(0.94)',
-              opacity: 0.7,
-              '&:hover': {
-                transform: 'translateY(-4px) scale(0.94)',
-                boxShadow: 4,
-              }
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
-                  <Build />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" component="div">
-                    Maintenance Hub
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Vehicle maintenance tracking
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
-                <Chip 
-                  icon={<Build />} 
-                  label="Coming Soon" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                  color="default"
-                />
-                <Chip 
-                  icon={<Assessment />} 
-                  label="Maintenance Reports" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                  color="default"
-                />
-                <Chip 
-                  icon={<Schedule />} 
-                  label="Service Scheduling" 
-                  size="small" 
-                  sx={{ mb: 1 }}
-                  color="default"
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Coming Soon Card 2 */}
-        <Grid item xs={12} md={4}>
-          <Card 
-            sx={{ 
-              cursor: 'default', 
-              transition: 'all 0.3s ease',
-              transform: 'scale(0.94)',
-              opacity: 0.7,
-              '&:hover': {
-                transform: 'translateY(-4px) scale(0.94)',
-                boxShadow: 4,
-              }
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
-                  <Analytics />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" component="div">
-                    Analytics Dashboard
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Fleet performance insights
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
-                <Chip 
-                  icon={<Analytics />} 
-                  label="Coming Soon" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                  color="default"
-                />
-                <Chip 
-                  icon={<TrendingUp />} 
-                  label="Performance Metrics" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                  color="default"
-                />
-                <Chip 
-                  icon={<Assessment />} 
-                  label="Data Insights" 
-                  size="small" 
-                  sx={{ mb: 1 }}
-                  color="default"
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Placeholder cards to complete incomplete rows */}
-        {placeholderCards.map((placeholder) => (
-          <Grid item xs={12} md={4} key={placeholder.id}>
-            <Card 
-              sx={{ 
-                cursor: 'default', 
-                transition: 'all 0.3s ease',
-                transform: 'scale(0.94)',
-                opacity: 0.7,
-                '&:hover': {
-                  transform: 'translateY(-4px) scale(0.94)',
-                  boxShadow: 4,
-                }
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
-                    {placeholder.icon}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h5" component="div">
-                      {placeholder.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {placeholder.description}
-                    </Typography>
+        {/* Dynamic Coming Soon Cards */}
+        {(() => {
+          const comingSoonCards = [
+            {
+              id: 'maintenance-hub',
+              title: 'Maintenance Hub',
+              description: 'Vehicle maintenance tracking',
+              icon: <Build />,
+              features: ['Coming Soon', 'Maintenance Reports', 'Service Scheduling']
+            },
+            {
+              id: 'analytics-dashboard',
+              title: 'Analytics Dashboard', 
+              description: 'Fleet performance insights',
+              icon: <Analytics />,
+              features: ['Coming Soon', 'Performance Metrics', 'Data Insights']
+            }
+          ];
+          
+          // Add placeholder cards to complete the row
+          const allComingSoonCards = [...comingSoonCards, ...placeholderCards];
+          
+          return allComingSoonCards.map((card) => (
+            <Grid item xs={12} md={4} key={card.id}>
+              <Card 
+                sx={{ 
+                  cursor: 'default', 
+                  transition: 'all 0.3s ease',
+                  transform: 'scale(0.94)',
+                  opacity: 0.7,
+                  '&:hover': {
+                    transform: 'translateY(-4px) scale(0.94)',
+                    boxShadow: 4,
+                  }
+                }}
+              >
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
+                      {card.icon}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h5" component="div">
+                        {card.title}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {card.description}
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-                
-                <Divider sx={{ my: 2 }} />
-                
-                <Box sx={{ mt: 2, minHeight: '60px' }}>
-                  {placeholder.features.map((feature, index) => (
-                    <Chip 
-                      key={index}
-                      icon={<Analytics />} 
-                      label={feature} 
-                      size="small" 
-                      sx={{ mr: 1, mb: 1 }}
-                      color="default"
-                    />
-                  ))}
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
+                  
+                  <Divider sx={{ my: 2 }} />
+                  
+                  <Box sx={{ mt: 2, minHeight: '60px' }}>
+                    {card.features.map((feature, index) => (
+                      <Chip 
+                        key={index}
+                        icon={<Analytics />} 
+                        label={feature} 
+                        size="small" 
+                        sx={{ mr: 1, mb: 1 }}
+                        color="default"
+                      />
+                    ))}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ));
+        })()}
 
       </Grid>
 
