@@ -26,7 +26,6 @@ import {
   Report,
 } from '@mui/icons-material';
 
-import PlanningHub from './PlanningHub';
 import { generatePlaceholderCards, PlaceholderCard } from '../utils/placeholderCards';
 
 interface JobAssignmentHubProps {
@@ -34,7 +33,6 @@ interface JobAssignmentHubProps {
 }
 
 const JobAssignmentHub: React.FC<JobAssignmentHubProps> = ({ onClose }) => {
-  const [currentView, setCurrentView] = useState<'main' | 'planning'>('main');
 
   // Define the cards configuration
   const functionalCards = 1; // Scheduling
@@ -50,12 +48,6 @@ const JobAssignmentHub: React.FC<JobAssignmentHubProps> = ({ onClose }) => {
   console.log('JobAssignmentHub - Placeholder cards:', placeholderCards.length);
   console.log('JobAssignmentHub - Total cards:', functionalCards + comingSoonCards + placeholderCards.length);
 
-  const handleNavigateToPlanning = () => setCurrentView('planning');
-  const handleBackToMain = () => setCurrentView('main');
-
-  if (currentView === 'planning') {
-    return <PlanningHub onClose={handleBackToMain} />;
-  }
 
   // Main Job Assignment Hub
   return (
@@ -89,7 +81,6 @@ const JobAssignmentHub: React.FC<JobAssignmentHubProps> = ({ onClose }) => {
                 boxShadow: 4,
               }
             }}
-            onClick={handleNavigateToPlanning}
           >
             <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
