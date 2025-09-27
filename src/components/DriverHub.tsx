@@ -38,7 +38,7 @@ const DriverHub: React.FC<DriverHubProps> = ({ onClose }) => {
   const [currentView, setCurrentView] = useState<'main' | 'management' | 'staff' | 'wages' | 'holiday'>('main');
 
   // Define the cards configuration
-  const functionalCards = 4; // Driver Management, Staff Management, Wage Management, Holiday Planner
+  const functionalCards = 3; // Staff Management, Wage Management, Holiday Planner
   const comingSoonCards = 0; // No coming soon cards currently
   const columnsPerRow = 3;
   

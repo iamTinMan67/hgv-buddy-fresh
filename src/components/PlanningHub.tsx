@@ -37,7 +37,7 @@ import DailyPlanner from './DailyPlanner';
 import RoutePlanning from './RoutePlanning';
 import GarminRoutePlanning from './GarminRoutePlanning';
 import TrailerPlanner from './TrailerPlanner';
-import JobAllocationForm from './JobAllocationForm';
+import JobAssignmentHub from './JobAssignmentHub';
 import { generatePlaceholderCards, PlaceholderCard } from '../utils/placeholderCards';
 
 interface PlanningHubProps {
@@ -48,7 +48,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
   const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'trailer' | 'job'>('main');
   
   // Define the cards configuration
-  const functionalCards = 5; // Daily Planner, Route Planning, Trailer Planner, Garmin Routes, Planning Analytics
+  const functionalCards = 6; // Daily Planner, Route Planning, Trailer Planner, Add A New Job, Garmin Routes, Planning Analytics
   const comingSoonCards = 0; // No coming soon cards currently
   const columnsPerRow = 3;
   
@@ -78,7 +78,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
   }
 
   if (currentView === 'job') {
-    return <JobAllocationForm onClose={() => setCurrentView('main')} />;
+    return <JobAssignmentHub onClose={() => setCurrentView('main')} />;
   }
 
   // Main Planning Hub

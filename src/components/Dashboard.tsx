@@ -67,8 +67,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const dispatch = useDispatch<AppDispatch>();
   
   // Define the cards configuration for main dashboard
-  const functionalCards = 6; // Timesheet, Fleet, Planning, Legal, Staff, Driver, Reports, Accounting, Client
-  const comingSoonCards = 3; // Three coming soon cards already exist
+  const functionalCards = 7; // Fleet, Staff, Legal, Jobs & Planning, Print Screen, Financial, Clients
+  const comingSoonCards = 0; // Coming soon cards replaced with placeholders
   const columnsPerRow = 3;
   
   // Generate placeholder cards to complete incomplete rows
