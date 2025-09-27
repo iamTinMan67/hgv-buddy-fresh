@@ -36,13 +36,22 @@ const generatePlaceholderCards = (functionalCards: number, comingSoonCards: numb
   const totalCards = functionalCards + comingSoonCards;
   const cardsInCurrentRow = totalCards % columnsPerRow;
   
+  console.log('Placeholder calculation:');
+  console.log('- Functional cards:', functionalCards);
+  console.log('- Coming soon cards:', comingSoonCards);
+  console.log('- Total cards:', totalCards);
+  console.log('- Cards in current row:', cardsInCurrentRow);
+  console.log('- Columns per row:', columnsPerRow);
+  
   // If current row is complete (cardsInCurrentRow === 0), don't add any placeholders
   if (cardsInCurrentRow === 0) {
+    console.log('- No placeholders needed (row is complete)');
     return [];
   }
   
   // Only add placeholders to complete the current row, never start a new row
   const placeholdersNeeded = columnsPerRow - cardsInCurrentRow;
+  console.log('- Placeholders needed:', placeholdersNeeded);
   
   // Never add more placeholders than needed to complete the current row
   return Array.from({ length: placeholdersNeeded }, (_, index) => ({
@@ -339,7 +348,7 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
 
         {/* Dynamic Coming Soon Cards */}
         {(() => {
-          const comingSoonCards = [
+          const comingSoonCardsData = [
             {
               id: 'maintenance-hub',
               title: 'Maintenance Hub',
@@ -357,7 +366,7 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose }) => {
           ];
           
           // Add placeholder cards to complete the row
-          const allComingSoonCards = [...comingSoonCards, ...placeholderCards];
+          const allComingSoonCards = [...comingSoonCardsData, ...placeholderCards];
           
           return allComingSoonCards.map((card) => (
             <Grid item xs={12} md={4} key={card.id}>
