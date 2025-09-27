@@ -30,38 +30,7 @@ import FleetManagement from './FleetManagement';
 import FuelManagement from './FuelManagement';
 import DriverManagement from './DriverManagement';
 import RoutePlanning from './RoutePlanning';
-
-// Utility function to generate placeholder cards
-const generatePlaceholderCards = (functionalCards: number, comingSoonCards: number, columnsPerRow: number = 3) => {
-  const totalCards = functionalCards + comingSoonCards;
-  const cardsInCurrentRow = totalCards % columnsPerRow;
-  
-  console.log('Placeholder calculation:');
-  console.log('- Functional cards:', functionalCards);
-  console.log('- Coming soon cards:', comingSoonCards);
-  console.log('- Total cards:', totalCards);
-  console.log('- Cards in current row:', cardsInCurrentRow);
-  console.log('- Columns per row:', columnsPerRow);
-  
-  // If current row is complete (cardsInCurrentRow === 0), don't add any placeholders
-  if (cardsInCurrentRow === 0) {
-    console.log('- No placeholders needed (row is complete)');
-    return [];
-  }
-  
-  // Only add placeholders to complete the current row, never start a new row
-  const placeholdersNeeded = columnsPerRow - cardsInCurrentRow;
-  console.log('- Placeholders needed:', placeholdersNeeded);
-  
-  // Never add more placeholders than needed to complete the current row
-  return Array.from({ length: placeholdersNeeded }, (_, index) => ({
-    id: `placeholder-${index}`,
-    title: 'Coming Soon',
-    description: 'Additional features and tools',
-    icon: <Analytics />,
-    features: ['Feature 1', 'Feature 2', 'Feature 3']
-  }));
-};
+import { generatePlaceholderCards, PlaceholderCard } from '../utils/placeholderCards';
 
 interface FleetManagementHubProps {
   onClose: () => void;

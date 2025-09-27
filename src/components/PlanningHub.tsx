@@ -38,6 +38,7 @@ import RoutePlanning from './RoutePlanning';
 import GarminRoutePlanning from './GarminRoutePlanning';
 import TrailerPlanner from './TrailerPlanner';
 import JobAllocationForm from './JobAllocationForm';
+import { generatePlaceholderCards, PlaceholderCard } from '../utils/placeholderCards';
 
 interface PlanningHubProps {
   onClose: () => void;
@@ -45,6 +46,20 @@ interface PlanningHubProps {
 
 const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
   const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'trailer' | 'job'>('main');
+  
+  // Define the cards configuration
+  const functionalCards = 5; // Daily Planner, Route Planning, Trailer Planner, Garmin Routes, Planning Analytics
+  const comingSoonCards = 0; // No coming soon cards currently
+  const columnsPerRow = 3;
+  
+  // Generate placeholder cards to complete incomplete rows
+  const placeholderCards = generatePlaceholderCards(functionalCards, comingSoonCards, columnsPerRow);
+  
+  // Debug: Log the card counts
+  console.log('PlanningHub - Functional cards:', functionalCards);
+  console.log('PlanningHub - Coming soon cards:', comingSoonCards);
+  console.log('PlanningHub - Placeholder cards:', placeholderCards.length);
+  console.log('PlanningHub - Total cards:', functionalCards + comingSoonCards + placeholderCards.length);
 
   if (currentView === 'daily') {
     return <DailyPlanner onClose={() => setCurrentView('main')} />;
@@ -412,6 +427,55 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Dynamic Placeholder Cards */}
+        {placeholderCards.map((card) => (
+          <Grid item xs={12} md={4} key={card.id}>
+            <Card 
+              sx={{ 
+                cursor: 'default', 
+                transition: 'all 0.3s ease',
+                transform: 'scale(0.94)',
+                opacity: 0.7,
+                '&:hover': {
+                  transform: 'translateY(-4px) scale(0.94)',
+                  boxShadow: 4,
+                }
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
+                    {card.icon}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" component="div">
+                      {card.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {card.description}
+                    </Typography>
+                  </Box>
+                </Box>
+                
+                <Divider sx={{ my: 2 }} />
+                
+                <Box sx={{ mt: 2, minHeight: '60px' }}>
+                  {card.features.map((feature, index) => (
+                    <Chip 
+                      key={index}
+                      icon={<Analytics />} 
+                      label={feature} 
+                      size="small" 
+                      sx={{ mr: 1, mb: 1 }}
+                      color="default"
+                    />
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
       </Grid>
     </Box>
   );

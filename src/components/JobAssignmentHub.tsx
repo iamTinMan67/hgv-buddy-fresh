@@ -27,6 +27,7 @@ import {
 } from '@mui/icons-material';
 
 import PlanningHub from './PlanningHub';
+import { generatePlaceholderCards, PlaceholderCard } from '../utils/placeholderCards';
 
 interface JobAssignmentHubProps {
   onClose: () => void;
@@ -34,6 +35,20 @@ interface JobAssignmentHubProps {
 
 const JobAssignmentHub: React.FC<JobAssignmentHubProps> = ({ onClose }) => {
   const [currentView, setCurrentView] = useState<'main' | 'planning'>('main');
+
+  // Define the cards configuration
+  const functionalCards = 1; // Scheduling
+  const comingSoonCards = 1; // Consignment Notes
+  const columnsPerRow = 3;
+  
+  // Generate placeholder cards to complete incomplete rows
+  const placeholderCards = generatePlaceholderCards(functionalCards, comingSoonCards, columnsPerRow);
+  
+  // Debug: Log the card counts
+  console.log('JobAssignmentHub - Functional cards:', functionalCards);
+  console.log('JobAssignmentHub - Coming soon cards:', comingSoonCards);
+  console.log('JobAssignmentHub - Placeholder cards:', placeholderCards.length);
+  console.log('JobAssignmentHub - Total cards:', functionalCards + comingSoonCards + placeholderCards.length);
 
   const handleNavigateToPlanning = () => setCurrentView('planning');
   const handleBackToMain = () => setCurrentView('main');
@@ -169,6 +184,55 @@ const JobAssignmentHub: React.FC<JobAssignmentHubProps> = ({ onClose }) => {
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Dynamic Placeholder Cards */}
+        {placeholderCards.map((card) => (
+          <Grid item xs={12} md={4} key={card.id}>
+            <Card 
+              sx={{ 
+                cursor: 'default', 
+                transition: 'all 0.3s ease',
+                transform: 'scale(0.94)',
+                opacity: 0.7,
+                '&:hover': {
+                  transform: 'translateY(-4px) scale(0.94)',
+                  boxShadow: 4,
+                }
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
+                    {card.icon}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" component="div">
+                      {card.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {card.description}
+                    </Typography>
+                  </Box>
+                </Box>
+                
+                <Divider sx={{ my: 2 }} />
+                
+                <Box sx={{ mt: 2, minHeight: '60px' }}>
+                  {card.features.map((feature, index) => (
+                    <Chip 
+                      key={index}
+                      icon={<Analytics />} 
+                      label={feature} 
+                      size="small" 
+                      sx={{ mr: 1, mb: 1 }}
+                      color="default"
+                    />
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
       </Grid>
     </Box>
   );

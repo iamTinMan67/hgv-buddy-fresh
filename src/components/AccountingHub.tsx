@@ -32,29 +32,7 @@ import {
 
 import BookKeeping from './BookKeeping';
 import ReportsHub from './ReportsHub';
-
-// Utility function to generate placeholder cards
-const generatePlaceholderCards = (functionalCards: number, comingSoonCards: number, columnsPerRow: number = 3) => {
-  const totalCards = functionalCards + comingSoonCards;
-  const currentRow = Math.floor(totalCards / columnsPerRow);
-  const cardsInCurrentRow = totalCards % columnsPerRow;
-  
-  // If current row is complete (cardsInCurrentRow === 0), don't add any placeholders
-  if (cardsInCurrentRow === 0) {
-    return [];
-  }
-  
-  // Calculate how many placeholders needed to complete the current row
-  const placeholdersNeeded = columnsPerRow - cardsInCurrentRow;
-  
-  return Array.from({ length: placeholdersNeeded }, (_, index) => ({
-    id: `placeholder-${index}`,
-    title: 'Coming Soon',
-    description: 'Additional features and tools',
-    icon: <Analytics />,
-    features: ['Feature 1', 'Feature 2', 'Feature 3']
-  }));
-};
+import { generatePlaceholderCards, PlaceholderCard } from '../utils/placeholderCards';
 import FuelManagement from './FuelManagement';
 import WageManagement from './WageManagement';
 

@@ -28,6 +28,7 @@ import FuelReport from './reports/FuelReport';
 import PurchaseOrdersReport from './reports/PurchaseOrdersReport';
 import InvoicesReport from './reports/InvoicesReport';
 import ManifestsReport from './reports/ManifestsReport';
+import { generatePlaceholderCards, PlaceholderCard } from '../utils/placeholderCards';
 
 interface ReportsHubProps {
   onClose: () => void;
@@ -35,6 +36,20 @@ interface ReportsHubProps {
 
 const ReportsHub: React.FC<ReportsHubProps> = ({ onClose }) => {
   const [currentView, setCurrentView] = useState<'main' | 'wageSlips' | 'fuel' | 'purchaseOrders' | 'invoices' | 'manifests'>('main');
+
+  // Define the cards configuration
+  const functionalCards = 5; // Wage Slips, Fuel, Purchase Orders, Invoices, Manifests
+  const comingSoonCards = 1; // One coming soon card already exists
+  const columnsPerRow = 3;
+  
+  // Generate placeholder cards to complete incomplete rows
+  const placeholderCards = generatePlaceholderCards(functionalCards, comingSoonCards, columnsPerRow);
+  
+  // Debug: Log the card counts
+  console.log('ReportsHub - Functional cards:', functionalCards);
+  console.log('ReportsHub - Coming soon cards:', comingSoonCards);
+  console.log('ReportsHub - Placeholder cards:', placeholderCards.length);
+  console.log('ReportsHub - Total cards:', functionalCards + comingSoonCards + placeholderCards.length);
 
   const handleNavigateToWageSlips = () => setCurrentView('wageSlips');
   const handleNavigateToFuel = () => setCurrentView('fuel');
@@ -356,58 +371,54 @@ const ReportsHub: React.FC<ReportsHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
-        {/* Second Coming Soon Card for consistent layout */}
-        <Grid item xs={12} md={4}>
-          <Card 
-            sx={{ 
-              opacity: 0.6,
-              cursor: 'not-allowed',
-              '&:hover': {
-                transform: 'none',
-                boxShadow: 1
-              }
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
-                  <Analytics />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" component="div" color="grey.600">
-                    Coming Soon
-                  </Typography>
-                  <Typography variant="body2" color="grey.500">
-                    Enhanced analytics
-                  </Typography>
+        {/* Dynamic Placeholder Cards */}
+        {placeholderCards.map((card) => (
+          <Grid item xs={12} md={4} key={card.id}>
+            <Card 
+              sx={{ 
+                cursor: 'default', 
+                transition: 'all 0.3s ease',
+                transform: 'scale(0.94)',
+                opacity: 0.7,
+                '&:hover': {
+                  transform: 'translateY(-4px) scale(0.94)',
+                  boxShadow: 4,
+                }
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
+                    {card.icon}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" component="div">
+                      {card.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {card.description}
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
-                <Chip 
-                  icon={<TrendingUp />} 
-                  label="Feature 1" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
-                />
-                <Chip 
-                  icon={<Analytics />} 
-                  label="Feature 2" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1, opacity: 0.7 }}
-                />
-                <Chip 
-                  icon={<Report />} 
-                  label="Feature 3" 
-                  size="small" 
-                  sx={{ mb: 1, opacity: 0.7 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+                
+                <Divider sx={{ my: 2 }} />
+                
+                <Box sx={{ mt: 2, minHeight: '60px' }}>
+                  {card.features.map((feature, index) => (
+                    <Chip 
+                      key={index}
+                      icon={<Analytics />} 
+                      label={feature} 
+                      size="small" 
+                      sx={{ mr: 1, mb: 1 }}
+                      color="default"
+                    />
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
       </Grid>
     </Box>
   );

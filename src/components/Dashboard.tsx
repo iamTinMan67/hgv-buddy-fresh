@@ -31,6 +31,7 @@ import { logout } from '../store/slices/authSlice';
 import { AppDispatch } from '../store';
 import { DynamicComponents, LoadingSpinner } from '../utils/dynamicImports';
 import ErrorBoundary from './ErrorBoundary';
+import { generatePlaceholderCards, PlaceholderCard } from '../utils/placeholderCards';
 
 // Destructure all the components we need
 const {
@@ -64,6 +65,20 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const dispatch = useDispatch<AppDispatch>();
+  
+  // Define the cards configuration for main dashboard
+  const functionalCards = 6; // Timesheet, Fleet, Planning, Legal, Staff, Driver, Reports, Accounting, Client
+  const comingSoonCards = 3; // Three coming soon cards already exist
+  const columnsPerRow = 3;
+  
+  // Generate placeholder cards to complete incomplete rows
+  const placeholderCards = generatePlaceholderCards(functionalCards, comingSoonCards, columnsPerRow);
+  
+  // Debug: Log the card counts
+  console.log('Dashboard - Functional cards:', functionalCards);
+  console.log('Dashboard - Coming soon cards:', comingSoonCards);
+  console.log('Dashboard - Placeholder cards:', placeholderCards.length);
+  console.log('Dashboard - Total cards:', functionalCards + comingSoonCards + placeholderCards.length);
   const [showTimesheet, setShowTimesheet] = useState(false);
   const [showVehicleCheck, setShowVehicleCheck] = useState(false);
   const [showFleetManagement, setShowFleetManagement] = useState(false);
@@ -689,87 +704,41 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               </Card>
             </Grid>
 
-            {/* Coming Soon Cards Row */}
-            <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ 
-                transform: 'scale(0.94)',
-                opacity: 0.6,
-                cursor: 'not-allowed',
-                '&:hover': {
+            {/* Dynamic Placeholder Cards */}
+            {placeholderCards.map((card) => (
+              <Grid item xs={12} md={6} lg={4} key={card.id}>
+                <Card sx={{ 
                   transform: 'scale(0.94)',
-                  boxShadow: 1
-                }
-              }}>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Schedule sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
-                  <Typography variant="h6" color="grey.600">Coming Soon</Typography>
-                  <Typography variant="body2" color="grey.500">
-                    Additional features and tools
-                  </Typography>
-                  <Button 
-                    variant="outlined" 
-                    disabled
-                    sx={{ mt: 2 }}
-                  >
-                    Unavailable
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ 
-                transform: 'scale(0.94)',
-                opacity: 0.6,
-                cursor: 'not-allowed',
-                '&:hover': {
-                  transform: 'scale(0.94)',
-                  boxShadow: 1
-                }
-              }}>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Assessment sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
-                  <Typography variant="h6" color="grey.600">Coming Soon</Typography>
-                  <Typography variant="body2" color="grey.500">
-                    Advanced analytics and reporting
-                  </Typography>
-                  <Button 
-                    variant="outlined" 
-                    disabled
-                    sx={{ mt: 2 }}
-                  >
-                    Unavailable
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ 
-                transform: 'scale(0.94)',
-                opacity: 0.6,
-                cursor: 'not-allowed',
-                '&:hover': {
-                  transform: 'scale(0.94)',
-                  boxShadow: 1
-                }
-              }}>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Business sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
-                  <Typography variant="h6" color="grey.600">Coming Soon</Typography>
-                  <Typography variant="body2" color="grey.500">
-                    Enhanced client management
-                  </Typography>
-                  <Button 
-                    variant="outlined" 
-                    disabled
-                    sx={{ mt: 2 }}
-                  >
-                    Unavailable
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
+                  opacity: 0.7,
+                  cursor: 'default',
+                  '&:hover': {
+                    transform: 'translateY(-4px) scale(0.94)',
+                    boxShadow: 4,
+                  }
+                }}>
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <Box sx={{ fontSize: 40, color: 'grey.500', mb: 1 }}>
+                      {card.icon}
+                    </Box>
+                    <Typography variant="h6" color="grey.600">{card.title}</Typography>
+                    <Typography variant="body2" color="grey.500">
+                      {card.description}
+                    </Typography>
+                    <Box sx={{ mt: 2 }}>
+                      {card.features.map((feature, index) => (
+                        <Chip 
+                          key={index}
+                          label={feature} 
+                          size="small" 
+                          sx={{ mr: 0.5, mb: 0.5 }}
+                          color="default"
+                        />
+                      ))}
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
           </>
         )}
       </Grid>
