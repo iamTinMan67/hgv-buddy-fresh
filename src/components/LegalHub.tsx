@@ -34,7 +34,7 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
 
   // Define the cards configuration
   const functionalCards = 1; // Compliance Tracking
-  const comingSoonCards = 2; // Two coming soon cards already exist
+  const comingSoonCards = 0; // Coming soon cards replaced with placeholders
   const columnsPerRow = 3;
   
   // Generate placeholder cards to complete incomplete rows
@@ -55,7 +55,7 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
 
   // Main Legal Hub
   return (
-    <Box sx={{ p: 3, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
+    <Box sx={{ py: 2, px: 3, bgcolor: 'black', minHeight: '100vh', color: 'white', width: '100%' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1" sx={{ color: 'white' }}>
           <Gavel sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -70,9 +70,9 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
       </Box>
 
       {/* Sub-Portal Navigation */}
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ width: '100%' }}>
         {/* Compliance Tracking Card */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card 
             sx={{ 
               cursor: 'pointer', 
@@ -127,7 +127,7 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
 
         {/* Dynamic Placeholder Cards */}
         {placeholderCards.map((card) => (
-          <Grid item xs={12} md={4} key={card.id}>
+          <Grid item xs={12} sm={6} md={4} key={card.id}>
             <Card 
               sx={{ 
                 cursor: 'default', 
