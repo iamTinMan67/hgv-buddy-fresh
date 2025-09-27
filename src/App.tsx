@@ -1,6 +1,6 @@
 
 import { useSelector, useDispatch } from "react-redux";
-import { useEffect, Suspense } from "react";
+import { useEffect, Suspense, useState } from "react";
 import { RootState } from "./store";
 import { setUser } from "./store/slices/authSlice";
 import { DynamicComponents, LoadingSpinner, preloadCommonComponents } from "./utils/dynamicImports";
@@ -12,10 +12,11 @@ const { Layout, Login, Dashboard } = DynamicComponents;
 function App() {
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const [hasAutoLoggedIn, setHasAutoLoggedIn] = useState(false);
 
-  // Auto-login for development - bypasses login screen
+  // Auto-login for development - bypasses login screen (only once)
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !hasAutoLoggedIn) {
       // Auto-login as admin for development with full access
       const defaultUser = {
         id: 'dev-1',
@@ -26,9 +27,10 @@ function App() {
       };
       
       dispatch(setUser(defaultUser));
+      setHasAutoLoggedIn(true);
       console.log('🛠️ Development Mode: Auto-logged in as Admin with full access');
     }
-  }, [isAuthenticated, dispatch]);
+  }, [isAuthenticated, dispatch, hasAutoLoggedIn]);
 
   // Preload common components for better performance
   useEffect(() => {
