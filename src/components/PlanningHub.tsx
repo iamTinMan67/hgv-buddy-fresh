@@ -37,6 +37,7 @@ import DailyPlanner from './DailyPlanner';
 import RoutePlanning from './RoutePlanning';
 import GarminRoutePlanning from './GarminRoutePlanning';
 import TrailerPlanner from './TrailerPlanner';
+import JobAllocationForm from './JobAllocationForm';
 import JobAssignmentHub from './JobAssignmentHub';
 import { generatePlaceholderCards, PlaceholderCard } from '../utils/placeholderCards';
 
@@ -45,10 +46,10 @@ interface PlanningHubProps {
 }
 
 const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
-  const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'trailer' | 'job'>('main');
+  const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'trailer' | 'job' | 'jobAssignment'>('main');
   
   // Define the cards configuration
-  const functionalCards = 6; // Daily Planner, Route Planning, Trailer Planner, Add A New Job, Garmin Routes, Planning Analytics
+  const functionalCards = 7; // Daily Planner, Route Planning, Trailer Planner, Add A New Job, Job Assignment Hub, Garmin Routes, Planning Analytics
   const comingSoonCards = 0; // No coming soon cards currently
   const columnsPerRow = 3;
   
@@ -78,6 +79,10 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
   }
 
   if (currentView === 'job') {
+    return <JobAllocationForm onClose={() => setCurrentView('main')} />;
+  }
+
+  if (currentView === 'jobAssignment') {
     return <JobAssignmentHub onClose={() => setCurrentView('main')} />;
   }
 
@@ -311,6 +316,61 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
                 <Chip 
                   icon={<DirectionsCar />} 
                   label="Vehicle Allocation" 
+                  size="small" 
+                  sx={{ mb: 1 }} 
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Job Assignment Hub Card */}
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              transform: 'scale(0.94)',
+              '&:hover': {
+                transform: 'translateY(-4px) scale(0.94)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={() => setCurrentView('jobAssignment')}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
+                  <Assignment />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Job Assignment Hub
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Comprehensive job assignment and scheduling
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<Schedule />} 
+                  label="Scheduling" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }} 
+                />
+                <Chip 
+                  icon={<Person />} 
+                  label="Driver Assignment" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }} 
+                />
+                <Chip 
+                  icon={<Assessment />} 
+                  label="Job Management" 
                   size="small" 
                   sx={{ mb: 1 }} 
                 />
