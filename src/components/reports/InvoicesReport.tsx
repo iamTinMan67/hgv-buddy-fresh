@@ -20,6 +20,8 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Avatar,
+  Divider,
 } from '@mui/material';
 import {
   Description,
@@ -32,7 +34,14 @@ import {
   Clear,
   AttachMoney,
   Payment,
+  Business,
+  LocationOn,
+  Phone,
+  Email,
+  Language,
 } from '@mui/icons-material';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 
 interface InvoicesReportProps {
   onClose: () => void;
@@ -71,6 +80,9 @@ const InvoicesReport: React.FC<InvoicesReportProps> = ({ onClose }) => {
     startDate: '',
     endDate: '',
   });
+  
+  // Get company data from Redux store
+  const companyData = useSelector((state: RootState) => state.company?.data);
 
   // Combined staff and driver data for dropdown
   const [staffMembers] = useState<StaffMember[]>([
@@ -201,6 +213,81 @@ const InvoicesReport: React.FC<InvoicesReportProps> = ({ onClose }) => {
           <Home />
         </IconButton>
       </Box>
+
+      {/* Company Information Header */}
+      {companyData && (
+        <Card sx={{ mb: 3, bgcolor: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(10px)' }}>
+          <CardContent>
+            <Grid container spacing={3} alignItems="center">
+              <Grid item xs={12} md={2}>
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <Avatar
+                    src={companyData.logo || undefined}
+                    sx={{ 
+                      width: 80, 
+                      height: 80,
+                      bgcolor: 'primary.main',
+                      fontSize: '2rem'
+                    }}
+                  >
+                    {!companyData.logo && <Business />}
+                  </Avatar>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  {companyData.name || 'Your Company Name'}
+                </Typography>
+                {companyData.description && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {companyData.description}
+                  </Typography>
+                )}
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                  {companyData.address.line1 && (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <LocationOn sx={{ fontSize: 16, mr: 0.5, color: 'primary.main' }} />
+                      <Typography variant="body2">
+                        {companyData.address.line1}
+                        {companyData.address.city && `, ${companyData.address.city}`}
+                        {companyData.address.postcode && ` ${companyData.address.postcode}`}
+                      </Typography>
+                    </Box>
+                  )}
+                  {companyData.contact.phone && (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Phone sx={{ fontSize: 16, mr: 0.5, color: 'primary.main' }} />
+                      <Typography variant="body2">{companyData.contact.phone}</Typography>
+                    </Box>
+                  )}
+                  {companyData.contact.email && (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Email sx={{ fontSize: 16, mr: 0.5, color: 'primary.main' }} />
+                      <Typography variant="body2">{companyData.contact.email}</Typography>
+                    </Box>
+                  )}
+                  {companyData.contact.website && (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Language sx={{ fontSize: 16, mr: 0.5, color: 'primary.main' }} />
+                      <Typography variant="body2">{companyData.contact.website}</Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
+                    Invoices Report
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Generated on {new Date().toLocaleDateString()}
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filter Form */}
       <Card sx={{ mb: 3 }}>

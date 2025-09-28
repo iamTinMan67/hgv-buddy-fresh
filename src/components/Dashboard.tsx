@@ -49,6 +49,7 @@ const {
   AccountingHub,
   InvoiceUpload,
   ClientHub,
+  CompanyInfo,
 } = DynamicComponents;
 
 interface User {
@@ -67,7 +68,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const dispatch = useDispatch<AppDispatch>();
   
   // Define the cards configuration for main dashboard
-  const functionalCards = 7; // Fleet, Staff, Legal, Jobs & Planning, Print Screen, Financial, Clients
+  const functionalCards = 8; // Fleet, Staff, Legal, Jobs & Planning, Print Screen, Financial, Clients, Company Info
   const comingSoonCards = 0; // Coming soon cards replaced with placeholders
   const columnsPerRow = 3;
   
@@ -96,6 +97,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [showAccountingHub, setShowAccountingHub] = useState(false);
   const [showInvoiceUpload, setShowInvoiceUpload] = useState(false);
   const [showClientHub, setShowClientHub] = useState(false);
+  const [showCompanyInfo, setShowCompanyInfo] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -303,6 +305,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         <ErrorBoundary>
           <Suspense fallback={<LoadingSpinner />}>
             <ClientHub onClose={() => setShowClientHub(false)} />
+          </Suspense>
+        </ErrorBoundary>
+      </Box>
+    );
+  }
+
+  // Show company info if requested
+  if (showCompanyInfo) {
+    return (
+      <Box sx={{ py: 2 }}>
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <CompanyInfo onClose={() => setShowCompanyInfo(false)} />
           </Suspense>
         </ErrorBoundary>
       </Box>
@@ -699,6 +714,26 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     onClick={() => setShowClientHub(true)}
                   >
                     Client Hub
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6} lg={4}>
+              <Card sx={{ transform: 'scale(0.94)' }}>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Business sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
+                  <Typography variant="h6">Company Info</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Manage company logo, details & branding
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="primary" 
+                    sx={{ mt: 2 }}
+                    onClick={() => setShowCompanyInfo(true)}
+                  >
+                    Open
                   </Button>
                 </CardContent>
               </Card>

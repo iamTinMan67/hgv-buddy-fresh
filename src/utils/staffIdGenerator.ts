@@ -16,19 +16,22 @@ class LocalStorageStaffIdGenerator implements StaffIdGenerator {
   private readonly STORAGE_KEY = 'existingStaffIds';
 
   /**
-   * Generates a unique Staff ID in the format EMP-YYYY-NNN
-   * where YYYY is the start date year and NNN is a 3-digit sequential number
+   * Generates a unique Staff ID in the format EMP-YYYY-MM-001
+   * where YYYY is the start date year, MM is the month, and 001 is a 3-digit sequential number
    */
   async generateStaffId(startDate: string): Promise<string> {
-    const startYear = new Date(startDate).getFullYear();
+    const startDateObj = new Date(startDate);
+    const startYear = startDateObj.getFullYear();
+    const startMonth = (startDateObj.getMonth() + 1).toString().padStart(2, '0');
     const existingStaffIds = await this.getExistingStaffIds();
     
-    // Find the highest staff number for the start year
-    const startYearStaff = existingStaffIds.filter(id => id.startsWith(`EMP-${startYear}-`));
+    // Find the highest staff number for the start year and month
+    const yearMonthPrefix = `EMP-${startYear}-${startMonth}-`;
+    const yearMonthStaff = existingStaffIds.filter(id => id.startsWith(yearMonthPrefix));
     let maxNumber = 0;
     
-    startYearStaff.forEach(staffId => {
-      const match = staffId.match(new RegExp(`EMP-${startYear}-(\\d+)`));
+    yearMonthStaff.forEach(staffId => {
+      const match = staffId.match(new RegExp(`EMP-${startYear}-${startMonth}-(\\d+)`));
       if (match) {
         const number = parseInt(match[1], 10);
         if (number > maxNumber) {
@@ -38,7 +41,7 @@ class LocalStorageStaffIdGenerator implements StaffIdGenerator {
     });
     
     const nextNumber = maxNumber + 1;
-    const newStaffId = `EMP-${startYear}-${nextNumber.toString().padStart(3, '0')}`;
+    const newStaffId = `EMP-${startYear}-${startMonth}-${nextNumber.toString().padStart(3, '0')}`;
     
     // Store the new Staff ID to maintain uniqueness
     existingStaffIds.push(newStaffId);
@@ -51,7 +54,7 @@ class LocalStorageStaffIdGenerator implements StaffIdGenerator {
    * Validates if a Staff ID follows the correct format
    */
   validateStaffId(staffId: string): boolean {
-    const pattern = /^EMP-\d{4}-\d{3}$/;
+    const pattern = /^EMP-\d{4}-\d{2}-\d{3}$/;
     return pattern.test(staffId);
   }
 
@@ -76,18 +79,34 @@ class LocalStorageStaffIdGenerator implements StaffIdGenerator {
   }
 
   /**
+   * Clears all staff IDs and resets the system for fresh start
+   * This should be called when migrating to new ID format
+   */
+  async resetStaffIdSystem(): Promise<void> {
+    // Clear localStorage
+    this.clearAllStaffIds();
+    
+    // If you have Supabase integration, you could also clear the database here
+    // For now, we'll just clear localStorage
+    console.log('Staff ID system reset - ready for new EMP-YYYY-MM-001 format');
+  }
+
+  /**
    * Gets the next available Staff ID without storing it
    * Useful for preview or validation purposes
    */
   async getNextStaffId(startDate: string): Promise<string> {
-    const startYear = new Date(startDate).getFullYear();
+    const startDateObj = new Date(startDate);
+    const startYear = startDateObj.getFullYear();
+    const startMonth = (startDateObj.getMonth() + 1).toString().padStart(2, '0');
     const existingStaffIds = await this.getExistingStaffIds();
     
-    const startYearStaff = existingStaffIds.filter(id => id.startsWith(`EMP-${startYear}-`));
+    const yearMonthPrefix = `EMP-${startYear}-${startMonth}-`;
+    const yearMonthStaff = existingStaffIds.filter(id => id.startsWith(yearMonthPrefix));
     let maxNumber = 0;
     
-    startYearStaff.forEach(staffId => {
-      const match = staffId.match(new RegExp(`EMP-${startYear}-(\\d+)`));
+    yearMonthStaff.forEach(staffId => {
+      const match = staffId.match(new RegExp(`EMP-${startYear}-${startMonth}-(\\d+)`));
       if (match) {
         const number = parseInt(match[1], 10);
         if (number > maxNumber) {
@@ -97,14 +116,22 @@ class LocalStorageStaffIdGenerator implements StaffIdGenerator {
     });
     
     const nextNumber = maxNumber + 1;
-    return `EMP-${startYear}-${nextNumber.toString().padStart(3, '0')}`;
+    return `EMP-${startYear}-${startMonth}-${nextNumber.toString().padStart(3, '0')}`;
   }
 
   /**
    * Extracts the year from a Staff ID
    */
   extractYearFromStaffId(staffId: string): number | null {
-    const match = staffId.match(/^EMP-(\d{4})-\d{3}$/);
+    const match = staffId.match(/^EMP-(\d{4})-\d{2}-\d{3}$/);
+    return match ? parseInt(match[1], 10) : null;
+  }
+
+  /**
+   * Extracts the month from a Staff ID
+   */
+  extractMonthFromStaffId(staffId: string): number | null {
+    const match = staffId.match(/^EMP-\d{4}-(\d{2})-\d{3}$/);
     return match ? parseInt(match[1], 10) : null;
   }
 
@@ -112,13 +139,14 @@ class LocalStorageStaffIdGenerator implements StaffIdGenerator {
    * Extracts the sequence number from a Staff ID
    */
   extractSequenceFromStaffId(staffId: string): number | null {
-    const match = staffId.match(/^EMP-\d{4}-(\d{3})$/);
+    const match = staffId.match(/^EMP-\d{4}-\d{2}-(\d{3})$/);
     return match ? parseInt(match[1], 10) : null;
   }
 }
 
 // Export the default instance
 export const staffIdGenerator = new LocalStorageStaffIdGenerator();
+
 
 // Export the class for testing or custom implementations
 export { LocalStorageStaffIdGenerator };

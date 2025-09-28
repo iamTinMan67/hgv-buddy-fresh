@@ -12,25 +12,23 @@ import {
 import { LocalShipping, Computer } from '@mui/icons-material';
 import { setUser, setLoading } from '../../store/slices/authSlice';
 import { AppDispatch } from '../../store';
+import { staffAuthService } from '../../services/staffAuthService';
 
 const Login: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  // 🛠️ DEVELOPMENT MODE: Login screen is bypassed with auto-login
-  // This component is only shown if auto-login fails
-
-  // Default credentials for testing
+  // Default credentials for testing (if no staff members exist)
   const DEFAULT_CREDENTIALS = {
-    email: 'Owner',
-    password: 'HGVBuddy.2025'
+    username: 'admin',
+    password: 'admin123'
   };
 
-  const handleDriverLogin = async () => {
-    if (!email || !password) {
-      setError('Please enter both email and password');
+  const handleStaffLogin = async () => {
+    if (!username || !password) {
+      setError('Please enter both username and password');
       return;
     }
 
@@ -38,20 +36,41 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      // Simulate API call - replace with actual authentication
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Try staff authentication first
+      const authResult = await staffAuthService.authenticate({ username, password });
       
-      // Mock successful login for driver (allow any credentials for testing)
-      const mockUser = {
-        id: '1',
-        email: email,
-        firstName: 'John',
-        lastName: 'Driver',
-        role: 'driver' as const,
-      };
-      
-      dispatch(setUser(mockUser));
-      console.log('Driver logged in successfully:', mockUser);
+      if (authResult.success && authResult.staff) {
+        // Convert staff data to user format
+        const user = {
+          id: authResult.staff.id,
+          email: `${authResult.staff.firstName}.${authResult.staff.lastName}@company.com`,
+          firstName: authResult.staff.firstName,
+          lastName: authResult.staff.lastName,
+          role: authResult.staff.role,
+        };
+
+        dispatch(setUser(user));
+        console.log('Staff logged in successfully:', user);
+        return;
+      }
+
+      // Fallback to default credentials if no staff members exist
+      if (username === DEFAULT_CREDENTIALS.username && password === DEFAULT_CREDENTIALS.password) {
+        const defaultUser = {
+          id: 'default-admin',
+          email: 'admin@company.com',
+          firstName: 'Admin',
+          lastName: 'User',
+          role: 'admin' as const,
+        };
+
+        dispatch(setUser(defaultUser));
+        console.log('Default admin logged in successfully:', defaultUser);
+        return;
+      }
+
+      // Authentication failed
+      setError(authResult.error || 'Invalid username or password');
     } catch (err) {
       setError('Login failed. Please try again.');
     } finally {
@@ -59,46 +78,11 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleManagementLogin = async () => {
-    if (!email || !password) {
-      setError('Please enter both email and password');
-      return;
-    }
-
-    dispatch(setLoading(true));
-    setError('');
-
-    try {
-      // Simulate API call - replace with actual authentication
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful login for admin (allow any credentials for testing)
-      const mockUser = {
-        id: '2',
-        email: email,
-        firstName: 'Jane',
-        lastName: 'Admin',
-        role: 'admin' as const,
-      };
-      
-      dispatch(setUser(mockUser));
-      console.log('Admin logged in successfully:', mockUser);
-    } catch (err) {
-      setError('Login failed. Please try again.');
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
 
   const handleQuickLogin = (role: 'driver' | 'admin') => {
-    setEmail(DEFAULT_CREDENTIALS.email);
+    setUsername(DEFAULT_CREDENTIALS.username);
     setPassword(DEFAULT_CREDENTIALS.password);
-    
-    if (role === 'driver') {
-      handleDriverLogin();
-    } else {
-      handleManagementLogin();
-    }
+    handleStaffLogin();
   };
 
   return (
@@ -115,9 +99,9 @@ const Login: React.FC = () => {
         <Grid item xs={12}>
           <Alert severity="info" sx={{ mb: 2 }}>
             <Typography variant="body2">
-              <strong>Testing Credentials:</strong> Username: <code>Owner</code> | Password: <code>HGVBuddy.2025</code>
+              <strong>Default Credentials:</strong> Username: <code>admin</code> | Password: <code>admin123</code>
               <br />
-              <strong>Quick Login:</strong> Use the buttons below for instant access
+              <strong>Staff Login:</strong> Use credentials created in Staff Management
             </Typography>
           </Alert>
         </Grid>
@@ -126,17 +110,16 @@ const Login: React.FC = () => {
           <Paper elevation={3} sx={{ p: 3, textAlign: 'center' }}>
             <LocalShipping sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
             <Typography variant="h5" gutterBottom>
-              Driver Portal
+              Staff Portal
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Access your daily vehicle checks, fuel monitoring, and job assignments
             </Typography>
             <TextField
               fullWidth
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              label="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               sx={{ mb: 2 }}
             />
             <TextField
@@ -151,10 +134,10 @@ const Login: React.FC = () => {
               variant="contained"
               size="large"
               fullWidth
-              onClick={handleDriverLogin}
+              onClick={handleStaffLogin}
               sx={{ mb: 2 }}
             >
-              Driver Login
+              Staff Login
             </Button>
             <Button
               variant="outlined"
@@ -162,7 +145,7 @@ const Login: React.FC = () => {
               fullWidth
               onClick={() => handleQuickLogin('driver')}
             >
-              Quick Driver Login
+              Quick Login
             </Button>
           </Paper>
         </Grid>
@@ -171,17 +154,16 @@ const Login: React.FC = () => {
           <Paper elevation={3} sx={{ p: 3, textAlign: 'center' }}>
             <Computer sx={{ fontSize: 60, color: 'secondary.main', mb: 2 }} />
             <Typography variant="h5" gutterBottom>
-              Admin Portal
+              Management Portal
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Monitor fleet, manage drivers, and track compliance
             </Typography>
             <TextField
               fullWidth
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              label="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               sx={{ mb: 2 }}
             />
             <TextField
@@ -197,10 +179,10 @@ const Login: React.FC = () => {
               color="secondary"
               size="large"
               fullWidth
-              onClick={handleManagementLogin}
+              onClick={handleStaffLogin}
               sx={{ mb: 2 }}
             >
-              Admin Login
+              Staff Login
             </Button>
             <Button
               variant="outlined"
@@ -209,7 +191,7 @@ const Login: React.FC = () => {
               fullWidth
               onClick={() => handleQuickLogin('admin')}
             >
-              Quick Admin Login
+              Quick Login
             </Button>
           </Paper>
         </Grid>

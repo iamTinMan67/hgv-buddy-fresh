@@ -86,115 +86,8 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
     notes: ''
   });
 
-  // Mock contacts data
-  const [contacts] = useState<ClientContact[]>([
-    {
-      id: '1',
-      name: 'John Smith',
-      company: 'ABC Transport Ltd',
-      position: 'Transport Manager',
-      email: 'john.smith@abctransport.com',
-      phone: '020 7123 4567',
-      mobile: '07700 900123',
-      addressLine1: '123 Transport Way',
-      addressLine2: '',
-      addressLine3: '',
-      town: '',
-      city: 'London',
-      postcode: 'SW1A 1AA',
-      country: 'UK',
-      category: 'client',
-      status: 'active',
-      notes: 'Main contact for freight deliveries',
-      createdAt: '2024-01-15T10:30:00Z',
-      lastUpdated: '2024-01-20T14:45:00Z'
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      company: 'XYZ Logistics',
-      position: 'Operations Director',
-      email: 'sarah.johnson@xyzlogistics.co.uk',
-      phone: '0161 234 5678',
-      mobile: '07800 123456',
-      addressLine1: '456 Industrial Estate',
-      addressLine2: '',
-      addressLine3: '',
-      town: '',
-      city: 'Manchester',
-      postcode: 'M1 1AA',
-      country: 'UK',
-      category: 'client',
-      status: 'active',
-      notes: 'Prefers email communication',
-      createdAt: '2024-01-10T09:15:00Z',
-      lastUpdated: '2024-01-18T11:20:00Z'
-    },
-    {
-      id: '3',
-      name: 'Mike Wilson',
-      company: 'Truck Parts Supply',
-      position: 'Sales Manager',
-      email: 'mike.wilson@truckparts.com',
-      phone: '0121 345 6789',
-      mobile: '07900 654321',
-      addressLine1: '789 Warehouse Road',
-      addressLine2: '',
-      addressLine3: '',
-      town: '',
-      city: 'Birmingham',
-      postcode: 'B1 1AA',
-      country: 'UK',
-      category: 'supplier',
-      status: 'active',
-      notes: 'Reliable parts supplier',
-      createdAt: '2024-01-05T08:45:00Z',
-      lastUpdated: '2024-01-15T16:30:00Z'
-    },
-    {
-      id: '4',
-      name: 'Emma Davis',
-      company: 'Fast Freight Solutions',
-      position: 'Business Development',
-      email: 'emma.davis@fastfreight.co.uk',
-      phone: '0113 456 7890',
-      mobile: '07600 987654',
-      addressLine1: '321 Business Park',
-      addressLine2: '',
-      addressLine3: '',
-      town: '',
-      city: 'Leeds',
-      postcode: 'LS1 1AA',
-      country: 'UK',
-      category: 'prospect',
-      status: 'lead',
-      notes: 'Interested in partnership opportunities',
-      createdAt: '2024-01-12T13:20:00Z',
-      lastUpdated: '2024-01-19T10:15:00Z'
-    },
-    {
-      id: '5',
-      name: 'David Brown',
-      company: 'National Haulage',
-      position: 'Fleet Manager',
-      email: 'david.brown@nationalhaulage.com',
-      phone: '0141 567 8901',
-      mobile: '07500 112233',
-      addressLine1: '654 Transport Hub',
-      addressLine2: '',
-      addressLine3: '',
-      town: '',
-      city: 'Glasgow',
-      postcode: 'G1 1AA',
-      country: 'UK',
-      category: 'client',
-      status: 'active',
-      notes: 'Large fleet operator',
-      createdAt: '2024-01-08T11:00:00Z',
-      lastUpdated: '2024-01-16T15:45:00Z'
-    },
-
-  ]);
+  // Contacts data - starting with empty array
+  const [contacts, setContacts] = useState<ClientContact[]>([]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -232,8 +125,7 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
       createdAt: new Date().toISOString(),
       lastUpdated: new Date().toISOString(),
     };
-    // In a real app, this would dispatch to Redux or call an API
-          // Adding contact
+    setContacts(prevContacts => [...prevContacts, newContact]);
     setShowAddDialog(false);
     setCurrentContact({
       name: '',
@@ -265,8 +157,11 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
       ...currentContact as ClientContact,
       lastUpdated: new Date().toISOString(),
     };
-    // In a real app, this would dispatch to Redux or call an API
-          // Updating contact
+    setContacts(prevContacts => 
+      prevContacts.map(contact => 
+        contact.id === updatedContact.id ? updatedContact : contact
+      )
+    );
     setShowEditDialog(false);
     setCurrentContact({
       name: '',
@@ -289,8 +184,7 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
   };
 
   const handleDeleteContact = (id: string) => {
-    // In a real app, this would dispatch to Redux or call an API
-          // Deleting contact
+    setContacts(prevContacts => prevContacts.filter(contact => contact.id !== id));
   };
 
   const getFilteredContacts = () => {
@@ -367,7 +261,7 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
 
       <Grid container spacing={3}>
         {getFilteredContacts().map((contact) => (
-          <Grid item xs={12} md={6} lg={4} key={contact.id}>
+          <Grid item xs={12} sm={6} md={4} lg={3} key={contact.id}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>

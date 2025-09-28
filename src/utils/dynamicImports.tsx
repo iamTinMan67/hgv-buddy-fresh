@@ -17,6 +17,7 @@ export const DynamicComponents = {
   AccountingHub: lazy(() => import('../components/AccountingHub')),
   ClientHub: lazy(() => import('../components/ClientHub')),
   JobAssignmentHub: lazy(() => import('../components/JobAssignmentHub')),
+  CompanyInfo: lazy(() => import('../components/CompanyInfo')),
   
   // Management Components
   FleetManagement: lazy(() => import('../components/FleetManagement')),

@@ -39,7 +39,7 @@ const ReportsHub: React.FC<ReportsHubProps> = ({ onClose }) => {
 
   // Define the cards configuration
   const functionalCards = 5; // Wage Slips, Fuel, Purchase Orders, Invoices, Manifests
-  const comingSoonCards = 1; // One coming soon card already exists
+  const comingSoonCards = 0; // No separate coming soon cards - using placeholders only
   const columnsPerRow = 3;
   
   // Generate placeholder cards to complete incomplete rows

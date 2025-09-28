@@ -30,7 +30,9 @@ import {
   Assessment, 
   Receipt, 
   Analytics, 
-  Report 
+  Report,
+  Assignment,
+  Schedule
 } from '@mui/icons-material';
 
 import DailyPlanner from './DailyPlanner';

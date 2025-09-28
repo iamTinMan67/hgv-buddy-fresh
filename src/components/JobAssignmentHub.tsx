@@ -33,6 +33,7 @@ interface JobAssignmentHubProps {
 }
 
 const JobAssignmentHub: React.FC<JobAssignmentHubProps> = ({ onClose }) => {
+  const [currentView, setCurrentView] = useState<'main' | 'scheduling'>('main');
 
   // Define the cards configuration
   const functionalCards = 1; // Scheduling
@@ -48,6 +49,59 @@ const JobAssignmentHub: React.FC<JobAssignmentHubProps> = ({ onClose }) => {
   console.log('JobAssignmentHub - Placeholder cards:', placeholderCards.length);
   console.log('JobAssignmentHub - Total cards:', functionalCards + comingSoonCards + placeholderCards.length);
 
+  // Scheduling Form View
+  if (currentView === 'scheduling') {
+    return (
+      <Box sx={{ p: 3, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h4" component="h1" sx={{ color: 'white' }}>
+            <Schedule sx={{ mr: 1, verticalAlign: 'middle' }} />
+            Job Scheduling
+          </Typography>
+          <IconButton
+            onClick={() => setCurrentView('main')}
+            sx={{ color: 'yellow' }}
+          >
+            <Assignment />
+          </IconButton>
+        </Box>
+
+        <Card sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(10px)' }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom sx={{ color: 'white', mb: 3 }}>
+              Schedule Jobs and Assign Drivers
+            </Typography>
+            
+            <Box sx={{ p: 3, bgcolor: 'rgba(255, 255, 255, 0.1)', borderRadius: 2, mb: 3 }}>
+              <Typography variant="body1" sx={{ color: 'white', textAlign: 'center' }}>
+                🚧 Scheduling functionality coming soon! 
+                <br />
+                This will include job scheduling, driver assignment, and calendar management.
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+              <Chip 
+                icon={<Schedule />} 
+                label="Calendar View" 
+                sx={{ bgcolor: 'info.main', color: 'white' }}
+              />
+              <Chip 
+                icon={<Person />} 
+                label="Driver Assignment" 
+                sx={{ bgcolor: 'success.main', color: 'white' }}
+              />
+              <Chip 
+                icon={<Timeline />} 
+                label="Timeline" 
+                sx={{ bgcolor: 'warning.main', color: 'white' }}
+              />
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  }
 
   // Main Job Assignment Hub
   return (
@@ -81,6 +135,7 @@ const JobAssignmentHub: React.FC<JobAssignmentHubProps> = ({ onClose }) => {
                 boxShadow: 4,
               }
             }}
+            onClick={() => setCurrentView('scheduling')}
           >
             <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
