@@ -144,6 +144,7 @@ interface Contact {
 
 const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialData, isEditing = false }) => {
   const dispatch = useDispatch<AppDispatch>();
+  const user = useSelector((state: RootState) => state.auth.user);
   const [activeStep, setActiveStep] = useState(0);
   const [selectedPallet, setSelectedPallet] = useState<string>('');
   const [dimensions, setDimensions] = useState({
@@ -363,9 +364,9 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
       town: '',
       city: '',
       postcode: '',
-      contactName: '',
+      contactName: user ? `${user.firstName} ${user.lastName}` : '',
       contactPhone: '',
-      contactEmail: '',
+      contactEmail: user?.email || '',
     },
     deliveryAddress: {
       addressLine1: '',
@@ -374,9 +375,9 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
       town: '',
       city: '',
       postcode: '',
-      contactName: '',
+      contactName: user ? `${user.firstName} ${user.lastName}` : '',
       contactPhone: '',
-      contactEmail: '',
+      contactEmail: user?.email || '',
     },
     pickupDate: tomorrowString,
     pickupTime: '12:00',
@@ -390,9 +391,9 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
       town: '',
       city: '',
       postcode: '',
-      contactName: '',
+      contactName: user ? `${user.firstName} ${user.lastName}` : '',
       contactPhone: '',
-      contactEmail: '',
+      contactEmail: user?.email || '',
     },
 
     cargoType: 'Custom',

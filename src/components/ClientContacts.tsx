@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
   Box,
   Typography,
@@ -36,6 +37,7 @@ import {
   Home,
   LocationOn,
 } from '@mui/icons-material';
+import { RootState } from '../store';
 
 interface ClientContactsProps {
   onClose: () => void;
@@ -64,14 +66,15 @@ interface ClientContact {
 }
 
 const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
+  const user = useSelector((state: RootState) => state.auth.user);
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [currentContact, setCurrentContact] = useState<Partial<ClientContact>>({
-    name: '',
+    name: user ? `${user.firstName} ${user.lastName}` : '',
     company: '',
     position: '',
-    email: '',
+    email: user?.email || '',
     phone: '',
     mobile: '',
     addressLine1: '',
@@ -128,10 +131,10 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
     setContacts(prevContacts => [...prevContacts, newContact]);
     setShowAddDialog(false);
     setCurrentContact({
-      name: '',
+      name: user ? `${user.firstName} ${user.lastName}` : '',
       company: '',
       position: '',
-      email: '',
+      email: user?.email || '',
       phone: '',
       mobile: '',
       addressLine1: '',
@@ -164,10 +167,10 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
     );
     setShowEditDialog(false);
     setCurrentContact({
-      name: '',
+      name: user ? `${user.firstName} ${user.lastName}` : '',
       company: '',
       position: '',
-      email: '',
+      email: user?.email || '',
       phone: '',
       mobile: '',
       addressLine1: '',

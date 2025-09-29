@@ -26,6 +26,12 @@ const Login: React.FC = () => {
     password: 'admin123'
   };
 
+  // Super admin bypass for development (remove in production)
+  const SUPER_ADMIN_CREDENTIALS = {
+    username: 'superadmin',
+    password: 'superadmin123'
+  };
+
   const handleStaffLogin = async () => {
     if (!username || !password) {
       setError('Please enter both username and password');
@@ -36,42 +42,104 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      // Try staff authentication first
-      const authResult = await staffAuthService.authenticate({ username, password });
+      console.log('🔍 Attempting Supabase login for:', username);
       
-      if (authResult.success && authResult.staff) {
-        // Convert staff data to user format
+      // Import Supabase client
+      const { supabase } = await import('../../lib/supabase');
+      
+      // Sign in with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: username, // Using username field as email
+        password: password,
+      });
+
+      if (authError) {
+        console.error('❌ Supabase auth error:', authError);
+        setError(authError.message);
+        return;
+      }
+
+      if (authData.user) {
+        console.log('✅ Supabase auth successful:', authData.user);
+        console.log('🔍 Auth user ID:', authData.user.id);
+        console.log('🔍 Auth user email:', authData.user.email);
+        console.log('🔍 Auth user metadata:', authData.user.user_metadata);
+        
+        // Try to get user details from our users table
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
+
+        console.log('🔍 Users table lookup result:', { userData, userError });
+
+        if (userData && userData.first_name) {
+          console.log('✅ User data retrieved from users table:', userData);
+          
+          // Create user object for Redux from users table
+          const user = {
+            id: userData.id,
+            email: userData.email || username,
+            firstName: userData.first_name,
+            lastName: userData.last_name,
+            role: userData.role as any,
+          };
+
+          dispatch(setUser(user));
+          console.log('✅ Login successful (from users table):', user);
+          return;
+        }
+
+        // If users table lookup failed or no first_name, try to get from email lookup
+        console.log('🔍 Trying email lookup for:', username);
+        const { data: emailUserData, error: emailError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', username)
+          .single();
+
+        console.log('🔍 Email lookup result:', { emailUserData, emailError });
+
+        if (emailUserData && emailUserData.first_name) {
+          console.log('✅ User data retrieved from email lookup:', emailUserData);
+          
+          const user = {
+            id: emailUserData.id,
+            email: emailUserData.email || username,
+            firstName: emailUserData.first_name,
+            lastName: emailUserData.last_name,
+            role: emailUserData.role as any,
+          };
+
+          dispatch(setUser(user));
+          console.log('✅ Login successful (from email lookup):', user);
+          return;
+        }
+
+        // Final fallback - use auth metadata or defaults
+        console.log('🔍 Using fallback with auth metadata');
+        const role = authData.user.user_metadata?.role || 'admin';
+        const firstName = authData.user.user_metadata?.first_name || username.split('@')[0] || 'User';
+        const lastName = authData.user.user_metadata?.last_name || '';
+        
         const user = {
-          id: authResult.staff.id,
-          email: `${authResult.staff.firstName}.${authResult.staff.lastName}@company.com`,
-          firstName: authResult.staff.firstName,
-          lastName: authResult.staff.lastName,
-          role: authResult.staff.role,
+          id: authData.user.id,
+          email: authData.user.email || username,
+          firstName: firstName,
+          lastName: lastName,
+          role: role as any,
         };
 
         dispatch(setUser(user));
-        console.log('Staff logged in successfully:', user);
+        console.log('✅ Login successful (fallback):', user);
         return;
       }
 
-      // Fallback to default credentials if no staff members exist
-      if (username === DEFAULT_CREDENTIALS.username && password === DEFAULT_CREDENTIALS.password) {
-        const defaultUser = {
-          id: 'default-admin',
-          email: 'admin@company.com',
-          firstName: 'Admin',
-          lastName: 'User',
-          role: 'admin' as const,
-        };
-
-        dispatch(setUser(defaultUser));
-        console.log('Default admin logged in successfully:', defaultUser);
-        return;
-      }
-
-      // Authentication failed
-      setError(authResult.error || 'Invalid username or password');
-    } catch (err) {
+      setError('Login failed. Please check your credentials.');
+      
+    } catch (err: any) {
+      console.error('❌ Login error:', err);
       setError('Login failed. Please try again.');
     } finally {
       dispatch(setLoading(false));
@@ -96,15 +164,17 @@ const Login: React.FC = () => {
           </Grid>
         )}
         
-        <Grid item xs={12}>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            <Typography variant="body2">
-              <strong>Default Credentials:</strong> Username: <code>admin</code> | Password: <code>admin123</code>
-              <br />
-              <strong>Staff Login:</strong> Use credentials created in Staff Management
-            </Typography>
-          </Alert>
-        </Grid>
+               <Grid item xs={12}>
+                 <Alert severity="info" sx={{ mb: 2 }}>
+                   <Typography variant="body2">
+                     <strong>Super Admin:</strong> Email: <code>tomboyce@mail.com</code> | Password: (your chosen password)
+                     <br />
+                     <strong>Business Owner:</strong> Email: <code>adam.mustafa1717@gmail.com</code> | Password: (your chosen password)
+                     <br />
+                     <strong>Note:</strong> Use your email address as the username
+                   </Typography>
+                 </Alert>
+               </Grid>
         
         <Grid item xs={12} md={6}>
           <Paper elevation={3} sx={{ p: 3, textAlign: 'center' }}>
@@ -117,7 +187,7 @@ const Login: React.FC = () => {
             </Typography>
             <TextField
               fullWidth
-              label="Username"
+                     label="Email Address"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               sx={{ mb: 2 }}
@@ -161,7 +231,7 @@ const Login: React.FC = () => {
             </Typography>
             <TextField
               fullWidth
-              label="Username"
+                     label="Email Address"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               sx={{ mb: 2 }}

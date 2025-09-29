@@ -57,7 +57,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'driver' | 'admin' | 'owner';
+  role: 'driver' | 'admin' | 'staff' | 'supa_admin';
 }
 
 interface DashboardProps {
@@ -111,7 +111,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         return 'primary';
       case 'admin':
         return 'secondary';
-      case 'owner':
+      case 'staff':
+        return 'info';
+      case 'supa_admin':
         return 'error';
       default:
         return 'default';
@@ -124,7 +126,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         return <LocalShipping />;
       case 'admin':
         return <Person />;
-      case 'owner':
+      case 'staff':
+        return <Person />;
+      case 'supa_admin':
         return <Person />;
       default:
         return <Person />;
@@ -371,14 +375,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           <Typography variant="h4" gutterBottom sx={{ color: 'white' }}>
             Welcome back, {user.firstName}!
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {getRoleIcon(user.role)}
-            <Chip
-              label={user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-              color={getRoleColor(user.role) as any}
-              size="small"
-            />
-          </Box>
         </Box>
         <Button
           variant="outlined"

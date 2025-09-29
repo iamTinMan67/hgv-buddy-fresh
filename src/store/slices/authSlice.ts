@@ -6,7 +6,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'driver' | 'admin' | 'owner';
+  role: 'driver' | 'admin' | 'staff' | 'supa_admin';
 }
 
 interface AuthState {

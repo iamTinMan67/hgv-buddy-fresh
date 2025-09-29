@@ -293,7 +293,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ onClose }) => {
             Driver Dashboard
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Welcome back, {user?.firstName} {user?.lastName}
+            Welcome back, {user?.firstName}!
           </Typography>
         </Box>
         <Box>

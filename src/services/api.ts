@@ -318,13 +318,17 @@ export class AuthService {
         const isSuperAdmin = await this.isSuperAdmin(email);
         
         if (isSuperAdmin) {
+          // Get user metadata for name
+          const firstName = authData.user.user_metadata?.first_name || 'Super';
+          const lastName = authData.user.user_metadata?.last_name || 'Admin';
+          
           // Return super admin user data
           return {
             data: {
               id: authData.user.id,
               email: authData.user.email || email,
-              first_name: 'Super',
-              last_name: 'Admin',
+              first_name: firstName,
+              last_name: lastName,
               role: 'supa_admin' as any,
               created_at: authData.user.created_at,
               updated_at: authData.user.updated_at || authData.user.created_at,
@@ -354,14 +358,25 @@ export class AuthService {
 
   static async isSuperAdmin(email: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase
+      console.log(`🔍 Checking super admin status for: ${email}`);
+      
+      // Check if user exists in super_admins table
+      const { data: superAdminData, error: superAdminError } = await supabase
         .from('super_admins')
         .select('email')
         .eq('email', email)
         .eq('is_active', true)
         .single();
 
-      return !error && !!data;
+      console.log('Super admin query result:', { superAdminData, superAdminError });
+
+      if (!superAdminError && superAdminData) {
+        console.log(`✅ User ${email} found in super_admins table`);
+        return true;
+      }
+
+      console.log(`❌ User ${email} not found in super_admins table. Error:`, superAdminError);
+      return false;
     } catch (error) {
       console.error('Error checking super admin status:', error);
       return false;
@@ -382,6 +397,40 @@ export class AuthService {
       return {
         data: false,
         error: error.message || 'Failed to sign out',
+        success: false
+      };
+    }
+  }
+
+  static async createAppUser(userData: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: 'admin' | 'driver' | 'owner';
+    username?: string;
+    passwordHash?: string;
+  }): Promise<ApiResponse<{ id: string }>> {
+    try {
+      const { data, error } = await supabase.rpc('create_app_user', {
+        p_email: userData.email,
+        p_first_name: userData.firstName,
+        p_last_name: userData.lastName,
+        p_role: userData.role,
+        p_username: userData.username,
+        p_password_hash: userData.passwordHash
+      });
+
+      if (error) throw error;
+
+      return {
+        data: { id: data },
+        error: null,
+        success: true
+      };
+    } catch (error: any) {
+      return {
+        data: null,
+        error: error.message || 'Failed to create app user',
         success: false
       };
     }

@@ -208,9 +208,9 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Multi-page form navigation
-  const handleNextPage = () => {
+  const handleNextPage = async () => {
           // Attempting to go to next page
-    if (validateCurrentPage()) {
+    if (await validateCurrentPage()) {
               // Validation passed, moving to next page
       setCurrentPage(prev => Math.min(prev + 1, 5)); // 6 pages total (0-5)
     } else {
@@ -223,7 +223,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
     setCurrentPage(prev => Math.max(prev - 1, 0));
   };
 
-  const validateCurrentPage = (): boolean => {
+  const validateCurrentPage = async (): Promise<boolean> => {
           // Validating page
     const errors: Record<string, string> = {};
     
@@ -389,32 +389,267 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
   // Staff members state - starts empty, data will be loaded from Supabase
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
 
-  const handleAddStaff = () => {
-          // Adding new staff member
-    
-    const newStaff: StaffMember = {
-      ...currentStaff as StaffMember,
-      id: Date.now().toString(),
-      lastUpdated: new Date().toISOString(),
+  // Load staff members from Supabase on component mount
+  useEffect(() => {
+    const loadStaffMembers = async () => {
+      try {
+        const { supabase } = await import('../lib/supabase');
+        
+        const { data: staffMembers, error } = await supabase
+          .from('staff_members')
+          .select(`
+            *,
+            staff_qualifications (*),
+            staff_licenses (*)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error loading staff:', error);
+          return;
+        }
+
+        if (staffMembers) {
+          // Convert staff_members to StaffMember format
+          const staffData: StaffMember[] = staffMembers.map(staff => ({
+            id: staff.id,
+            staffId: staff.staff_id,
+            firstName: staff.first_name,
+            middleName: staff.middle_name || '',
+            familyName: staff.family_name,
+            address: {
+              line1: staff.address_line1 || '',
+              line2: staff.address_line2 || '',
+              line3: staff.address_line3 || '',
+              town: staff.town || '',
+              postCode: staff.postcode || ''
+            },
+            contact: {
+              phone: staff.phone || '',
+              mobile: staff.mobile || '',
+              email: staff.email
+            },
+            nextOfKin: {
+              name: staff.next_of_kin_name || '',
+              relationship: staff.next_of_kin_relationship || '',
+              phone: staff.next_of_kin_phone || '',
+              email: staff.next_of_kin_email || ''
+            },
+            taxCode: staff.tax_code || '',
+            nationalInsurance: staff.national_insurance || '',
+            role: staff.role as 'manager' | 'admin' | 'driver',
+            isActive: staff.is_active,
+            startDate: staff.start_date,
+            lastUpdated: staff.updated_at,
+            username: staff.email.split('@')[0], // Use email prefix as username
+            password: '', // Not stored for security
+            // Driver-specific fields
+            employeeNumber: staff.employee_number,
+            dateOfBirth: staff.date_of_birth,
+            licenseNumber: staff.license_number,
+            licenseExpiry: staff.license_expiry,
+            // Bank details
+            bankDetails: staff.bank_account_number ? {
+              accountNumber: staff.bank_account_number,
+              sortCode: staff.bank_sort_code || '',
+              bankName: staff.bank_name || ''
+            } : undefined,
+            // Qualifications and licenses
+            qualifications: staff.staff_qualifications?.map((qual: any) => ({
+              name: qual.name,
+              issuingBody: qual.issuing_body,
+              issueDate: qual.issue_date,
+              expiryDate: qual.expiry_date,
+              documentUrl: qual.document_url
+            })) || [],
+            licenses: staff.staff_licenses?.map((license: any) => ({
+              type: license.type,
+              number: license.number,
+              issuingBody: license.issuing_body,
+              issueDate: license.issue_date,
+              expiryDate: license.expiry_date,
+              documentUrl: license.document_url
+            })) || []
+          }));
+
+          setStaffMembers(staffData);
+          
+          // Also save to localStorage for backward compatibility
+          localStorage.setItem('staffMembers', JSON.stringify(staffData));
+        }
+      } catch (error) {
+        console.error('Error loading staff members:', error);
+      }
     };
-    
-            // New staff member object
-    
-    setStaffMembers(prevStaff => {
-      const updatedStaff = [...prevStaff, newStaff];
+
+    loadStaffMembers();
+  }, []);
+
+  const handleAddStaff = async () => {
+    try {
+      // Generate staff ID
+      const newStaffId = await staffIdGenerator.generateStaffId(currentStaff.startDate);
       
-      // Save to localStorage for authentication service
-      localStorage.setItem('staffMembers', JSON.stringify(updatedStaff));
+      // Import Supabase client
+      const { supabase } = await import('../lib/supabase');
       
-              // Updated staff members array
-      return updatedStaff;
-    });
-    
-    // Reset form and close dialog after state update
-    setTimeout(() => {
+      // Generate a UUID for the new user
+      const userId = crypto.randomUUID();
+      
+      // Create user record in users table (for auth)
+      const { error: userError } = await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          email: currentStaff.contact?.email || '',
+          first_name: currentStaff.firstName || '',
+          last_name: currentStaff.familyName || '',
+          role: currentStaff.role || 'driver'
+        });
+
+      if (userError) {
+        console.error('Failed to create user record:', userError);
+        alert(`Failed to create user record: ${userError.message}`);
+        return;
+      }
+
+      // Create detailed staff record in staff_members table
+      const { error: staffError } = await supabase
+        .from('staff_members')
+        .insert({
+          user_id: userId,
+          staff_id: newStaffId,
+          first_name: currentStaff.firstName || '',
+          middle_name: currentStaff.middleName || '',
+          family_name: currentStaff.familyName || '',
+          address_line1: currentStaff.address?.line1 || '',
+          address_line2: currentStaff.address?.line2 || '',
+          address_line3: currentStaff.address?.line3 || '',
+          town: currentStaff.address?.town || '',
+          postcode: currentStaff.address?.postCode || '',
+          country: 'UK',
+          phone: currentStaff.contact?.phone || '',
+          mobile: currentStaff.contact?.mobile || '',
+          email: currentStaff.contact?.email || '',
+          next_of_kin_name: currentStaff.nextOfKin?.name || '',
+          next_of_kin_relationship: currentStaff.nextOfKin?.relationship || '',
+          next_of_kin_phone: currentStaff.nextOfKin?.phone || '',
+          next_of_kin_email: currentStaff.nextOfKin?.email || '',
+          role: currentStaff.role || 'driver',
+          is_active: true,
+          start_date: currentStaff.startDate || new Date().toISOString().split('T')[0],
+          tax_code: currentStaff.taxCode || '',
+          national_insurance: currentStaff.nationalInsurance || '',
+          employee_number: currentStaff.employeeNumber || '',
+          date_of_birth: currentStaff.dateOfBirth || '',
+          license_number: currentStaff.licenseNumber || '',
+          license_expiry: currentStaff.licenseExpiry || '',
+          bank_account_number: currentStaff.bankDetails?.accountNumber || '',
+          bank_sort_code: currentStaff.bankDetails?.sortCode || '',
+          bank_name: currentStaff.bankDetails?.bankName || '',
+          notes: ''
+        });
+
+      if (staffError) {
+        console.error('Failed to create staff record:', staffError);
+        alert(`Failed to create staff record: ${staffError.message}`);
+        return;
+      }
+
+      // Get the staff_member_id for the newly created record
+      const { data: newStaffMember, error: fetchError } = await supabase
+        .from('staff_members')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError || !newStaffMember) {
+        console.error('Failed to fetch new staff member:', fetchError);
+        alert('Staff member created but failed to fetch ID for qualifications/licenses');
+      } else {
+        // Save qualifications if any
+        if (currentStaff.qualifications && currentStaff.qualifications.length > 0) {
+          const qualificationsData = currentStaff.qualifications.map(qual => ({
+            staff_member_id: newStaffMember.id,
+            name: qual.name,
+            issuing_body: qual.issuingBody,
+            issue_date: qual.issueDate,
+            expiry_date: qual.expiryDate || null,
+            document_url: qual.documentUrl || null
+          }));
+
+          const { error: qualError } = await supabase
+            .from('staff_qualifications')
+            .insert(qualificationsData);
+
+          if (qualError) {
+            console.error('Failed to save qualifications:', qualError);
+          }
+        }
+
+        // Save licenses if any
+        if (currentStaff.licenses && currentStaff.licenses.length > 0) {
+          const licensesData = currentStaff.licenses.map(license => ({
+            staff_member_id: newStaffMember.id,
+            type: license.type,
+            number: license.number,
+            issuing_body: license.issuingBody,
+            issue_date: license.issueDate,
+            expiry_date: license.expiryDate,
+            document_url: license.documentUrl || null
+          }));
+
+          const { error: licenseError } = await supabase
+            .from('staff_licenses')
+            .insert(licensesData);
+
+          if (licenseError) {
+            console.error('Failed to save licenses:', licenseError);
+          }
+        }
+      }
+
+      if (userError) {
+        console.error('Failed to create user record:', userError);
+        alert(`Failed to create user record: ${userError.message}`);
+        return;
+      }
+
+      // Create staff member object for local state
+      const newStaff: StaffMember = {
+        ...currentStaff as StaffMember,
+        id: userId,
+        staffId: newStaffId,
+        lastUpdated: new Date().toISOString(),
+      };
+      
+      // Update local state
+      setStaffMembers(prevStaff => {
+        const updatedStaff = [...prevStaff, newStaff];
+        
+        // Save to localStorage for backward compatibility
+        localStorage.setItem('staffMembers', JSON.stringify(updatedStaff));
+        
+        return updatedStaff;
+      });
+      
+      // Reset form and close dialog
       resetForm();
       setShowAddDialog(false);
-    }, 100);
+      
+      // Show success message with instructions
+      alert(`✅ Staff member created successfully!\n\nTo complete the setup:\n1. Go to Supabase Dashboard > Authentication > Users\n2. Click "Add User"\n3. Email: ${currentStaff.contact?.email}\n4. Password: ${currentStaff.password}\n5. Raw User Meta Data: {"role": "${currentStaff.role}", "first_name": "${currentStaff.firstName}", "last_name": "${currentStaff.familyName}"}`);
+      
+      console.log('✅ Staff member created successfully:', {
+        id: userId,
+        email: currentStaff.contact?.email,
+        role: currentStaff.role
+      });
+      
+    } catch (error) {
+      console.error('Error creating staff member:', error);
+      alert('Failed to create staff member. Please try again.');
+    }
   };
 
   const handleEditStaff = (staff: StaffMember) => {
@@ -441,37 +676,143 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
     setShowAddDialog(true);
   };
 
-  const handleUpdateStaff = () => {
+  const handleUpdateStaff = async () => {
     if (!editingId) return;
     
-    // Deep clone the current staff data to ensure all nested objects are preserved
-    const updatedStaff: StaffMember = {
-      ...currentStaff as StaffMember,
-      id: editingId,
-      lastUpdated: new Date().toISOString(),
-      address: { ...currentStaff.address! },
-      contact: { ...currentStaff.contact! },
-      nextOfKin: { ...currentStaff.nextOfKin! },
-      qualifications: currentStaff.qualifications ? [...currentStaff.qualifications] : [],
-      licenses: currentStaff.licenses ? [...currentStaff.licenses] : [],
-      bankDetails: currentStaff.bankDetails ? { ...currentStaff.bankDetails } : undefined,
-    };
-    
-    const updatedStaffMembers = staffMembers.map(staff =>
-      staff.id === editingId ? updatedStaff : staff
-    );
-    
-    // Save to localStorage for authentication service
-    localStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
-    
-    setStaffMembers(updatedStaffMembers);
-    resetForm();
-    setEditingId(null);
-    setShowAddDialog(false);
+    try {
+      // Import Supabase client
+      const { supabase } = await import('../lib/supabase');
+      
+      // Update user record in Supabase
+      const { error: userError } = await supabase
+        .from('users')
+        .update({
+          email: currentStaff.contact?.email || '',
+          first_name: currentStaff.firstName || '',
+          last_name: currentStaff.familyName || '',
+          role: currentStaff.role || 'driver'
+        })
+        .eq('id', editingId);
+
+      if (userError) {
+        console.error('Failed to update user record:', userError);
+        alert(`Failed to update user record: ${userError.message}`);
+        return;
+      }
+
+      // Update detailed staff record in staff_members table
+      const { error: staffError } = await supabase
+        .from('staff_members')
+        .update({
+          first_name: currentStaff.firstName || '',
+          middle_name: currentStaff.middleName || '',
+          family_name: currentStaff.familyName || '',
+          address_line1: currentStaff.address?.line1 || '',
+          address_line2: currentStaff.address?.line2 || '',
+          address_line3: currentStaff.address?.line3 || '',
+          town: currentStaff.address?.town || '',
+          postcode: currentStaff.address?.postCode || '',
+          phone: currentStaff.contact?.phone || '',
+          mobile: currentStaff.contact?.mobile || '',
+          email: currentStaff.contact?.email || '',
+          next_of_kin_name: currentStaff.nextOfKin?.name || '',
+          next_of_kin_relationship: currentStaff.nextOfKin?.relationship || '',
+          next_of_kin_phone: currentStaff.nextOfKin?.phone || '',
+          next_of_kin_email: currentStaff.nextOfKin?.email || '',
+          role: currentStaff.role || 'driver',
+          tax_code: currentStaff.taxCode || '',
+          national_insurance: currentStaff.nationalInsurance || '',
+          employee_number: currentStaff.employeeNumber || '',
+          date_of_birth: currentStaff.dateOfBirth || '',
+          license_number: currentStaff.licenseNumber || '',
+          license_expiry: currentStaff.licenseExpiry || '',
+          bank_account_number: currentStaff.bankDetails?.accountNumber || '',
+          bank_sort_code: currentStaff.bankDetails?.sortCode || '',
+          bank_name: currentStaff.bankDetails?.bankName || ''
+        })
+        .eq('user_id', editingId);
+
+      if (staffError) {
+        console.error('Failed to update staff record:', staffError);
+        alert(`Failed to update staff record: ${staffError.message}`);
+        return;
+      }
+      
+      // Deep clone the current staff data to ensure all nested objects are preserved
+      const updatedStaff: StaffMember = {
+        ...currentStaff as StaffMember,
+        id: editingId,
+        lastUpdated: new Date().toISOString(),
+        address: { ...currentStaff.address! },
+        contact: { ...currentStaff.contact! },
+        nextOfKin: { ...currentStaff.nextOfKin! },
+        qualifications: currentStaff.qualifications ? [...currentStaff.qualifications] : [],
+        licenses: currentStaff.licenses ? [...currentStaff.licenses] : [],
+        bankDetails: currentStaff.bankDetails ? { ...currentStaff.bankDetails } : undefined,
+      };
+      
+      const updatedStaffMembers = staffMembers.map(staff =>
+        staff.id === editingId ? updatedStaff : staff
+      );
+      
+      // Save to localStorage for authentication service
+      localStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
+      
+      setStaffMembers(updatedStaffMembers);
+      resetForm();
+      setEditingId(null);
+      setShowAddDialog(false);
+      
+      console.log('✅ Staff member updated successfully');
+      
+    } catch (error) {
+      console.error('Error updating staff member:', error);
+      alert('Failed to update staff member. Please try again.');
+    }
   };
 
-  const handleDeleteStaff = (id: string) => {
-    setStaffMembers(staffMembers.filter(staff => staff.id !== id));
+  const handleDeleteStaff = async (id: string) => {
+    try {
+      // Import Supabase client
+      const { supabase } = await import('../lib/supabase');
+      
+      // Delete staff record from staff_members table
+      const { error: staffError } = await supabase
+        .from('staff_members')
+        .delete()
+        .eq('user_id', id);
+
+      if (staffError) {
+        console.error('Failed to delete staff record:', staffError);
+        alert(`Failed to delete staff record: ${staffError.message}`);
+        return;
+      }
+
+      // Delete user record from users table
+      const { error: userError } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', id);
+
+      if (userError) {
+        console.error('Failed to delete user record:', userError);
+        alert(`Failed to delete user record: ${userError.message}`);
+        return;
+      }
+      
+      // Update local state
+      const updatedStaffMembers = staffMembers.filter(staff => staff.id !== id);
+      setStaffMembers(updatedStaffMembers);
+      
+      // Save to localStorage for backward compatibility
+      localStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
+      
+      console.log('✅ Staff member deleted successfully');
+      
+    } catch (error) {
+      console.error('Error deleting staff member:', error);
+      alert('Failed to delete staff member. Please try again.');
+    }
   };
 
 
