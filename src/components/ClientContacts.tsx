@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Box,
@@ -38,6 +38,7 @@ import {
   LocationOn,
 } from '@mui/icons-material';
 import { RootState } from '../store';
+import { supabase } from '../lib/supabase';
 
 interface ClientContactsProps {
   onClose: () => void;
@@ -89,8 +90,54 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
     notes: ''
   });
 
-  // Contacts data - starting with empty array
+  // Contacts data - load from Supabase
   const [contacts, setContacts] = useState<ClientContact[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load contacts from Supabase on component mount
+  useEffect(() => {
+    loadContacts();
+  }, []);
+
+  const loadContacts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('client_contacts')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+
+      const mappedContacts: ClientContact[] = (data || []).map((row: any) => ({
+        id: row.id,
+        name: row.name || row.contact_name || '',
+        company: row.company || row.company_name || '',
+        position: row.position || row.job_title || '',
+        email: row.email || '',
+        phone: row.phone || '',
+        mobile: row.mobile || '',
+        addressLine1: row.address_line1 || '',
+        addressLine2: row.address_line2 || '',
+        addressLine3: row.address_line3 || '',
+        town: row.town || '',
+        city: row.city || '',
+        postcode: row.postcode || '',
+        country: row.country || 'UK',
+        category: row.category || 'client',
+        status: row.status || 'active',
+        notes: row.notes || '',
+        createdAt: row.created_at || new Date().toISOString(),
+        lastUpdated: row.updated_at || new Date().toISOString(),
+      }));
+
+      setContacts(mappedContacts);
+    } catch (error) {
+      console.error('Failed to load contacts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -121,33 +168,63 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
     }
   };
 
-  const handleAddContact = () => {
-    const newContact: ClientContact = {
-      ...currentContact as ClientContact,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      lastUpdated: new Date().toISOString(),
-    };
-    setContacts(prevContacts => [...prevContacts, newContact]);
-    setShowAddDialog(false);
-    setCurrentContact({
-      name: user ? `${user.firstName} ${user.lastName}` : '',
-      company: '',
-      position: '',
-      email: user?.email || '',
-      phone: '',
-      mobile: '',
-      addressLine1: '',
-      addressLine2: '',
-      addressLine3: '',
-      town: '',
-      city: '',
-      postcode: '',
-      country: 'UK',
-      category: 'client',
-      status: 'active',
-      notes: ''
-    });
+  const handleAddContact = async () => {
+    try {
+      const insertRow = {
+        contact_name: currentContact.name,
+        name: currentContact.name,
+        company_name: currentContact.company,
+        company: currentContact.company,
+        job_title: currentContact.position,
+        position: currentContact.position,
+        email: currentContact.email,
+        phone: currentContact.phone || null,
+        mobile: currentContact.mobile || null,
+        address_line1: currentContact.addressLine1,
+        address_line2: currentContact.addressLine2 || null,
+        address_line3: currentContact.addressLine3 || null,
+        town: currentContact.town || null,
+        city: currentContact.city,
+        postcode: currentContact.postcode,
+        country: currentContact.country,
+        category: currentContact.category,
+        status: currentContact.status,
+        notes: currentContact.notes || null,
+      };
+
+      const { data, error } = await supabase
+        .from('client_contacts')
+        .insert(insertRow)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      // Reload contacts to get the new one
+      await loadContacts();
+
+      setShowAddDialog(false);
+      setCurrentContact({
+        name: user ? `${user.firstName} ${user.lastName}` : '',
+        company: '',
+        position: '',
+        email: user?.email || '',
+        phone: '',
+        mobile: '',
+        addressLine1: '',
+        addressLine2: '',
+        addressLine3: '',
+        town: '',
+        city: '',
+        postcode: '',
+        country: 'UK',
+        category: 'client',
+        status: 'active',
+        notes: ''
+      });
+    } catch (error) {
+      console.error('Failed to add contact:', error);
+    }
   };
 
   const handleEditContact = (contact: ClientContact) => {
@@ -155,39 +232,79 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
     setShowEditDialog(true);
   };
 
-  const handleUpdateContact = () => {
-    const updatedContact: ClientContact = {
-      ...currentContact as ClientContact,
-      lastUpdated: new Date().toISOString(),
-    };
-    setContacts(prevContacts => 
-      prevContacts.map(contact => 
-        contact.id === updatedContact.id ? updatedContact : contact
-      )
-    );
-    setShowEditDialog(false);
-    setCurrentContact({
-      name: user ? `${user.firstName} ${user.lastName}` : '',
-      company: '',
-      position: '',
-      email: user?.email || '',
-      phone: '',
-      mobile: '',
-      addressLine1: '',
-      addressLine2: '',
-      addressLine3: '',
-      town: '',
-      city: '',
-      postcode: '',
-      country: 'UK',
-      category: 'client',
-      status: 'active',
-      notes: ''
-    });
+  const handleUpdateContact = async () => {
+    try {
+      const updateRow = {
+        contact_name: currentContact.name,
+        name: currentContact.name,
+        company_name: currentContact.company,
+        company: currentContact.company,
+        job_title: currentContact.position,
+        position: currentContact.position,
+        email: currentContact.email,
+        phone: currentContact.phone || null,
+        mobile: currentContact.mobile || null,
+        address_line1: currentContact.addressLine1,
+        address_line2: currentContact.addressLine2 || null,
+        address_line3: currentContact.addressLine3 || null,
+        town: currentContact.town || null,
+        city: currentContact.city,
+        postcode: currentContact.postcode,
+        country: currentContact.country,
+        category: currentContact.category,
+        status: currentContact.status,
+        notes: currentContact.notes || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('client_contacts')
+        .update(updateRow)
+        .eq('id', currentContact.id);
+
+      if (error) throw error;
+
+      // Reload contacts to get the updated one
+      await loadContacts();
+
+      setShowEditDialog(false);
+      setCurrentContact({
+        name: user ? `${user.firstName} ${user.lastName}` : '',
+        company: '',
+        position: '',
+        email: user?.email || '',
+        phone: '',
+        mobile: '',
+        addressLine1: '',
+        addressLine2: '',
+        addressLine3: '',
+        town: '',
+        city: '',
+        postcode: '',
+        country: 'UK',
+        category: 'client',
+        status: 'active',
+        notes: ''
+      });
+    } catch (error) {
+      console.error('Failed to update contact:', error);
+    }
   };
 
-  const handleDeleteContact = (id: string) => {
-    setContacts(prevContacts => prevContacts.filter(contact => contact.id !== id));
+  const handleDeleteContact = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('client_contacts')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Reload contacts to reflect the deletion
+      await loadContacts();
+    } catch (error) {
+      console.error('Failed to delete contact:', error);
+    }
   };
 
   const getFilteredContacts = () => {
@@ -203,8 +320,8 @@ const ClientContacts: React.FC<ClientContactsProps> = ({ onClose }) => {
 
   return (
     <Box sx={{ py: 2, px: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1" sx={{ mr: 2 }}>
           Client Contacts
         </Typography>
         <IconButton

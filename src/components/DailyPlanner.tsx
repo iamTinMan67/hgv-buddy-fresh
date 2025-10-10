@@ -62,6 +62,7 @@ import {
   LocalShipping,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
+import { supabase } from '../lib/supabase';
 import {
   DailySchedule,
   JobStatus,
@@ -147,8 +148,23 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
     { id: 'V003', name: 'HGV-003', type: 'Box Van' },
   ];
 
-  // Mock data for available jobs (pending jobs that can be scheduled)
-  const availableJobs = jobs.filter(job => job.status === 'pending');
+  // Pending jobs available for scheduling (exclude hardcoded demo seeds)
+  const availableJobs = jobs.filter(j => j.status === 'pending' && !['1','2','3'].includes(j.id));
+
+  // Cache of delivery_addresses from DB to resolve names/addresses for DB-backed jobs
+  const [addressCache, setAddressCache] = useState<Record<string, any>>({});
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const { data, error } = await supabase.from('delivery_addresses').select('*');
+        if (!error && data) {
+          const map: Record<string, any> = {};
+          for (const row of data) map[row.id] = row;
+          setAddressCache(map);
+        }
+      } catch {}
+    })();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -232,6 +248,22 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
       default:
         return <Schedule />;
     }
+  };
+
+  // Safely format a location display for cards
+  const formatLocation = (loc: any, dbAddressId?: string): string => {
+    // If DB id provided, try resolve from cache
+    if (dbAddressId && addressCache[dbAddressId]) {
+      const row = addressCache[dbAddressId];
+      const parts = [row.address_line1, row.town || row.city, row.postcode].filter(Boolean);
+      return parts.length ? parts.join(', ') : row.name || 'N/A';
+    }
+    if (!loc) return 'N/A';
+    const name: string | undefined = (loc as any).name;
+    const addr = (loc as any).address || {};
+    if (name && name.trim()) return name;
+    const parts = [addr.line1, addr.town || addr.city, addr.postcode].filter(Boolean);
+    return parts.length ? parts.join(', ') : 'N/A';
   };
 
   const openEditDialog = (schedule: DailySchedule) => {
@@ -353,27 +385,23 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
 
   return (
     <Box sx={{ py: 2, px: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ mr: 2 }}>
           Daily Planner
         </Typography>
-        <Box>
+        <IconButton onClick={onClose} sx={{ color: 'yellow', fontSize: '1.5rem', mr: 2 }}>
+          <Home />
+        </IconButton>
+        <Box sx={{ ml: 'auto' }}>
           {(user?.role === 'admin' || user?.role === 'owner') && (
             <Button
               startIcon={<Add />}
               variant="contained"
               onClick={() => setShowAddDialog(true)}
-              sx={{ mr: 2 }}
             >
               Create Schedule
             </Button>
           )}
-          <IconButton
-            onClick={onClose}
-            sx={{ color: 'yellow', fontSize: '1.5rem' }}
-          >
-            <Home />
-          </IconButton>
         </Box>
       </Box>
 
@@ -639,7 +667,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                           Pickup
                         </Typography>
                         <Typography variant="body2">
-                          {job.pickupLocation.name}
+                          {formatLocation(job.pickupLocation, (job as any).pickup_address_id)}
                         </Typography>
                       </Grid>
                       <Grid item xs={6}>
@@ -647,7 +675,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                           Delivery
                         </Typography>
                         <Typography variant="body2">
-                          {job.deliveryLocation.name}
+                          {formatLocation(job.deliveryLocation, (job as any).delivery_address_id)}
                         </Typography>
                       </Grid>
                       <Grid item xs={6}>

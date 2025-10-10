@@ -115,6 +115,12 @@ interface TrailerLayout {
   utilizationPercentage: number;
   createdAt: string;
   updatedAt: string;
+  assignments?: {
+    jobId: string;
+    vehicleId: string;
+    driverId: string;
+    assignedAt: string;
+  }[];
 }
 
 function TabPanel(props: TabPanelProps) {
@@ -143,6 +149,35 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
   const [showCargoDialog, setShowCargoDialog] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
   const [selectedLayout, setSelectedLayout] = useState<TrailerLayout | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string>('');
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
+  const [selectedDriverId, setSelectedDriverId] = useState<string>('');
+  const [drivers, setDrivers] = useState<{ id: string; name: string; email: string }[]>([]);
+
+  useEffect(() => {
+    const loadDrivers = async () => {
+      try {
+        const { supabase } = await import('../lib/supabase');
+        const { data, error } = await supabase
+          .from('staff_members')
+          .select('id, first_name, family_name, email, role')
+          .eq('role', 'driver');
+        if (error) {
+          console.error('Failed to load drivers:', error);
+          return;
+        }
+        const mapped = (data || []).map((d: any) => ({
+          id: d.id,
+          name: `${d.first_name} ${d.family_name}`.trim(),
+          email: d.email
+        }));
+        setDrivers(mapped);
+      } catch (e) {
+        console.error('Failed to load drivers:', e);
+      }
+    };
+    loadDrivers();
+  }, []);
 
   // Mock trailer layouts data
   const [trailerLayouts, setTrailerLayouts] = useState<TrailerLayout[]>([
@@ -300,6 +335,43 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
     }
   };
 
+  const handleAssign = async () => {
+    if (!selectedLayout || !selectedJobId || !selectedVehicleId || !selectedDriverId) return;
+    const assignedAt = new Date().toISOString();
+
+    // Persist to DB
+    try {
+      const { supabase } = await import('../lib/supabase');
+      const { error } = await supabase
+        .from('trailer_assignments')
+        .insert({
+          job_id: selectedJobId,
+          trailer_layout_id: selectedLayout.id,
+          vehicle_id: selectedVehicleId,
+          driver_id: selectedDriverId,
+          // assigned_by captured by audit trigger; do not include here
+          assigned_at: assignedAt,
+          status: 'assigned'
+        });
+      if (error) {
+        console.error('Failed to assign trailer/job:', error);
+      }
+    } catch (e) {
+      console.error('Error persisting assignment:', e);
+    }
+
+    // Optimistic UI update
+    const updated: TrailerLayout = {
+      ...selectedLayout,
+      assignments: [
+        ...(selectedLayout.assignments || []),
+        { jobId: selectedJobId, vehicleId: selectedVehicleId, driverId: selectedDriverId, assignedAt }
+      ]
+    };
+    setTrailerLayouts(prev => prev.map(l => l.id === updated.id ? updated : l));
+    setSelectedLayout(updated);
+  };
+
   // Calculate overall statistics
   const totalLayouts = filteredLayouts.length;
   const totalCargoItems = filteredLayouts.reduce((sum, layout) => sum + layout.cargoItems.length, 0);
@@ -309,18 +381,13 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
 
   return (
     <Box sx={{ py: 2, px: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ mr: 2 }}>
           Trailer Planner
         </Typography>
-        <Box>
-          <IconButton
-            onClick={onClose}
-            sx={{ color: 'yellow', fontSize: '1.5rem' }}
-          >
-            <Home />
-          </IconButton>
-        </Box>
+        <IconButton onClick={onClose} sx={{ color: 'yellow', fontSize: '1.5rem' }}>
+          <Home />
+        </IconButton>
       </Box>
 
       {/* Trailer Statistics */}
@@ -848,7 +915,58 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
                 </List>
                 
                 <Divider sx={{ my: 2 }} />
-                
+                <Typography variant="h6" gutterBottom>
+                  Assign Job / Vehicle / Driver
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 1.5 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Select Job</InputLabel>
+                    <Select
+                      value={selectedJobId}
+                      onChange={(e) => setSelectedJobId(e.target.value)}
+                      label="Select Job"
+                    >
+                      {jobs.filter(j => j.status === 'pending' || j.status === 'assigned').map(j => (
+                        <MenuItem key={j.id} value={j.id}>{j.title} - {j.customerName}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Select Vehicle</InputLabel>
+                    <Select
+                      value={selectedVehicleId}
+                      onChange={(e) => setSelectedVehicleId(e.target.value)}
+                      label="Select Vehicle"
+                    >
+                      {vehicles.map(v => (
+                        <MenuItem key={v.id} value={v.id}>{v.registration || v.name || v.id}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Select Driver</InputLabel>
+                    <Select
+                      value={selectedDriverId}
+                      onChange={(e) => setSelectedDriverId(e.target.value)}
+                      label="Select Driver"
+                    >
+                      {drivers.map(d => (
+                        <MenuItem key={d.id} value={d.id}>{d.name} ({d.email})</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <Button
+                    variant="contained"
+                    startIcon={<Assignment />}
+                    disabled={!selectedJobId || !selectedVehicleId || !selectedDriverId}
+                    onClick={handleAssign}
+                  >
+                    Assign
+                  </Button>
+                </Box>
 
               </Grid>
             </Grid>

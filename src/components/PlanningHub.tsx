@@ -40,7 +40,6 @@ import RoutePlanning from './RoutePlanning';
 import GarminRoutePlanning from './GarminRoutePlanning';
 import TrailerPlanner from './TrailerPlanner';
 import JobAllocationForm from './JobAllocationForm';
-import JobAssignmentHub from './JobAssignmentHub';
 import { generatePlaceholderCards, PlaceholderCard } from '../utils/placeholderCards';
 
 interface PlanningHubProps {
@@ -48,10 +47,10 @@ interface PlanningHubProps {
 }
 
 const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
-  const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'trailer' | 'job' | 'jobAssignment'>('main');
+  const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'trailer' | 'job'>('main');
   
   // Define the cards configuration
-  const functionalCards = 7; // Daily Planner, Route Planning, Trailer Planner, Add A New Job, Job Assignment Hub, Garmin Routes, Planning Analytics
+  const functionalCards = 6; // Daily Planner, Route Planning, Trailer Planner, Add A New Job, Garmin Routes, Planning Analytics
   const comingSoonCards = 0; // No coming soon cards currently
   const columnsPerRow = 3;
   
@@ -84,22 +83,17 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
     return <JobAllocationForm onClose={() => setCurrentView('main')} />;
   }
 
-  if (currentView === 'jobAssignment') {
-    return <JobAssignmentHub onClose={() => setCurrentView('main')} />;
-  }
+  
 
   // Main Planning Hub
   return (
     <Box sx={{ p: 3, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1" sx={{ color: 'white' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1" sx={{ color: 'white', mr: 2 }}>
           <CalendarToday sx={{ mr: 1, verticalAlign: 'middle' }} />
           Planning Hub
         </Typography>
-        <IconButton
-          onClick={onClose}
-          sx={{ color: 'yellow' }}
-        >
+        <IconButton onClick={onClose} sx={{ color: 'yellow' }}>
           <Home />
         </IconButton>
       </Box>
@@ -113,6 +107,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
               transform: 'scale(0.94)',
+              minHeight: '200px',
               '&:hover': {
                 transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
@@ -137,24 +132,24 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               
               <Divider sx={{ my: 2 }} />
               
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
+              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Chip 
                   icon={<Timeline />} 
                   label="Daily Schedule" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
                 <Chip 
                   icon={<Person />} 
                   label="Driver Assignments" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
                 <Chip 
                   icon={<DirectionsCar />} 
                   label="Vehicle Allocation" 
                   size="small" 
-                  sx={{ mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
               </Box>
             </CardContent>
@@ -168,6 +163,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
               transform: 'scale(0.94)',
+              minHeight: '200px',
               '&:hover': {
                 transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
@@ -192,24 +188,24 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               
               <Divider sx={{ my: 2 }} />
               
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
+              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Chip 
                   icon={<Map />} 
                   label="Route Optimization" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
                 <Chip 
                   icon={<TrendingUp />} 
                   label="Efficiency" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
                 <Chip 
                   icon={<DirectionsCar />} 
                   label="Vehicle Routes" 
                   size="small" 
-                  sx={{ mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
               </Box>
             </CardContent>
@@ -223,6 +219,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
               transform: 'scale(0.94)',
+              minHeight: '200px',
               '&:hover': {
                 transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
@@ -247,24 +244,24 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               
               <Divider sx={{ my: 2 }} />
               
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
+              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Chip 
                   icon={<Scale />} 
                   label="Cubage Calculator" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
                 <Chip 
                   icon={<Storage />} 
                   label="Cargo Layout" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
                 <Chip 
                   icon={<ViewInAr />} 
                   label="3D Visualization" 
                   size="small" 
-                  sx={{ mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
               </Box>
             </CardContent>
@@ -278,6 +275,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
               transform: 'scale(0.94)',
+              minHeight: '200px',
               '&:hover': {
                 transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
@@ -302,84 +300,31 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               
               <Divider sx={{ my: 2 }} />
               
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
+              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Chip 
                   icon={<Edit />} 
                   label="Job Creation" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
                 <Chip 
                   icon={<Person />} 
                   label="Driver Assignment" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
                 <Chip 
                   icon={<DirectionsCar />} 
                   label="Vehicle Allocation" 
                   size="small" 
-                  sx={{ mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
               </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Job Assignment Hub Card */}
-        <Grid item xs={12} md={4}>
-          <Card 
-            sx={{ 
-              cursor: 'pointer', 
-              transition: 'all 0.3s ease',
-              transform: 'scale(0.94)',
-              '&:hover': {
-                transform: 'translateY(-4px) scale(0.94)',
-                boxShadow: 4,
-              }
-            }}
-            onClick={() => setCurrentView('jobAssignment')}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
-                  <Assignment />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" component="div">
-                    Job Assignment Hub
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Comprehensive job assignment and scheduling
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
-                <Chip 
-                  icon={<Schedule />} 
-                  label="Scheduling" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
-                />
-                <Chip 
-                  icon={<Person />} 
-                  label="Driver Assignment" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
-                />
-                <Chip 
-                  icon={<Assessment />} 
-                  label="Job Management" 
-                  size="small" 
-                  sx={{ mb: 1 }} 
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+        
 
         {/* Garmin Route Planning Card */}
         <Grid item xs={12} md={4}>
@@ -388,6 +333,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
               transform: 'scale(0.94)',
+              minHeight: '200px',
               '&:hover': {
                 transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
@@ -412,24 +358,24 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               
               <Divider sx={{ my: 2 }} />
               
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
+              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Chip 
                   icon={<Traffic />} 
                   label="Traffic Analysis" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
                 <Chip 
                   icon={<Speed />} 
                   label="Speed Optimization" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
                 <Chip 
                   icon={<Warning />} 
                   label="Hazards" 
                   size="small" 
-                  sx={{ mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
               </Box>
             </CardContent>
@@ -443,6 +389,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               cursor: 'pointer', 
               transition: 'all 0.3s ease',
               transform: 'scale(0.94)',
+              minHeight: '200px',
               '&:hover': {
                 transform: 'translateY(-4px) scale(0.94)',
                 boxShadow: 4,
@@ -466,24 +413,24 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               
               <Divider sx={{ my: 2 }} />
               
-              <Box sx={{ mt: 2, minHeight: '60px' }}>
+              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Chip 
                   icon={<Report />} 
                   label="Reports" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
                 <Chip 
                   icon={<TrendingUp />} 
                   label="Trends" 
                   size="small" 
-                  sx={{ mr: 1, mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
                 <Chip 
                   icon={<Assessment />} 
                   label="KPIs" 
                   size="small" 
-                  sx={{ mb: 1 }} 
+                  sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />
               </Box>
             </CardContent>
@@ -498,6 +445,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
                 cursor: 'default', 
                 transition: 'all 0.3s ease',
                 transform: 'scale(0.94)',
+                minHeight: '200px',
                 opacity: 0.7,
                 '&:hover': {
                   transform: 'translateY(-4px) scale(0.94)',
@@ -522,14 +470,14 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
                 
                 <Divider sx={{ my: 2 }} />
                 
-                <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
                   {card.features.map((feature, index) => (
                     <Chip 
                       key={index}
                       icon={<Analytics />} 
                       label={feature} 
                       size="small" 
-                      sx={{ mr: 1, mb: 1 }}
+                      sx={{ width: '100%', justifyContent: 'flex-start' }}
                       color="default"
                     />
                   ))}

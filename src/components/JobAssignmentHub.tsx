@@ -106,15 +106,12 @@ const JobAssignmentHub: React.FC<JobAssignmentHubProps> = ({ onClose }) => {
   // Main Job Assignment Hub
   return (
     <Box sx={{ p: 3, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1" sx={{ color: 'white' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1" sx={{ color: 'white', mr: 2 }}>
           <Assignment sx={{ mr: 1, verticalAlign: 'middle' }} />
           Job Assignment Hub
         </Typography>
-        <IconButton
-          onClick={onClose}
-          sx={{ color: 'yellow' }}
-        >
+        <IconButton onClick={onClose} sx={{ color: 'yellow' }}>
           <Home />
         </IconButton>
       </Box>

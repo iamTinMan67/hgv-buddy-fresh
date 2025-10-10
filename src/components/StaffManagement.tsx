@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import {
   Box,
   Typography,
@@ -37,6 +38,7 @@ import {
 } from '@mui/material';
 import { staffIdGenerator } from '../utils/staffIdGenerator';
 import { staffAuthService } from '../services/staffAuthService';
+import { RootState } from '../store';
 import {
   Add,
   Edit,
@@ -161,6 +163,11 @@ interface StaffMember {
 }
 
 const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
+  const user = useSelector((state: RootState) => state.auth.user);
+  const isAdam = user?.email === 'adam.mustafa1717@gmail.com';
+  const isAdmin = user?.role === 'admin' || user?.role === 'supa_admin';
+  const canAddDelete = Boolean(isAdam); // Only Adam can add/delete
+  const canEdit = Boolean(isAdmin || isAdam); // Admins and Adam can edit
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -677,6 +684,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
   };
 
   const handleUpdateStaff = async () => {
+    if (!canEdit) return;
     if (!editingId) return;
     
     try {
@@ -772,6 +780,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
   };
 
   const handleDeleteStaff = async (id: string) => {
+    if (!canAddDelete) return;
     try {
       // Import Supabase client
       const { supabase } = await import('../lib/supabase');
@@ -866,8 +875,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
 
   return (
     <Box sx={{ py: 2, px: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ mr: 2 }}>
           <Business sx={{ mr: 1, verticalAlign: 'middle' }} />
           Staff Management
         </Typography>
@@ -919,6 +928,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
               console.log('Current form state before opening:', currentStaff);
               setShowAddDialog(true);
             }}
+            disabled={!canAddDelete}
           >
             Add Staff Member
           </Button>
@@ -1112,6 +1122,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                       <IconButton
                         size="small"
                         onClick={() => handleDeleteStaff(staff.id)}
+                        disabled={!canAddDelete}
                         color="error"
                       >
                         <Delete />
@@ -1226,6 +1237,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                         size="small"
                         startIcon={<Delete />}
                         onClick={() => handleDeleteStaff(staff.id)}
+                        disabled={!canAddDelete}
                         fullWidth
                       >
                         Delete
@@ -2282,6 +2294,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
               if (editingId) {
                 handleUpdateStaff();
               } else {
+                if (!canAddDelete) return;
                 handleAddStaff();
               }
             }}

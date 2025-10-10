@@ -165,27 +165,23 @@ const GarminRoutePlanning: React.FC<GarminRoutePlanningProps> = ({ onClose }) =>
 
   const renderMainView = () => (
     <Box sx={{ py: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ mr: 2 }}>
           <Navigation sx={{ mr: 1, verticalAlign: 'middle' }} />
           Garmin Route Planning
         </Typography>
-        <Box>
+        <IconButton onClick={onClose} sx={{ color: 'yellow', fontSize: '1.5rem', mr: 2 }}>
+          <Home />
+        </IconButton>
+        <Box sx={{ ml: 'auto' }}>
           <Button
             variant="contained"
             startIcon={garminConnected ? <Settings /> : <Refresh />}
             onClick={connectGarmin}
             disabled={isLoading}
-            sx={{ mr: 2 }}
           >
             {garminConnected ? 'Garmin Connected' : 'Connect Garmin'}
           </Button>
-          <IconButton
-            onClick={onClose}
-            sx={{ color: 'yellow', fontSize: '1.5rem' }}
-          >
-            <Home />
-          </IconButton>
         </Box>
       </Box>
 

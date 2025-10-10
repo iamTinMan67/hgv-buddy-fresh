@@ -78,15 +78,12 @@ const AccountingHub: React.FC<AccountingHubProps> = ({ onClose }) => {
   // Main Accounting Hub
   return (
     <Box sx={{ py: 2, px: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ mr: 2 }}>
           <Receipt sx={{ mr: 1, verticalAlign: 'middle' }} />
           Accounting Hub
         </Typography>
-        <IconButton
-          onClick={onClose}
-          sx={{ color: 'yellow', fontSize: '1.5rem' }}
-        >
+        <IconButton onClick={onClose} sx={{ color: 'yellow', fontSize: '1.5rem' }}>
           <Home />
         </IconButton>
       </Box>

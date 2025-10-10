@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
   Box,
   Card,
@@ -56,6 +57,7 @@ import {
   Person,
 } from '@mui/icons-material';
 import DriverDetails from './DriverDetails';
+import { RootState } from '../store';
 
 interface DriverManagementProps {
   onClose: () => void;
@@ -160,114 +162,67 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [showDriverDetails, setShowDriverDetails] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editableDriver, setEditableDriver] = useState<Driver | null>(null);
 
-  // Mock driver data
-  const [drivers] = useState<Driver[]>([
-    {
-      id: '1',
-      firstName: 'Adam',
-      lastName: 'Mustafa',
-      email: 'adam.mustafa@company.com',
-      phone: '+44 7700 900123',
-              addressLine1: '123 Main Street',
-        addressLine2: '',
-        addressLine3: '',
-        town: 'London',
-        city: 'London',
-        postcode: 'SW1A 1AA',
-      dateOfBirth: '1985-03-15',
-      employeeNumber: 'EMP001',
-      hireDate: '2020-01-15',
-      status: 'active',
-      role: 'driver',
-      licenseNumber: 'DRIVER123456',
-      licenseExpiry: '2025-03-15',
-      cpcCardNumber: 'CPC123456',
-      cpcExpiry: '2024-12-31',
-      medicalCertificate: 'MED123456',
-      medicalExpiry: '2024-06-30',
-      currentVehicle: 'HGV001',
-      totalHours: 1840,
-      totalMiles: 45000,
-      safetyScore: 95,
-      performanceRating: 4.2,
-      notes: 'Owner of the business, excellent driver, very reliable',
-      emergencyContact: {
-        name: 'Jane Mustafa',
-        relationship: 'Spouse',
-        phone: '+44 7700 900124',
-      },
-    },
-    {
-      id: '2',
-      firstName: 'Jane',
-      lastName: 'Manager',
-      email: 'jane.manager@company.com',
-      phone: '+44 7700 900125',
-              addressLine1: '456 High Street',
-        addressLine2: '',
-        addressLine3: '',
-        town: 'Manchester',
-        city: 'Manchester',
-        postcode: 'M1 1AA',
-      dateOfBirth: '1988-07-22',
-      employeeNumber: 'EMP002',
-      hireDate: '2019-06-01',
-      status: 'active',
-      role: 'senior_driver',
-      licenseNumber: 'DRIVER789012',
-      licenseExpiry: '2026-07-22',
-      cpcCardNumber: 'CPC789012',
-      cpcExpiry: '2025-06-30',
-      medicalCertificate: 'MED789012',
-      medicalExpiry: '2024-12-31',
-      currentVehicle: 'HGV002',
-      totalHours: 2200,
-      totalMiles: 52000,
-      safetyScore: 98,
-      performanceRating: 4.5,
-      notes: 'Senior driver, excellent safety record',
-      emergencyContact: {
-        name: 'John Manager',
-        relationship: 'Spouse',
-        phone: '+44 7700 900126',
-      },
-    },
-    {
-      id: '3',
-      firstName: 'Mike',
-      lastName: 'Wilson',
-      email: 'mike.wilson@company.com',
-      phone: '+44 7700 900127',
-              addressLine1: '789 Park Lane',
-        addressLine2: '',
-        addressLine3: '',
-        town: 'Birmingham',
-        city: 'Birmingham',
-        postcode: 'B1 1AA',
-      dateOfBirth: '1990-11-08',
-      employeeNumber: 'EMP003',
-      hireDate: '2021-03-10',
-      status: 'suspended',
-      role: 'driver',
-      licenseNumber: 'DRIVER345678',
-      licenseExpiry: '2024-11-08',
-      cpcCardNumber: 'CPC345678',
-      cpcExpiry: '2023-12-31',
-      medicalCertificate: 'MED345678',
-      medicalExpiry: '2024-03-31',
-      totalHours: 1200,
-      totalMiles: 28000,
-      safetyScore: 75,
-      performanceRating: 3.1,
-      notes: 'Currently suspended due to safety violations',
-      emergencyContact: {
-        name: 'Sarah Wilson',
-        relationship: 'Sister',
-        phone: '+44 7700 900128',
-      },
-    },
-  ]);
+  const user = useSelector((state: RootState) => state.auth.user);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  useEffect(() => {
+    const loadDrivers = async () => {
+      try {
+        const { supabase } = await import('../lib/supabase');
+        const { data, error } = await supabase
+          .from('staff_members')
+          .select('*')
+          .eq('role', 'driver')
+          .order('created_at', { ascending: false });
+        if (error) {
+          console.error('Error loading drivers:', error);
+          return;
+        }
+        const mapped: Driver[] = (data || []).map((d: any) => ({
+          id: d.id,
+          firstName: d.first_name,
+          lastName: d.family_name,
+          email: d.email,
+          phone: d.phone || '',
+          addressLine1: d.address_line1 || '',
+          addressLine2: d.address_line2 || '',
+          addressLine3: d.address_line3 || '',
+          town: d.town || '',
+          city: '',
+          postcode: d.postcode || '',
+          dateOfBirth: d.date_of_birth || '',
+          employeeNumber: d.employee_number || '',
+          hireDate: d.start_date || '',
+          status: d.is_active ? 'active' : 'inactive',
+          role: 'driver',
+          licenseNumber: d.license_number || '',
+          licenseExpiry: d.license_expiry || '',
+          cpcCardNumber: d.cpc_card_number || '',
+          cpcExpiry: d.cpc_expiry || '',
+          medicalCertificate: d.medical_certificate || '',
+          medicalExpiry: d.medical_expiry || '',
+          currentVehicle: d.current_vehicle || '',
+          totalHours: d.total_hours || 0,
+          totalMiles: d.total_miles || 0,
+          safetyScore: d.safety_score || 0,
+          performanceRating: d.performance_rating || 0,
+          notes: d.notes || '',
+          emergencyContact: {
+            name: d.next_of_kin_name || '',
+            relationship: d.next_of_kin_relationship || '',
+            phone: d.next_of_kin_phone || ''
+          }
+        }));
+        setDrivers(mapped);
+      } catch (e) {
+        console.error('Failed to load drivers:', e);
+      }
+    };
+    loadDrivers();
+  }, []);
+  
 
   // Mock driver status data
   const [driverStatuses] = useState<DriverStatus[]>([
@@ -516,12 +471,58 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
 
   const openViewDialog = (driver: Driver) => {
     setSelectedDriver(driver);
+    setEditableDriver(driver);
+    setEditMode(false);
     setShowViewDialog(true);
   };
 
   const openDriverDetails = (driver: Driver) => {
     setSelectedDriver(driver);
+    setEditableDriver(driver);
     setShowDriverDetails(true);
+  };
+
+  const isAdam = user?.email === 'adam.mustafa1717@gmail.com';
+  const isAdmin = user?.role === 'admin' || user?.role === 'supa_admin';
+  const canEdit = Boolean(isAdam || isAdmin);
+
+  const handleSaveDriver = async () => {
+    if (!editableDriver || !canEdit) return;
+    try {
+      const { supabase } = await import('../lib/supabase');
+      const { error } = await supabase
+        .from('staff_members')
+        .update({
+          first_name: editableDriver.firstName,
+          family_name: editableDriver.lastName,
+          phone: editableDriver.phone,
+          address_line1: editableDriver.addressLine1,
+          address_line2: editableDriver.addressLine2,
+          address_line3: editableDriver.addressLine3,
+          town: editableDriver.town,
+          postcode: editableDriver.postcode,
+          employee_number: editableDriver.employeeNumber,
+          license_number: editableDriver.licenseNumber,
+          license_expiry: editableDriver.licenseExpiry || null,
+          cpc_card_number: editableDriver.cpcCardNumber,
+          cpc_expiry: editableDriver.cpcExpiry || null,
+          medical_certificate: editableDriver.medicalCertificate,
+          medical_expiry: editableDriver.medicalExpiry || null,
+          current_vehicle: editableDriver.currentVehicle || null,
+          notes: editableDriver.notes || null
+        })
+        .eq('id', editableDriver.id);
+      if (error) {
+        console.error('Error saving driver:', error);
+        return;
+      }
+      // reflect changes locally
+      setDrivers(prev => prev.map(d => d.id === editableDriver.id ? editableDriver : d));
+      setSelectedDriver(editableDriver);
+      setEditMode(false);
+    } catch (e) {
+      console.error('Failed to save driver:', e);
+    }
   };
 
   // Calculate statistics
@@ -547,26 +548,16 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
 
   return (
     <Box sx={{ py: 2, px: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ mr: 2 }}>
           Driver Management
         </Typography>
-        <Box>
-          <Button
-            startIcon={<Add />}
-            variant="contained"
-            onClick={() => setShowAddDialog(true)}
-            sx={{ mr: 2 }}
-          >
-            Add Driver
-          </Button>
-          <IconButton
-            onClick={onClose}
-            sx={{ color: 'yellow', fontSize: '1.5rem' }}
-          >
-            <Home />
-          </IconButton>
-        </Box>
+        <IconButton
+          onClick={onClose}
+          sx={{ color: 'yellow', fontSize: '1.5rem' }}
+        >
+          <Home />
+        </IconButton>
       </Box>
 
 
@@ -1238,7 +1229,14 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
       {selectedDriver && (
         <Dialog open={showViewDialog} onClose={() => setShowViewDialog(false)} maxWidth="md" fullWidth>
           <DialogTitle>
-            Driver Details: {selectedDriver.firstName} {selectedDriver.lastName}
+            Driver Details: {editMode ? (
+              <>
+                <TextField size="small" label="First Name" value={editableDriver?.firstName || ''} onChange={(e) => setEditableDriver(prev => prev ? { ...prev, firstName: e.target.value } : prev)} sx={{ mr: 1 }} />
+                <TextField size="small" label="Last Name" value={editableDriver?.lastName || ''} onChange={(e) => setEditableDriver(prev => prev ? { ...prev, lastName: e.target.value } : prev)} />
+              </>
+            ) : (
+              <>{selectedDriver.firstName} {selectedDriver.lastName}</>
+            )}
           </DialogTitle>
           <DialogContent>
             <Grid container spacing={3} sx={{ mt: 1 }}>
@@ -1253,17 +1251,27 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
                   <strong>Email:</strong> {selectedDriver.email}
                 </Typography>
                 <Typography variant="body2" gutterBottom>
-                  <strong>Phone:</strong> {selectedDriver.phone}
+                  <strong>Phone:</strong> {editMode ? (
+                    <TextField size="small" value={editableDriver?.phone || ''} onChange={(e) => setEditableDriver(prev => prev ? { ...prev, phone: e.target.value } : prev)} />
+                  ) : selectedDriver.phone}
                 </Typography>
                                   <Typography variant="body2" gutterBottom>
-                    <strong>Address:</strong> {[
+                    <strong>Address:</strong> {editMode ? (
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mt: 1 }}>
+                        <TextField size="small" label="Line 1" value={editableDriver?.addressLine1 || ''} onChange={(e) => setEditableDriver(prev => prev ? { ...prev, addressLine1: e.target.value } : prev)} />
+                        <TextField size="small" label="Line 2" value={editableDriver?.addressLine2 || ''} onChange={(e) => setEditableDriver(prev => prev ? { ...prev, addressLine2: e.target.value } : prev)} />
+                        <TextField size="small" label="Line 3" value={editableDriver?.addressLine3 || ''} onChange={(e) => setEditableDriver(prev => prev ? { ...prev, addressLine3: e.target.value } : prev)} />
+                        <TextField size="small" label="Town" value={editableDriver?.town || ''} onChange={(e) => setEditableDriver(prev => prev ? { ...prev, town: e.target.value } : prev)} />
+                        <TextField size="small" label="Postcode" value={editableDriver?.postcode || ''} onChange={(e) => setEditableDriver(prev => prev ? { ...prev, postcode: e.target.value } : prev)} />
+                      </Box>
+                    ) : ([
                       selectedDriver.addressLine1,
                       selectedDriver.addressLine2,
                       selectedDriver.addressLine3,
                       selectedDriver.town,
                       selectedDriver.city,
                       selectedDriver.postcode
-                    ].filter(Boolean).join(', ')}
+                    ].filter(Boolean).join(', '))}
                   </Typography>
                 <Typography variant="body2" gutterBottom>
                   <strong>Date of Birth:</strong> {new Date(selectedDriver.dateOfBirth).toLocaleDateString()}
@@ -1372,25 +1380,32 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
                   </Grid>
                 </Grid>
               </Grid>
-              {selectedDriver.notes && (
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
-                    Notes
-                  </Typography>
-                  <Typography variant="body2">
-                    {selectedDriver.notes}
-                  </Typography>
-                </Grid>
-              )}
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  Notes
+                </Typography>
+                <Typography variant="body2">
+                  {editMode ? (
+                    <TextField size="small" fullWidth multiline minRows={2} value={editableDriver?.notes || ''} onChange={(e) => setEditableDriver(prev => prev ? { ...prev, notes: e.target.value } : prev)} />
+                  ) : (selectedDriver.notes || '')}
+                </Typography>
+              </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setShowViewDialog(false)}>
               Close
             </Button>
-            <Button onClick={() => openEditDialog(selectedDriver)} variant="contained">
-              Edit Driver
-            </Button>
+            {canEdit && !editMode && (
+              <Button onClick={() => setEditMode(true)} variant="contained">
+                Edit
+              </Button>
+            )}
+            {canEdit && editMode && (
+              <Button onClick={handleSaveDriver} variant="contained" color="success">
+                Save
+              </Button>
+            )}
           </DialogActions>
         </Dialog>
       )}

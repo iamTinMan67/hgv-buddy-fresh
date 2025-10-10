@@ -40,7 +40,10 @@ import { AppDispatch, RootState } from '../store';
 import { addJob, addDailySchedule, updateJob } from '../store/slices/jobSlice';
 import { JobAssignment, JobStatus, JobLocation, JobPriority } from '../store/slices/jobSlice';
 import { PalletPricingService, LoadDimensions, LoadAssessment } from '../services/palletPricingService';
-import { DeliveryAddress, fetchDeliveryAddresses } from '../store/slices/deliveryAddressesSlice';
+import { DeliveryAddress, fetchDeliveryAddresses, addDeliveryAddress } from '../store/slices/deliveryAddressesSlice';
+import { JobService } from '../services/api';
+import { createDeliveryAddress } from '../services/deliveryAddressesService';
+import { supabase } from '../lib/supabase';
 import {
   Assignment,
   Home,
@@ -163,9 +166,23 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
   const [selectedPickupAddressId, setSelectedPickupAddressId] = useState<string>('');
   const [selectedDeliveryAddressId, setSelectedDeliveryAddressId] = useState<string>('');
   const [showDeliveryAddressesDialog, setShowDeliveryAddressesDialog] = useState(false);
+  const [addressDialogMode, setAddressDialogMode] = useState<'pickup' | 'delivery'>('pickup');
+  const [newAddress, setNewAddress] = useState({
+    name: '',
+    addressLine1: '',
+    addressLine2: '',
+    addressLine3: '',
+    town: '',
+    city: '',
+    postcode: '',
+    contactName: '',
+    contactPhone: '',
+    deliveryInstructions: ''
+  });
 
   // Get delivery addresses from Redux store
   const { addresses: deliveryAddresses } = useSelector((state: RootState) => state.deliveryAddresses);
+  
 
   // Get tomorrow's date for default values
   const tomorrow = new Date();
@@ -217,141 +234,43 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
     }));
   };
 
-  // Mock clients data
-  const clients: Contact[] = [
-    {
-      id: '1',
-      name: 'John Smith',
-      company: 'ABC Transport Ltd',
-      position: 'Manager',
-      contactType: 'Client',
-      addresses: [
-        {
-          id: '1',
-          name: 'Main Office',
-      addressLine1: '123 Transport Way',
-      addressLine2: '',
-      addressLine3: '',
-      town: 'Westminster',
-      city: 'London',
-      postcode: 'SW1A 1AA',
-          isDefault: true,
-    },
-    {
-      id: '2',
-          name: 'Branch Office',
-      addressLine1: '456 Industrial Estate',
-      addressLine2: 'Unit 12',
-      addressLine3: '',
-      town: 'Salford',
-      city: 'Manchester',
-      postcode: 'M1 1AA',
-          isDefault: false,
-        },
-      ],
-      phone: '020 7123 4567',
-      email: 'john.smith@abctransport.com'
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      company: 'XYZ Logistics',
-      position: 'Logistics Coordinator',
-      contactType: 'Supplier',
-      addresses: [
-        {
-          id: '3',
-          name: 'Headquarters',
-          addressLine1: '789 Business Park',
-          addressLine2: 'Building A',
-          addressLine3: 'Floor 3',
-          town: 'Digbeth',
-          city: 'Birmingham',
-          postcode: 'B1 1AA',
-          isDefault: true,
-        },
-        {
-          id: '4',
-          name: 'Regional Office',
-          addressLine1: '321 Innovation Drive',
-          addressLine2: 'Suite 15',
-          addressLine3: '',
-          town: 'Bristol',
-          city: 'Bristol',
-          postcode: 'BS1 1AA',
-          isDefault: false,
-        },
-      ],
-      phone: '0161 234 5678',
-      email: 'sarah.johnson@xyzlogistics.co.uk'
-    },
-    {
-      id: '3',
-      name: 'David Wilson',
-      company: 'Wilson Freight Services',
-      position: 'Freight Specialist',
-      contactType: 'Partner',
-      addresses: [
-        {
-          id: '5',
-          name: 'Corporate Office',
-      addressLine1: '789 Business Park',
-      addressLine2: 'Building A',
-      addressLine3: 'Floor 3',
-      town: 'Digbeth',
-      city: 'Birmingham',
-      postcode: 'B1 1AA',
-          isDefault: true,
-        },
-        {
-          id: '6',
-          name: 'Regional Office',
-          addressLine1: '321 Innovation Drive',
-          addressLine2: 'Suite 15',
-          addressLine3: '',
-          town: 'Bristol',
-          city: 'Bristol',
-          postcode: 'BS1 1AA',
-          isDefault: false,
-        },
-      ],
-      phone: '0121 345 6789',
-      email: 'david.wilson@wilsonfreight.co.uk'
-    },
-    {
-      id: '4',
-      name: 'Emma Thompson',
-      company: 'Thompson Transport Solutions',
-      position: 'Business Development Manager',
-      contactType: 'Prospect',
-      addresses: [
-        {
-          id: '7',
-          name: 'Main Office',
-          addressLine1: '123 Transport Way',
-          addressLine2: '',
-          addressLine3: '',
-          town: 'Westminster',
-          city: 'London',
-          postcode: 'SW1A 1AA',
-          isDefault: true,
-        },
-        {
-          id: '8',
-          name: 'Branch Office',
-          addressLine1: '456 Industrial Estate',
-          addressLine2: 'Unit 12',
-          addressLine3: '',
-          town: 'Salford',
-          city: 'Manchester',
-          postcode: 'M1 1AA',
-          isDefault: false,
-        },
-      ],
-      phone: '0117 456 7890',
-      email: 'emma.thompson@thompsontransport.co.uk'
-    }
-  ];
+  // Clients - load from Supabase
+  const [clients, setClients] = useState<Contact[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from('client_contacts')
+        .select('*')
+        .eq('category', 'client')
+        .eq('status', 'active')
+        .order('name', { ascending: true });
+      if (!error) {
+        const mapped: Contact[] = (data || []).map((row: any) => ({
+          id: row.id,
+          name: row.contact_name || row.name,
+          company: row.company_name || row.company,
+          position: row.job_title || row.position,
+          contactType: 'Client',
+          addresses: [{
+            id: `${row.id}-address`,
+            name: `${row.contact_name || row.name} - ${row.company_name || row.company}`,
+            addressLine1: row.address_line1 || '',
+            addressLine2: row.address_line2 || '',
+            addressLine3: row.address_line3 || '',
+            town: row.town || '',
+            city: row.city || '',
+            postcode: row.postcode || '',
+            isDefault: true
+          }],
+          phone: row.phone || '',
+          email: row.email || ''
+        }));
+        setClients(mapped);
+      } else {
+        console.error('Failed to load clients', error);
+      }
+    })();
+  }, []);
 
   const [formData, setFormData] = useState<JobConsignmentData>({
     jobId: '',
@@ -689,10 +608,76 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
       dispatch(updateJob(jobAssignment));
               // Job updated in Redux store
     } else {
-      // Create new job
-      dispatch(addJob(jobAssignment));
+      // Persist job to DB first
+      (async () => {
+        try {
+          // Ensure delivery addresses exist in DB and capture their IDs if not already persisted
+          const ensureAddress = async (addr: any): Promise<string> => {
+            // If we have a matching existing address in Redux by line1+postcode, reuse it
+            const existing = deliveryAddresses.find(a => a.address.line1 === addr.address.line1 && a.address.postcode === addr.address.postcode);
+            if (existing) return existing.id;
+            const created = await createDeliveryAddress({
+              name: addr.name || `${addr.address.line1}, ${addr.address.postcode}`,
+              clientId: undefined,
+              address: addr.address,
+              contactPerson: addr.contactPerson,
+              contactPhone: addr.contactPhone,
+              deliveryInstructions: addr.deliveryInstructions
+            });
+            return created.id;
+          };
 
-      // Create a daily schedule entry for new jobs only
+          const pickupId = await ensureAddress(jobAssignment.pickupLocation);
+          const deliveryId = await ensureAddress(jobAssignment.deliveryLocation);
+
+          const payload = {
+            job_number: jobAssignment.jobNumber,
+            title: jobAssignment.title,
+            description: jobAssignment.description,
+            customer_name: jobAssignment.customerName,
+            customer_phone: jobAssignment.customerPhone,
+            customer_email: jobAssignment.customerEmail,
+            priority: jobAssignment.priority,
+            status: 'pending',
+            pickup_address_id: pickupId,
+            delivery_address_id: deliveryId,
+            use_different_delivery_address: false,
+            alt_delivery_address_id: null,
+            cargo_type: jobAssignment.cargoType,
+            cargo_weight: jobAssignment.cargoWeight,
+            special_requirements: jobAssignment.specialRequirements,
+            notes: jobAssignment.notes,
+            driver_notes: jobAssignment.driverNotes,
+            management_notes: jobAssignment.managementNotes,
+            load_length_cm: jobAssignment.loadDimensions.length,
+            load_width_cm: jobAssignment.loadDimensions.width,
+            load_height_cm: jobAssignment.loadDimensions.height,
+            load_weight_kg: jobAssignment.loadDimensions.weight,
+            load_volume_m3: jobAssignment.loadDimensions.volume,
+            load_is_oversized: jobAssignment.loadDimensions.isOversized,
+            load_is_protruding: jobAssignment.loadDimensions.isProtruding,
+            load_is_balanced: jobAssignment.loadDimensions.isBalanced,
+            load_is_fragile: jobAssignment.loadDimensions.isFragile,
+            load_notes: jobAssignment.loadDimensions.loadNotes,
+            scheduled_date: jobAssignment.scheduledDate || null,
+            scheduled_time: jobAssignment.scheduledTime || null,
+            authorized_by: jobAssignment.authorizedBy,
+            created_by: jobAssignment.createdBy,
+          } as any;
+
+          const result = await JobService.createJob(payload as any);
+          if (!result.success || !result.data) {
+            console.error('Failed to persist job to DB:', result.error);
+          } else {
+            // Also push to Redux for immediate UI
+            dispatch(addJob(jobAssignment));
+          }
+        } catch (err) {
+          console.error('Error creating job in DB:', err);
+        }
+      })();
+
+      // Create a daily schedule entry for new jobs only (local planning data)
       const dailySchedule = {
         id: `schedule-${formData.jobId}`,
         date: formData.pickupDate,
@@ -1028,22 +1013,73 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
     });
   };
 
-  const handleClientFormSubmit = () => {
-    // Create a new client with a generated ID
-    const newClientWithId: Contact = {
-      ...newClient,
-      id: `client-${Date.now()}`,
-    };
-    
-    // Add to clients array (in a real app, this would be saved to a database)
-    // For now, we'll just close the dialog and the user can refresh
-            // New client created
-    
-    // Close the dialog
-    handleClientFormClose();
-    
-    // In a real app, you would dispatch an action to add the client to the store
-    // dispatch(addClient(newClientWithId));
+  const handleClientFormSubmit = async () => {
+    try {
+      const addr = newClient.addresses[0] || {
+        addressLine1: '',
+        addressLine2: '',
+        addressLine3: '',
+        town: '',
+        city: '',
+        postcode: ''
+      };
+
+      const insertRow = {
+        // Support both schemas by writing to both new and legacy columns
+        contact_name: newClient.name,
+        name: newClient.name,
+        company_name: newClient.company,
+        company: newClient.company,
+        job_title: newClient.position,
+        position: newClient.position,
+        email: newClient.email,
+        phone: newClient.phone || null,
+        mobile: null as string | null,
+        address_line1: addr.addressLine1,
+        address_line2: addr.addressLine2 || null,
+        address_line3: addr.addressLine3 || null,
+        town: addr.town || null,
+        city: addr.city,
+        postcode: addr.postcode,
+        country: 'UK',
+        category: 'client' as const,
+        status: 'active' as const,
+        notes: null as string | null,
+      };
+
+      const { data: created, error } = await supabase
+        .from('client_contacts')
+        .insert(insertRow)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      // Map created record into local Contact type and update dropdown
+      const mapped: Contact = {
+        id: created.id,
+        name: created.name,
+        company: created.company,
+        position: created.position,
+        contactType: 'Client',
+        addresses: [],
+        phone: created.phone || '',
+        email: created.email || ''
+      };
+
+      setClients(prev => {
+        const next = [...prev, mapped].sort((a, b) => a.name.localeCompare(b.name));
+        return next;
+      });
+
+      // Select the newly created client in the form
+      setFormData(prev => ({ ...prev, clientName: mapped.name }));
+
+      // Close the dialog and reset form
+      handleClientFormClose();
+    } catch (err) {
+      console.error('Failed to create client contact', err);
+    }
   };
 
   const handleNewClientInputChange = (field: keyof Omit<Contact, 'id'>, value: string | number, addressIndex?: number, addressField?: string) => {
@@ -1093,27 +1129,23 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
     if (addressId) {
       // Check if it's a client address or general address
       if (addressId.startsWith('client-')) {
-        // It's a client address
-        const clientAddressId = addressId.replace('client-', '');
-        const selectedClient = clients.find(client => client.name === formData.clientName);
-        if (selectedClient) {
-          const clientAddress = selectedClient.addresses.find(addr => addr.id === clientAddressId);
-          if (clientAddress) {
-            setFormData(prev => ({
-              ...prev,
-              pickupAddress: {
-                addressLine1: clientAddress.addressLine1,
-                addressLine2: clientAddress.addressLine2 || '',
-                addressLine3: clientAddress.addressLine3 || '',
-                town: clientAddress.town,
-                city: clientAddress.city || '',
-                postcode: clientAddress.postcode,
-                contactName: selectedClient.name,
-                contactPhone: selectedClient.phone || '',
-                contactEmail: selectedClient.email || '',
-              }
-            }));
-          }
+        // It's a client address - find it in the filtered addresses
+        const selectedAddress = filteredPickupAddresses.find(addr => addr.id === addressId);
+        if (selectedAddress) {
+          setFormData(prev => ({
+            ...prev,
+            pickupAddress: {
+              addressLine1: selectedAddress.address.line1,
+              addressLine2: selectedAddress.address.line2 || '',
+              addressLine3: selectedAddress.address.line3 || '',
+              town: selectedAddress.address.town,
+              city: selectedAddress.address.city || '',
+              postcode: selectedAddress.address.postcode,
+              contactName: selectedAddress.contactPerson || '',
+              contactPhone: selectedAddress.contactPhone || '',
+              contactEmail: selectedAddress.contactEmail || '',
+            }
+          }));
         }
       } else {
         // It's a general address
@@ -1143,27 +1175,23 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
     if (addressId) {
       // Check if it's a client address or general address
       if (addressId.startsWith('client-')) {
-        // It's a client address
-        const clientAddressId = addressId.replace('client-', '');
-        const selectedClient = clients.find(client => client.name === formData.clientName);
-        if (selectedClient) {
-          const clientAddress = selectedClient.addresses.find(addr => addr.id === clientAddressId);
-          if (clientAddress) {
-            setFormData(prev => ({
-              ...prev,
-              deliveryAddress: {
-                addressLine1: clientAddress.addressLine1,
-                addressLine2: clientAddress.addressLine2 || '',
-                addressLine3: clientAddress.addressLine3 || '',
-                town: clientAddress.town,
-                city: clientAddress.city || '',
-                postcode: clientAddress.postcode,
-                contactName: selectedClient.name,
-                contactPhone: selectedClient.phone || '',
-                contactEmail: selectedClient.email || '',
-              }
-            }));
-          }
+        // It's a client address - find it in the filtered addresses
+        const selectedAddress = filteredDeliveryAddresses.find(addr => addr.id === addressId);
+        if (selectedAddress) {
+          setFormData(prev => ({
+            ...prev,
+            deliveryAddress: {
+              addressLine1: selectedAddress.address.line1,
+              addressLine2: selectedAddress.address.line2 || '',
+              addressLine3: selectedAddress.address.line3 || '',
+              town: selectedAddress.address.town,
+              city: selectedAddress.address.city || '',
+              postcode: selectedAddress.address.postcode,
+              contactName: selectedAddress.contactPerson || '',
+              contactPhone: selectedAddress.contactPhone || '',
+              contactEmail: selectedAddress.contactEmail || '',
+            }
+          }));
         }
       } else {
         // It's a general address
@@ -1202,9 +1230,7 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
   // Use useMemo to recalculate filtered addresses when clientName or deliveryAddresses change
   const filteredPickupAddresses = React.useMemo(() => {
     const clientAddresses = getClientAddresses(formData.clientName);
-    console.log('filteredPickupAddresses - clientName:', formData.clientName);
-    console.log('filteredPickupAddresses - clientAddresses:', clientAddresses);
-    console.log('filteredPickupAddresses - deliveryAddresses:', deliveryAddresses);
+    const selectedClient = clients.find(client => client.name === formData.clientName);
     
     const result = [
       ...clientAddresses.map(addr => ({
@@ -1218,9 +1244,9 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
           city: addr.city,
           postcode: addr.postcode
         },
-        contactPerson: formData.clientName,
-        contactPhone: '',
-        contactEmail: ''
+        contactPerson: selectedClient?.name || '',
+        contactPhone: selectedClient?.phone || '',
+        contactEmail: selectedClient?.email || ''
       })),
       ...deliveryAddresses.filter(addr => !clientAddresses.some(clientAddr => 
         clientAddr.addressLine1 === addr.address.line1 && 
@@ -1228,14 +1254,12 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
       ))
     ];
     
-    console.log('filteredPickupAddresses - final result:', result);
     return result;
-  }, [formData.clientName, deliveryAddresses]);
+  }, [formData.clientName, deliveryAddresses, clients]);
 
   const filteredDeliveryAddresses = React.useMemo(() => {
     const clientAddresses = getClientAddresses(formData.clientName);
-    console.log('filteredDeliveryAddresses - clientName:', formData.clientName);
-    console.log('filteredDeliveryAddresses - clientAddresses:', clientAddresses);
+    const selectedClient = clients.find(client => client.name === formData.clientName);
     
     const result = [
       ...clientAddresses.map(addr => ({
@@ -1249,9 +1273,9 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
           city: addr.city,
           postcode: addr.postcode
         },
-        contactPerson: formData.clientName,
-        contactPhone: '',
-        contactEmail: ''
+        contactPerson: selectedClient?.name || '',
+        contactPhone: selectedClient?.phone || '',
+        contactEmail: selectedClient?.email || ''
       })),
       ...deliveryAddresses.filter(addr => !clientAddresses.some(clientAddr => 
         clientAddr.addressLine1 === addr.address.line1 && 
@@ -1259,9 +1283,8 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
       ))
     ];
     
-    console.log('filteredDeliveryAddresses - final result:', result);
     return result;
-  }, [formData.clientName, deliveryAddresses]);
+  }, [formData.clientName, deliveryAddresses, clients]);
 
   return (
     <Box sx={{ p: 3, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
@@ -1396,7 +1419,8 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                                     sx={{ 
                                       '& .MuiOutlinedInput-root': { color: 'white' },
                                       '& .MuiInputLabel-root': { color: 'grey.400' },
-                                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' },
+                                      mb: 2
                                     }}
                                   />
                                 </Grid>
@@ -1419,7 +1443,8 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                                     sx={{ 
                                       '& .MuiOutlinedInput-root': { color: 'white' },
                                       '& .MuiInputLabel-root': { color: 'grey.400' },
-                                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' },
+                                      mb: 2
                                     }}
                                   />
                                 </Grid>
@@ -1578,15 +1603,6 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                                   ))}
                                 </Select>
                               </FormControl>
-                              {/* Debug display */}
-                              <Typography variant="caption" sx={{ color: 'yellow', fontSize: '10px', mt: 1, display: 'block' }}>
-                                Debug - Available Pickup Addresses: {filteredPickupAddresses.length} addresses
-                              </Typography>
-                              {filteredPickupAddresses.length > 0 && (
-                                <Typography variant="caption" sx={{ color: 'yellow', fontSize: '8px', mt: 1, display: 'block' }}>
-                                  {filteredPickupAddresses.map(addr => `${addr.name}: ${addr.address.line1}`).join(', ')}
-                                </Typography>
-                              )}
                             </Grid>
                             <Grid item xs={12} md={3.44}>
                               <FormControl fullWidth sx={{ minHeight: '80px', '& .MuiInputLabel-root': { transform: 'translate(14px, -9px) scale(0.75)' } }}>
@@ -1614,30 +1630,42 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                                   ))}
                                 </Select>
                               </FormControl>
-                              {/* Debug display */}
-                              <Typography variant="caption" sx={{ color: 'yellow', fontSize: '10px', mt: 1, display: 'block' }}>
-                                Debug - Available Delivery Addresses: {filteredDeliveryAddresses.length} addresses
-                              </Typography>
-                              {filteredDeliveryAddresses.length > 0 && (
-                                <Typography variant="caption" sx={{ color: 'yellow', fontSize: '8px', mt: 1, display: 'block' }}>
-                                  {filteredDeliveryAddresses.map(addr => `${addr.name}: ${addr.address.line1}`).join(', ')}
-                                </Typography>
-                              )}
                             </Grid>
                             <Grid item xs={12} md={3.44}>
-                              <Button
-                                variant="outlined"
-                                startIcon={<LocationIcon />}
-                                onClick={() => setShowDeliveryAddressesDialog(true)}
-                                sx={{ 
-                                  color: 'grey.400', 
-                                  borderColor: 'grey.600',
-                                  height: '56px',
-                                  width: '100%'
-                                }}
-                              >
-                                Manage Addresses
-                              </Button>
+                              <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Button
+                                  variant="outlined"
+                                  startIcon={<LocationIcon />}
+                                  onClick={() => { 
+                                    setAddressDialogMode('pickup'); 
+                                    setShowDeliveryAddressesDialog(true); 
+                                  }}
+                                  sx={{ 
+                                    color: 'grey.400', 
+                                    borderColor: 'grey.600',
+                                    height: '56px',
+                                    width: '50%'
+                                  }}
+                                >
+                                  Add Pickup
+                                </Button>
+                                <Button
+                                  variant="outlined"
+                                  startIcon={<LocationIcon />}
+                                  onClick={() => { 
+                                    setAddressDialogMode('delivery'); 
+                                    setShowDeliveryAddressesDialog(true); 
+                                  }}
+                                  sx={{ 
+                                    color: 'grey.400', 
+                                    borderColor: 'grey.600',
+                                    height: '56px',
+                                    width: '50%'
+                                  }}
+                                >
+                                  Add Delivery
+                                </Button>
+                              </Box>
                             </Grid>
                           </Grid>
                         </Grid>
@@ -1688,10 +1716,6 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                                   '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
                                 }}
                               />
-                              {/* Debug display */}
-                              <Typography variant="caption" sx={{ color: 'yellow', fontSize: '10px', mt: 1, display: 'block' }}>
-                                Debug - Pickup Address: {JSON.stringify(formData.pickupAddress)}
-                              </Typography>
                             </Grid>
                             <Grid item xs={12} md={3.44}>
                               <TextField
@@ -1930,112 +1954,98 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                         
 
                         
-                        {/* Pickup Date */}
-                        <Grid item xs={12} md={2.4}>
-                          <TextField
-                            fullWidth
-                            type="date"
-                            label="Pickup Date"
-                            value={formData.pickupDate}
-                            onChange={(e) => handleInputChange('pickupDate', e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const nextField = document.querySelector('input[name="pickupTime"]') as HTMLInputElement;
-                                if (nextField) {
-                                  nextField.focus();
+                        {/* Schedule Row: enforce 4 equal columns on md+ */}
+                        <Grid item xs={12}>
+                          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' } }}>
+                            {/* Pickup Date (col 1) */}
+                            <TextField
+                              type="date"
+                              label="Pickup Date"
+                              value={formData.pickupDate}
+                              onChange={(e) => handleInputChange('pickupDate', e.target.value)}
+                              InputLabelProps={{ shrink: true }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const nextField = document.querySelector('input[name=\"pickupTime\"]') as HTMLInputElement;
+                                  if (nextField) nextField.focus();
                                 }
-                              }
-                            }}
-                            name="pickupDate"
-                            sx={{ 
-                              '& .MuiOutlinedInput-root': { color: 'white' },
-                              '& .MuiInputLabel-root': { color: 'grey.400' },
-                              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                            }}
-                          />
-                        </Grid>
-                        
-                        {/* Pickup Time */}
-                        <Grid item xs={12} md={1.0}>
-                          <TextField
-                            fullWidth
-                            type="time"
-                            label="Pickup Time"
-                            value={formData.pickupTime}
-                            onChange={(e) => handleInputChange('pickupTime', e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const nextField = document.querySelector('input[name="deliveryDate"]') as HTMLInputElement;
-                                if (nextField) {
-                                  nextField.focus();
+                              }}
+                              name="pickupDate"
+                              sx={{ 
+                                width: { md: 'calc(100% - 20px)' },
+                                '& .MuiOutlinedInput-root': { color: 'white' },
+                                '& .MuiInputLabel-root': { color: 'grey.400' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                              }}
+                            />
+                            {/* Pickup Time (col 2) */}
+                            <TextField
+                              type="time"
+                              label="Pickup Time"
+                              value={formData.pickupTime}
+                              onChange={(e) => handleInputChange('pickupTime', e.target.value)}
+                              InputLabelProps={{ shrink: true }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const nextField = document.querySelector('input[name=\"deliveryDate\"]') as HTMLInputElement;
+                                  if (nextField) nextField.focus();
                                 }
-                              }
-                            }}
-                            name="pickupTime"
-                            sx={{ 
-                              '& .MuiOutlinedInput-root': { color: 'white' },
-                              '& .MuiInputLabel-root': { color: 'grey.400' },
-                              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                            }}
-                          />
-                        </Grid>
-                        
-                        {/* Delivery Date */}
-                        <Grid item xs={12} md={2.4}>
-                          <TextField
-                            fullWidth
-                            type="date"
-                            label="Delivery Date"
-                            value={formData.deliveryDate}
-                            onChange={(e) => handleInputChange('deliveryDate', e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const nextField = document.querySelector('input[name="deliveryTime"]') as HTMLInputElement;
-                                if (nextField) {
-                                  nextField.focus();
+                              }}
+                              name="pickupTime"
+                              sx={{ 
+                                width: { md: '50%' },
+                                '& .MuiOutlinedInput-root': { color: 'white' },
+                                '& .MuiInputLabel-root': { color: 'grey.400' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                              }}
+                            />
+                            {/* Delivery Date (col 3) */}
+                            <TextField
+                              type="date"
+                              label="Delivery Date"
+                              value={formData.deliveryDate}
+                              onChange={(e) => handleInputChange('deliveryDate', e.target.value)}
+                              InputLabelProps={{ shrink: true }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const nextField = document.querySelector('input[name=\"deliveryTime\"]') as HTMLInputElement;
+                                  if (nextField) nextField.focus();
                                 }
-                              }
-                            }}
-                            name="deliveryDate"
-                            sx={{ 
-                              '& .MuiOutlinedInput-root': { color: 'white' },
-                              '& .MuiInputLabel-root': { color: 'grey.400' },
-                              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                            }}
-                          />
-                        </Grid>
-                        
-                        {/* Delivery Time */}
-                        <Grid item xs={12} md={1.0}>
-                          <TextField
-                            fullWidth
-                            type="time"
-                            label="Delivery Time"
-                            value={formData.deliveryTime}
-                            onChange={(e) => handleInputChange('deliveryTime', e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const nextField = document.querySelector('input[name="cargoWeight"]') as HTMLInputElement;
-                                if (nextField) {
-                                  nextField.focus();
+                              }}
+                              name="deliveryDate"
+                              sx={{ 
+                                width: { md: 'calc(100% - 20px)' },
+                                '& .MuiOutlinedInput-root': { color: 'white' },
+                                '& .MuiInputLabel-root': { color: 'grey.400' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                              }}
+                            />
+                            {/* Delivery Time (col 4) */}
+                            <TextField
+                              type="time"
+                              label="Delivery Time"
+                              value={formData.deliveryTime}
+                              onChange={(e) => handleInputChange('deliveryTime', e.target.value)}
+                              InputLabelProps={{ shrink: true }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const nextField = document.querySelector('input[name=\"cargoWeight\"]') as HTMLInputElement;
+                                  if (nextField) nextField.focus();
                                 }
-                              }
-                            }}
-                            name="deliveryTime"
-                            sx={{ 
-                              '& .MuiOutlinedInput-root': { color: 'white' },
-                              '& .MuiInputLabel-root': { color: 'grey.400' },
-                              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                            }}
-                          />
+                              }}
+                              name="deliveryTime"
+                              sx={{ 
+                                width: { md: '50%' },
+                                '& .MuiOutlinedInput-root': { color: 'white' },
+                                '& .MuiInputLabel-root': { color: 'grey.400' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                              }}
+                            />
+                          </Box>
                         </Grid>
                       </Grid>
                     )}
@@ -2932,6 +2942,262 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
             disabled={!newClient.name.trim() || !newClient.company.trim() || !newClient.position.trim() || !newClient.contactType}
           >
             Add Contact
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delivery Addresses Dialog */}
+      <Dialog 
+        open={showDeliveryAddressesDialog} 
+        onClose={() => setShowDeliveryAddressesDialog(false)}
+        maxWidth="md"
+        fullWidth
+        sx={{ zIndex: 9999 }}
+      >
+        <DialogTitle sx={{ color: 'white', backgroundColor: 'grey.800' }}>
+          {addressDialogMode === 'pickup' ? 'Add Pickup Address' : 'Add Delivery Address'}
+        </DialogTitle>
+        <DialogContent sx={{ backgroundColor: 'grey.800', pt: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              fullWidth
+              label="Address Name"
+              value={newAddress.name}
+              onChange={(e) => setNewAddress(prev => ({ ...prev, name: e.target.value }))}
+              sx={{ 
+                '& .MuiOutlinedInput-root': { color: 'white' },
+                '& .MuiInputLabel-root': { color: 'grey.400' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Address Line 1"
+              value={newAddress.addressLine1}
+              onChange={(e) => setNewAddress(prev => ({ ...prev, addressLine1: e.target.value }))}
+              sx={{ 
+                '& .MuiOutlinedInput-root': { color: 'white' },
+                '& .MuiInputLabel-root': { color: 'grey.400' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Address Line 2"
+              value={newAddress.addressLine2}
+              onChange={(e) => setNewAddress(prev => ({ ...prev, addressLine2: e.target.value }))}
+              sx={{ 
+                '& .MuiOutlinedInput-root': { color: 'white' },
+                '& .MuiInputLabel-root': { color: 'grey.400' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Address Line 3"
+              value={newAddress.addressLine3}
+              onChange={(e) => setNewAddress(prev => ({ ...prev, addressLine3: e.target.value }))}
+              sx={{ 
+                '& .MuiOutlinedInput-root': { color: 'white' },
+                '& .MuiInputLabel-root': { color: 'grey.400' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Town"
+              value={newAddress.town}
+              onChange={(e) => setNewAddress(prev => ({ ...prev, town: e.target.value }))}
+              sx={{ 
+                '& .MuiOutlinedInput-root': { color: 'white' },
+                '& .MuiInputLabel-root': { color: 'grey.400' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+              }}
+            />
+            <TextField
+              fullWidth
+              label="City"
+              value={newAddress.city}
+              onChange={(e) => setNewAddress(prev => ({ ...prev, city: e.target.value }))}
+              sx={{ 
+                '& .MuiOutlinedInput-root': { color: 'white' },
+                '& .MuiInputLabel-root': { color: 'grey.400' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Postcode"
+              value={newAddress.postcode}
+              onChange={(e) => setNewAddress(prev => ({ ...prev, postcode: e.target.value }))}
+              sx={{ 
+                '& .MuiOutlinedInput-root': { color: 'white' },
+                '& .MuiInputLabel-root': { color: 'grey.400' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Contact Name"
+              value={newAddress.contactName}
+              onChange={(e) => setNewAddress(prev => ({ ...prev, contactName: e.target.value }))}
+              sx={{ 
+                '& .MuiOutlinedInput-root': { color: 'white' },
+                '& .MuiInputLabel-root': { color: 'grey.400' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Contact Phone"
+              value={newAddress.contactPhone}
+              onChange={(e) => setNewAddress(prev => ({ ...prev, contactPhone: e.target.value }))}
+              sx={{ 
+                '& .MuiOutlinedInput-root': { color: 'white' },
+                '& .MuiInputLabel-root': { color: 'grey.400' },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+              }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ 
+          backgroundColor: 'grey.800', 
+          padding: '16px 24px',
+          gap: '8px',
+          zIndex: 10000
+        }}>
+          <Button 
+            onClick={() => setShowDeliveryAddressesDialog(false)}
+            sx={{ color: 'grey.400' }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={async () => {
+              console.log('🔍 Add Address button clicked');
+              try {
+                // Validate required fields
+                if (!newAddress.name.trim() || !newAddress.addressLine1.trim() || !newAddress.town.trim() || !newAddress.postcode.trim()) {
+                  console.error('❌ Missing required fields');
+                  alert('Please fill in all required fields (Name, Address Line 1, Town, Postcode)');
+                  return;
+                }
+
+                // Create the address data in the format expected by the Redux action
+                const selectedClientForAddress = clients.find(c => c.name === formData.clientName);
+                if (!selectedClientForAddress) {
+                  alert('Please select a client before adding an address.');
+                  return;
+                }
+
+                const addressToAdd = {
+                  name: newAddress.name,
+                  address: {
+                    line1: newAddress.addressLine1,
+                    line2: newAddress.addressLine2 || '',
+                    line3: newAddress.addressLine3 || '',
+                    town: newAddress.town,
+                    city: newAddress.city || '',
+                    postcode: newAddress.postcode
+                  },
+                  contactPerson: newAddress.contactName,
+                  contactPhone: newAddress.contactPhone,
+                  deliveryInstructions: '',
+                  isActive: true,
+                  clientId: selectedClientForAddress.id
+                };
+                
+                console.log('🔍 Adding address:', addressToAdd);
+                
+                // Add to delivery addresses (this will make it available in both pickup and delivery dropdowns)
+                const result = await dispatch(addDeliveryAddress(addressToAdd));
+                
+                console.log('🔍 Redux result:', result);
+                console.log('🔍 Error details:', result.error);
+                console.log('🔍 Meta:', result.meta);
+                
+                if (result.type.endsWith('/fulfilled')) {
+                  console.log('✅ Address added successfully');
+                  
+                  // Use returned payload immediately to avoid race conditions
+                  const created = result.payload as any;
+                  const createdId: string = created.id;
+                  const createdAddr = created.address;
+                  
+                  if (addressDialogMode === 'pickup') {
+                    // Immediately update pickup form fields and selected ID
+                    setSelectedPickupAddressId(createdId);
+                    setFormData(prev => ({
+                      ...prev,
+                      pickupAddress: {
+                        addressLine1: createdAddr.line1 || '',
+                        addressLine2: createdAddr.line2 || '',
+                        addressLine3: createdAddr.line3 || '',
+                        town: createdAddr.town || '',
+                        city: createdAddr.city || '',
+                        postcode: createdAddr.postcode || '',
+                        contactName: created.contactPerson || '',
+                        contactPhone: created.contactPhone || '',
+                        contactEmail: ''
+                      }
+                    }));
+                  } else {
+                    // Immediately update delivery form fields and selected ID
+                    setSelectedDeliveryAddressId(createdId);
+                    setFormData(prev => ({
+                      ...prev,
+                      deliveryAddress: {
+                        addressLine1: createdAddr.line1 || '',
+                        addressLine2: createdAddr.line2 || '',
+                        addressLine3: createdAddr.line3 || '',
+                        town: createdAddr.town || '',
+                        city: createdAddr.city || '',
+                        postcode: createdAddr.postcode || '',
+                        contactName: created.contactPerson || '',
+                        contactPhone: created.contactPhone || '',
+                        contactEmail: ''
+                      }
+                    }));
+                  }
+                  
+                  // Refresh the delivery addresses list for the selected client
+                  await dispatch(fetchDeliveryAddresses(selectedClientForAddress.id));
+                  
+                  // Reset form and close dialog
+                  setNewAddress({
+                    name: '',
+                    addressLine1: '',
+                    addressLine2: '',
+                    addressLine3: '',
+                    town: '',
+                    city: '',
+                    postcode: '',
+                    contactName: '',
+                    contactPhone: '',
+                    deliveryInstructions: ''
+                  });
+                  setShowDeliveryAddressesDialog(false);
+                } else {
+                  console.error('❌ Failed to add address:', result.payload);
+                  console.error('❌ Error object:', result.error);
+                  console.error('❌ Meta:', result.meta);
+                  alert('Failed to add address. Error: ' + (result.error?.message || 'Unknown error'));
+                }
+              } catch (error) {
+                console.error('❌ Error adding address:', error);
+                alert('Error adding address: ' + error.message);
+              }
+            }}
+            variant="contained"
+            sx={{ 
+              bgcolor: 'primary.main',
+              color: 'white',
+              '&:hover': {
+                bgcolor: 'primary.dark'
+              }
+            }}
+          >
+            Add Address
           </Button>
         </DialogActions>
       </Dialog>

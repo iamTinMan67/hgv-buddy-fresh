@@ -310,12 +310,18 @@ const CompanyInfo: React.FC<CompanyInfoProps> = ({ onClose }) => {
 
   return (
     <Box sx={{ p: 3, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1" sx={{ color: 'white' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1" sx={{ color: 'white', mr: 2 }}>
           <Business sx={{ mr: 1, verticalAlign: 'middle' }} />
           Company Information
         </Typography>
-        <Box>
+        <IconButton
+          onClick={onClose}
+          sx={{ color: 'yellow' }}
+        >
+          <Home />
+        </IconButton>
+        <Box sx={{ ml: 'auto' }}>
           {!isEditing ? (
             <Button
               variant="contained"
@@ -345,12 +351,6 @@ const CompanyInfo: React.FC<CompanyInfoProps> = ({ onClose }) => {
               </Button>
             </Box>
           )}
-          <IconButton
-            onClick={onClose}
-            sx={{ color: 'yellow' }}
-          >
-            <Home />
-          </IconButton>
         </Box>
       </Box>
 

@@ -89,18 +89,15 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose, userRo
   // Main Fleet Management Hub
   return (
     <Box sx={{ py: 2, px: 2 }}>
-             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-         <Typography variant="h4" gutterBottom>
-           <LocalShipping sx={{ mr: 1, verticalAlign: 'middle' }} />
-           Fleet Hub
-         </Typography>
-         <IconButton
-           onClick={onClose}
-           sx={{ color: 'yellow', fontSize: '1.5rem' }}
-         >
-           <Home />
-         </IconButton>
-       </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ mr: 2 }}>
+          <LocalShipping sx={{ mr: 1, verticalAlign: 'middle' }} />
+          Fleet Hub
+        </Typography>
+        <IconButton onClick={onClose} sx={{ color: 'yellow', fontSize: '1.5rem' }}>
+          <Home />
+        </IconButton>
+      </Box>
 
 
 

@@ -26,6 +26,7 @@ import {
   Business,
   History,
   Receipt,
+  Analytics,
 } from '@mui/icons-material';
 import { logout } from '../store/slices/authSlice';
 import { AppDispatch } from '../store';
@@ -392,16 +393,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           // Driver Dashboard - Complete Feature Set
           <>
             <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)' }}>
+              <Card sx={{ transform: 'scale(0.94)', width: '100%' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <CheckCircle sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
                   <Typography variant="h6">Daily Vehicle Checks</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Digital inspection forms
-                  </Typography>
                   <Button 
                     variant="contained" 
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowVehicleCheck(true)}
                   >
                     Start Check
@@ -415,13 +413,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Upload sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
                   <Typography variant="h6">Invoice Upload</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    OCR document processing
-                  </Typography>
                   <Button 
                     variant="contained" 
-                    color="info" 
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowInvoiceUpload(true)}
                   >
                     Upload & Process
@@ -437,13 +431,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Schedule sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
                   <Typography variant="h6">Daily Planner</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    View your daily schedule
-                  </Typography>
                   <Button 
                     variant="contained" 
-                    color="info" 
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => {/* Daily planner functionality removed */}}
                   >
                     View Schedule
@@ -457,13 +447,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Person sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
                   <Typography variant="h6">Driver Dashboard</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    View jobs, hours & pay
-                  </Typography>
                   <Button 
                     variant="contained" 
-                    color="secondary" 
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowDriverDashboard(true)}
                   >
                     Open Dashboard
@@ -477,13 +463,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Route sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
                   <Typography variant="h6">Driver Planner</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Daily/weekly schedule reports & route optimization
-                  </Typography>
                   <Button 
                     variant="contained" 
-                    color="warning" 
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowDriverPlanner(true)}
                   >
                     Open Planner
@@ -497,13 +479,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 <CardContent sx={{ textAlign: 'center' }}>
                   <LocalShipping sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
                   <Typography variant="h6">Trailer Plan</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Load planning & trailer optimization with drag & drop
-                  </Typography>
                   <Button 
                     variant="contained" 
-                    color="secondary" 
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowTrailerPlan(true)}
                   >
                     Open Trailer Plan
@@ -517,13 +495,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Schedule sx={{ fontSize: 40, color: 'error.main', mb: 1 }} />
                   <Typography variant="h6">Hours Logging</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Working time tracking
-                  </Typography>
                   <Button 
                     variant="contained" 
-                    color="error" 
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowTimesheet(true)}
                   >
                     Log Hours
@@ -537,10 +511,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Report sx={{ fontSize: 40, color: 'error.main', mb: 1 }} />
                   <Typography variant="h6">Incident Reporting</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Safety incident management
-                  </Typography>
-                  <Button variant="contained" color="error" sx={{ mt: 2 }}>
+                  <Button variant="contained" sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}>
                     Report Incident
                   </Button>
                 </CardContent>
@@ -554,22 +525,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <Grid item xs={12} md={4}>
               <Card sx={{ 
                 transform: 'scale(0.94)',
-                height: '280px',
+                width: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between'
               }}>
                 <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
                   <LocalShipping sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-                  <Typography variant="h6">Fleet Management</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Monitor all vehicles, track defects, and manage maintenance
-                  </Typography>
+                  <Typography variant="h6">Fleet Manager</Typography>
                 </CardContent>
                 <Box sx={{ p: 2, textAlign: 'center' }}>
                   <Button 
                     variant="contained" 
-                    fullWidth
+                    sx={{ width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowFleetManagement(true)}
                   >
                     Fleet Hub
@@ -581,23 +549,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <Grid item xs={12} md={4}>
               <Card sx={{ 
                 transform: 'scale(0.94)',
-                height: '280px',
+                width: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between'
               }}>
                 <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
                   <Person sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
-                  <Typography variant="h6">Staff Hub</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Manage staff, wages, qualifications, and employment details
-                  </Typography>
+                  <Typography variant="h6">Staff Manager</Typography>
                 </CardContent>
                 <Box sx={{ p: 2, textAlign: 'center' }}>
                   <Button 
                     variant="contained" 
-                    color="secondary" 
-                    fullWidth
+                    sx={{ width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowStaffManagement(true)}
                   >
                     Staff Hub
@@ -609,23 +573,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <Grid item xs={12} md={4}>
               <Card sx={{ 
                 transform: 'scale(0.94)',
-                height: '280px',
+                width: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between'
               }}>
                 <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
                   <Assessment sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
-                  <Typography variant="h6">Legal Hub</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Legal compliance, regulations, and driver hours tracking
-                  </Typography>
+                  <Typography variant="h6">Legal Manager</Typography>
                 </CardContent>
                 <Box sx={{ p: 2, textAlign: 'center' }}>
                   <Button 
                     variant="contained" 
-                    color="success" 
-                    fullWidth
+                    sx={{ width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowLegalHub(true)}
                   >
                     Legal Hub
@@ -636,17 +596,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
             {/* Additional Tools Row */}
             <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)' }}>
+              <Card sx={{ transform: 'scale(0.94)', width: 'calc(100% - 20px)' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Schedule sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
-                  <Typography variant="h6">Jobs & Planning</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Daily planning, routes & job assignment
-                  </Typography>
+                  <Typography variant="h6">Jobs & Planning Manager</Typography>
                   <Button 
                     variant="contained" 
-                    color="info" 
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowPlanningHub(true)}
                   >
                     Main Hub
@@ -656,17 +612,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </Grid>
 
             <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)' }}>
+              <Card sx={{ transform: 'scale(0.94)', width: '100%' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Assessment sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
-                  <Typography variant="h6">Print Screen</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Wage slips, fuel, purchase orders & invoices
-                  </Typography>
+                  <Typography variant="h6">Print Manager</Typography>
                   <Button 
                     variant="contained" 
-                    color="secondary" 
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowReportsHub(true)}
                   >
                     PrintOut Hub
@@ -676,17 +628,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </Grid>
 
             <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)' }}>
+              <Card sx={{ transform: 'scale(0.94)', width: '100%' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <AccountBalance sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
                   <Typography variant="h6">Financial</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Books, Invoices, Purchase Orders & Print
-                  </Typography>
                   <Button 
                     variant="contained" 
-                    color="info" 
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowAccountingHub(true)}
                   >
                     Finance Hub
@@ -696,17 +644,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </Grid>
 
             <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)' }}>
+              <Card sx={{ transform: 'scale(0.94)', width: '100%' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Business sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
-                  <Typography variant="h6">Clients</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Manage client relationships
-                  </Typography>
+                  <Typography variant="h6">Clients Manager</Typography>
                   <Button 
                     variant="contained" 
-                    color="info" 
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowClientHub(true)}
                   >
                     Client Hub
@@ -716,20 +660,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </Grid>
 
             <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)' }}>
+              <Card sx={{ transform: 'scale(0.94)', width: '100%' }}>
                 <CardContent sx={{ textAlign: 'center' }}>
                   <Business sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-                  <Typography variant="h6">Company Info</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Manage company logo, details & branding
-                  </Typography>
+                  <Typography variant="h6">Company Info Manager</Typography>
                   <Button 
                     variant="contained" 
-                    color="primary" 
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowCompanyInfo(true)}
                   >
-                    Open
+                    Update
                   </Button>
                 </CardContent>
               </Card>
@@ -748,24 +688,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   }
                 }}>
                   <CardContent sx={{ textAlign: 'center' }}>
-                    <Box sx={{ fontSize: 40, color: 'grey.500', mb: 1 }}>
-                      {card.icon}
-                    </Box>
+                    <Analytics sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
                     <Typography variant="h6" color="grey.600">{card.title}</Typography>
-                    <Typography variant="body2" color="grey.500">
-                      {card.description}
-                    </Typography>
-                    <Box sx={{ mt: 2 }}>
-                      {card.features.map((feature, index) => (
-                        <Chip 
-                          key={index}
-                          label={feature} 
-                          size="small" 
-                          sx={{ mr: 0.5, mb: 0.5 }}
-                          color="default"
-                        />
-                      ))}
-                    </Box>
+                    <Button 
+                      variant="contained" 
+                      sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'grey.500', '&:hover': { backgroundColor: 'grey.600' } }}
+                      disabled
+                    >
+                      Coming Soon
+                    </Button>
                   </CardContent>
                 </Card>
               </Grid>

@@ -235,27 +235,23 @@ const RoutePlanning: React.FC<RoutePlanningProps> = ({ onClose }) => {
 
   return (
     <Box sx={{ py: 2, px: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ mr: 2 }}>
           Route Planning
         </Typography>
-        <Box>
+        <IconButton onClick={onClose} sx={{ color: 'yellow', fontSize: '1.5rem', mr: 2 }}>
+          <Home />
+        </IconButton>
+        <Box sx={{ ml: 'auto' }}>
           {(user?.role === 'admin' || user?.role === 'owner') && (
             <Button
               startIcon={<Add />}
               variant="contained"
               onClick={() => setShowAddDialog(true)}
-              sx={{ mr: 2 }}
             >
               Create Route
             </Button>
           )}
-          <IconButton
-            onClick={onClose}
-            sx={{ color: 'yellow', fontSize: '1.5rem' }}
-          >
-            <Home />
-          </IconButton>
         </Box>
       </Box>
 

@@ -13,25 +13,34 @@ function App() {
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
 
-  // Auto-login for development - DISABLED for testing logout
-  // useEffect(() => {
-  //   const hasAutoLoggedIn = localStorage.getItem('hasAutoLoggedIn');
-  //   
-  //   if (!isAuthenticated && !hasAutoLoggedIn) {
-  //     // Auto-login as admin for development with full access
-  //     const defaultUser = {
-  //       id: 'dev-1',
-  //       email: 'developer@hgvbuddy.com',
-  //       firstName: 'Developer',
-  //       lastName: 'Admin',
-  //       role: 'admin' as const,
-  //     };
-  //     
-  //     dispatch(setUser(defaultUser));
-  //     localStorage.setItem('hasAutoLoggedIn', 'true');
-  //     console.log('🛠️ Development Mode: Auto-logged in as Admin with full access');
-  //   }
-  // }, [isAuthenticated, dispatch]);
+  // TEMPORARY: Force authentication for testing
+  const forceAuthenticated = true;
+  const forceUser = {
+    id: 'dev-1',
+    email: 'developer@hgvbuddy.com',
+    firstName: 'Developer',
+    lastName: 'Admin',
+    role: 'admin' as const,
+  };
+
+  // Auto-login for development - ENABLED for testing
+  useEffect(() => {
+    console.log('🔍 App useEffect - isAuthenticated:', isAuthenticated);
+    console.log('🔍 App useEffect - user:', user);
+    
+    // Force auto-login for testing - bypass all checks
+    const defaultUser = {
+      id: 'dev-1',
+      email: 'developer@hgvbuddy.com',
+      firstName: 'Developer',
+      lastName: 'Admin',
+      role: 'admin' as const,
+    };
+    
+    console.log('🛠️ Force auto-logging in as admin...');
+    dispatch(setUser(defaultUser));
+    console.log('✅ Development Mode: Force auto-logged in as Admin');
+  }, [dispatch]);
 
   // Preload common components for better performance
   useEffect(() => {
@@ -40,7 +49,11 @@ function App() {
     }
   }, [isAuthenticated]);
 
-  if (!isAuthenticated) {
+  console.log('🔍 App render - isAuthenticated:', isAuthenticated, 'user:', user);
+  console.log('🔍 Force authenticated:', forceAuthenticated);
+  
+  if (!forceAuthenticated && !isAuthenticated) {
+    console.log('🔍 Showing login screen');
     return (
       <ErrorBoundary>
         <Suspense fallback={<LoadingSpinner />}>
@@ -56,7 +69,7 @@ function App() {
     <ErrorBoundary>
       <Suspense fallback={<LoadingSpinner />}>
         <Layout>
-          <Dashboard user={user} />
+          <Dashboard user={forceUser} />
         </Layout>
       </Suspense>
     </ErrorBoundary>

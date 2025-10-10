@@ -1,4 +1,13 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import {
+  fetchAllDeliveryAddresses,
+  fetchDeliveryAddressesByClient,
+  createDeliveryAddress,
+  updateDeliveryAddressRecord,
+  deleteDeliveryAddressRecord,
+  DeliveryAddressRecord,
+  CreateDeliveryAddressInput,
+} from '../../services/deliveryAddressesService';
 
 export interface DeliveryAddress {
   id: string;
@@ -57,82 +66,97 @@ const initialState: DeliveryAddressesState = {
 // Async thunks
 export const fetchDeliveryAddresses = createAsyncThunk(
   'deliveryAddresses/fetchAll',
-  async () => {
-    // In a real app, this would be an API call
-    // For now, return mock data
-    const mockAddresses: DeliveryAddress[] = [
-      {
-        id: '1',
-        name: 'Main Warehouse',
-        address: {
-          line1: '123 Industrial Estate',
-          line2: 'Unit 15',
-          line3: '',
-          town: 'Manchester',
-          city: 'Manchester',
-          postcode: 'M1 1AA'
-        },
-        coordinates: { lat: 53.4808, lng: -2.2426 },
-        contactPerson: 'John Smith',
-        contactPhone: '0161 123 4567',
-        deliveryInstructions: 'Deliver to loading bay 3',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: 'admin'
-      },
-      {
-        id: '2',
-        name: 'Distribution Center',
-        address: {
-          line1: '456 Logistics Park',
-          line2: 'Building B',
-          line3: 'Floor 2',
-          town: 'Birmingham',
-          city: 'Birmingham',
-          postcode: 'B1 1BB'
-        },
-        coordinates: { lat: 52.4862, lng: -1.8904 },
-        contactPerson: 'Sarah Johnson',
-        contactPhone: '0121 234 5678',
-        deliveryInstructions: 'Security code required at gate',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: 'admin'
-      }
-    ];
-    return mockAddresses;
+  async (clientId?: string): Promise<DeliveryAddress[]> => {
+    const rows = clientId
+      ? await fetchDeliveryAddressesByClient(clientId)
+      : await fetchAllDeliveryAddresses();
+    const mapped: DeliveryAddress[] = rows.map((r: DeliveryAddressRecord) => ({
+      id: r.id,
+      name: r.name,
+      clientId: (r as any).clientId,
+      address: r.address,
+      coordinates: r.coordinates && r.coordinates.lat != null && r.coordinates.lng != null ? {
+        lat: r.coordinates.lat as number,
+        lng: r.coordinates.lng as number,
+      } : undefined,
+      contactPerson: r.contactPerson ?? undefined,
+      contactPhone: r.contactPhone ?? undefined,
+      deliveryInstructions: r.deliveryInstructions ?? undefined,
+      isActive: r.isActive,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      createdBy: r.createdBy ?? 'system',
+    }));
+    return mapped;
   }
 );
 
 export const addDeliveryAddress = createAsyncThunk(
   'deliveryAddresses/add',
-  async (address: Omit<DeliveryAddress, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newAddress: DeliveryAddress = {
-      ...address,
-      id: `addr-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+  async (address: Omit<DeliveryAddress, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'> & { clientId?: string }) => {
+    const payload: CreateDeliveryAddressInput = {
+      name: address.name,
+      clientId: (address as any).clientId,
+      address: address.address,
+      contactPerson: address.contactPerson,
+      contactPhone: address.contactPhone,
+      deliveryInstructions: address.deliveryInstructions,
     };
-    return newAddress;
+    const created = await createDeliveryAddress(payload);
+    const mapped: DeliveryAddress = {
+      id: created.id,
+      name: created.name,
+      address: created.address,
+      coordinates: created.coordinates && created.coordinates.lat != null && created.coordinates.lng != null ? {
+        lat: created.coordinates.lat as number,
+        lng: created.coordinates.lng as number,
+      } : undefined,
+      contactPerson: created.contactPerson ?? undefined,
+      contactPhone: created.contactPhone ?? undefined,
+      deliveryInstructions: created.deliveryInstructions ?? undefined,
+      isActive: created.isActive,
+      createdAt: created.createdAt,
+      updatedAt: created.updatedAt,
+      createdBy: created.createdBy ?? 'system',
+    };
+    return mapped;
   }
 );
 
 export const updateDeliveryAddress = createAsyncThunk(
   'deliveryAddresses/update',
   async (address: DeliveryAddress) => {
-    const updatedAddress: DeliveryAddress = {
-      ...address,
-      updatedAt: new Date().toISOString()
+    const updated = await updateDeliveryAddressRecord(address.id, {
+      name: address.name,
+      address: address.address,
+      contactPerson: address.contactPerson,
+      contactPhone: address.contactPhone,
+      deliveryInstructions: address.deliveryInstructions,
+    });
+    const mapped: DeliveryAddress = {
+      id: updated.id,
+      name: updated.name,
+      address: updated.address,
+      coordinates: updated.coordinates && updated.coordinates.lat != null && updated.coordinates.lng != null ? {
+        lat: updated.coordinates.lat as number,
+        lng: updated.coordinates.lng as number,
+      } : undefined,
+      contactPerson: updated.contactPerson ?? undefined,
+      contactPhone: updated.contactPhone ?? undefined,
+      deliveryInstructions: updated.deliveryInstructions ?? undefined,
+      isActive: updated.isActive,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+      createdBy: updated.createdBy ?? 'system',
     };
-    return updatedAddress;
+    return mapped;
   }
 );
 
 export const deleteDeliveryAddress = createAsyncThunk(
   'deliveryAddresses/delete',
   async (id: string) => {
+    await deleteDeliveryAddressRecord(id);
     return id;
   }
 );

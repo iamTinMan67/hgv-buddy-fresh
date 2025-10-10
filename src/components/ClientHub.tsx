@@ -55,14 +55,11 @@ const ClientHub: React.FC<ClientHubProps> = ({ onClose }) => {
   // Main Client Hub
   return (
     <Box sx={{ py: 2, px: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1" sx={{ mr: 2 }}>
           Client Hub
         </Typography>
-        <IconButton
-          onClick={onClose}
-          sx={{ color: 'yellow', fontSize: '1.5rem' }}
-        >
+        <IconButton onClick={onClose} sx={{ color: 'yellow', fontSize: '1.5rem' }}>
           <Home />
         </IconButton>
       </Box>
