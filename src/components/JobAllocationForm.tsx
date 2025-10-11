@@ -105,7 +105,7 @@ interface PostcodeLookupResult {
 interface JobConsignmentData {
   jobId: string;
   clientName: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  priority: 'before_9am' | 'am_timed' | 'pm_timed' | 'any_time';
   pickupAddress: StructuredAddress;
   deliveryAddress: StructuredAddress;
   pickupDate: string;
@@ -119,6 +119,11 @@ interface JobConsignmentData {
   cargoWeight: number;
   cargoVolume: number;
   specialRequirements: string[];
+  equipmentRequirements: {
+    tailLift: boolean;
+    forkLift: boolean;
+    handBall: boolean;
+  };
   notes: string;
   estimatedDuration: number;
   estimatedCost: number;
@@ -275,7 +280,7 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
   const [formData, setFormData] = useState<JobConsignmentData>({
     jobId: '',
     clientName: '',
-    priority: 'medium',
+    priority: 'any_time',
     pickupAddress: {
       addressLine1: '',
       addressLine2: '',
@@ -319,6 +324,11 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
     cargoWeight: 0,
     cargoVolume: 0,
     specialRequirements: [],
+    equipmentRequirements: {
+      tailLift: false,
+      forkLift: true,
+      handBall: false,
+    },
     notes: '',
     estimatedDuration: 0,
     estimatedCost: 0,
@@ -420,7 +430,7 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
       const mappedData: JobConsignmentData = {
         jobId: initialData.jobNumber || initialData.id || '',
         clientName: initialData.customerName || '',
-        priority: initialData.priority || 'medium',
+        priority: initialData.priority || 'any_time',
         pickupAddress: {
           addressLine1: initialData.pickupLocation?.address?.line1 || '',
           addressLine2: initialData.pickupLocation?.address?.line2 || '',
@@ -463,6 +473,11 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
         cargoWeight: initialData.cargoWeight || initialData.loadDimensions?.weight || 0,
         cargoVolume: initialData.loadDimensions?.volume || 0,
         specialRequirements: initialData.specialRequirements || [],
+        equipmentRequirements: {
+          tailLift: false,
+          forkLift: true,
+          handBall: false,
+        },
         notes: initialData.notes || '',
         estimatedDuration: initialData.estimatedDuration || 0,
         estimatedCost: 0,
@@ -646,6 +661,7 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
             cargo_type: jobAssignment.cargoType,
             cargo_weight: jobAssignment.cargoWeight,
             special_requirements: jobAssignment.specialRequirements,
+            equipment_requirements: JSON.stringify(formData.equipmentRequirements),
             notes: jobAssignment.notes,
             driver_notes: jobAssignment.driverNotes,
             management_notes: jobAssignment.managementNotes,
@@ -710,6 +726,16 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
     setFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  const handleEquipmentRequirementChange = (equipment: 'tailLift' | 'forkLift' | 'handBall', checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      equipmentRequirements: {
+        ...prev.equipmentRequirements,
+        [equipment]: checked
+      }
     }));
   };
 
@@ -1365,10 +1391,10 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
                               }}
                             >
-                              <MenuItem value="low">Low</MenuItem>
-                              <MenuItem value="medium">Medium</MenuItem>
-                              <MenuItem value="high">High</MenuItem>
-                              <MenuItem value="urgent">Urgent</MenuItem>
+                              <MenuItem value="before_9am">Before 9am</MenuItem>
+                              <MenuItem value="am_timed">AM Timed</MenuItem>
+                              <MenuItem value="pm_timed">PM Timed</MenuItem>
+                              <MenuItem value="any_time">Any Time</MenuItem>
                             </Select>
                           </FormControl>
                         </Grid>
@@ -1473,6 +1499,26 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                                 </Grid>
                               </Grid>
                               )}
+                              
+                              {/* Add Pickup Button */}
+                              <Box sx={{ mt: 2 }}>
+                                <Button
+                                  variant="outlined"
+                                  startIcon={<LocationIcon />}
+                                  onClick={() => { 
+                                    setAddressDialogMode('pickup'); 
+                                    setShowDeliveryAddressesDialog(true); 
+                                  }}
+                                  sx={{ 
+                                    color: 'grey.400', 
+                                    borderColor: 'grey.600',
+                                    height: '56px',
+                                    width: '100%'
+                                  }}
+                                >
+                                  Add Pickup
+                                </Button>
+                              </Box>
                             </Grid>
 
                             {/* Delivery Contact Fields */}
@@ -1568,6 +1614,26 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                                 </Grid>
                               </Grid>
                               )}
+                              
+                              {/* Add Delivery Button */}
+                              <Box sx={{ mt: 2 }}>
+                                <Button
+                                  variant="outlined"
+                                  startIcon={<LocationIcon />}
+                                  onClick={() => { 
+                                    setAddressDialogMode('delivery'); 
+                                    setShowDeliveryAddressesDialog(true); 
+                                  }}
+                                  sx={{ 
+                                    color: 'grey.400', 
+                                    borderColor: 'grey.600',
+                                    height: '56px',
+                                    width: '100%'
+                                  }}
+                                >
+                                  Add Delivery
+                                </Button>
+                              </Box>
                             </Grid>
                           </Grid>
                         </Grid>
@@ -1632,40 +1698,7 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                               </FormControl>
                             </Grid>
                             <Grid item xs={12} md={3.44}>
-                              <Box sx={{ display: 'flex', gap: 1 }}>
-                                <Button
-                                  variant="outlined"
-                                  startIcon={<LocationIcon />}
-                                  onClick={() => { 
-                                    setAddressDialogMode('pickup'); 
-                                    setShowDeliveryAddressesDialog(true); 
-                                  }}
-                                  sx={{ 
-                                    color: 'grey.400', 
-                                    borderColor: 'grey.600',
-                                    height: '56px',
-                                    width: '50%'
-                                  }}
-                                >
-                                  Add Pickup
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  startIcon={<LocationIcon />}
-                                  onClick={() => { 
-                                    setAddressDialogMode('delivery'); 
-                                    setShowDeliveryAddressesDialog(true); 
-                                  }}
-                                  sx={{ 
-                                    color: 'grey.400', 
-                                    borderColor: 'grey.600',
-                                    height: '56px',
-                                    width: '50%'
-                                  }}
-                                >
-                                  Add Delivery
-                                </Button>
-                              </Box>
+                              {/* Add Pickup button will be moved below pickup contact fields */}
                             </Grid>
                           </Grid>
                         </Grid>
@@ -2110,6 +2143,58 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                             </Select>
                           </FormControl>
                         </Grid>
+                        
+                        {/* Equipment Requirements */}
+                        <Grid item xs={12}>
+                          <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
+                            Equipment Requirements
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={formData.equipmentRequirements.tailLift}
+                                  onChange={(e) => handleEquipmentRequirementChange('tailLift', e.target.checked)}
+                                  sx={{ 
+                                    color: 'grey.400',
+                                    '&.Mui-checked': { color: 'primary.main' }
+                                  }}
+                                />
+                              }
+                              label="Tail-Lift"
+                              sx={{ color: 'white' }}
+                            />
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={formData.equipmentRequirements.forkLift}
+                                  onChange={(e) => handleEquipmentRequirementChange('forkLift', e.target.checked)}
+                                  sx={{ 
+                                    color: 'grey.400',
+                                    '&.Mui-checked': { color: 'primary.main' }
+                                  }}
+                                />
+                              }
+                              label="Fork-Lift"
+                              sx={{ color: 'white' }}
+                            />
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={formData.equipmentRequirements.handBall}
+                                  onChange={(e) => handleEquipmentRequirementChange('handBall', e.target.checked)}
+                                  sx={{ 
+                                    color: 'grey.400',
+                                    '&.Mui-checked': { color: 'primary.main' }
+                                  }}
+                                />
+                              }
+                              label="Hand-Ball"
+                              sx={{ color: 'white' }}
+                            />
+                          </Box>
+                        </Grid>
+                        
                         {/* Dimension fields with Pallet Script hints */}
                         <Grid item xs={12} md={2}>
                           <TextField
