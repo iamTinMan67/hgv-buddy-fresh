@@ -244,15 +244,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   if (showPlanningHub) {
     return (
       <Box sx={{ py: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={() => setShowPlanningHub(false)}
-            sx={{ mr: 2, color: 'yellow' }}
-          >
-            Back to Dashboard
-          </Button>
-        </Box>
         <ErrorBoundary>
           <Suspense fallback={<LoadingSpinner />}>
             <PlanningHub onClose={() => setShowPlanningHub(false)} />

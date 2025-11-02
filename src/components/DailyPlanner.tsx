@@ -69,7 +69,11 @@ import {
   updateScheduleJobStatus,
   updateJobStatus,
   addDailySchedule,
+  addJob,
+  updateJob,
+  JobAssignment,
 } from '../store/slices/jobSlice';
+import { JobService } from '../services/api';
 
 interface DailyPlannerProps {
   onClose: () => void;
@@ -165,6 +169,245 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
       } catch {}
     })();
   }, []);
+
+  // Fetch pending jobs from database on component mount
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const result = await JobService.getJobs({ status: 'pending' });
+        if (!mounted || !result.success || !result.data) return;
+        
+        // Convert DB jobs to JobAssignment format and add to Redux if not already present
+        // Note: We check against jobs in Redux at fetch time, duplicates will be prevented
+        result.data.forEach((dbJob: any) => {
+          // Check if job already exists in Redux state
+          const existingJob = jobs.find(j => j.id === dbJob.id || j.jobNumber === dbJob.job_number);
+          const shouldUpdate = existingJob !== undefined;
+          
+          // Always process the job to extract data (whether new or existing)
+          // Extract pickup and delivery address data (may be JSON objects or plain objects)
+          let pickupAddr: any = {};
+          let deliveryAddr: any = {};
+          
+          console.log('Raw dbJob.pickup_address:', dbJob.pickup_address);
+          console.log('Raw dbJob.delivery_address:', dbJob.delivery_address);
+          console.log('Raw dbJob.customer_name:', dbJob.customer_name);
+          console.log('Raw dbJob.customer_phone:', dbJob.customer_phone);
+          console.log('Raw dbJob.customer_email:', dbJob.customer_email);
+          
+          try {
+            if (dbJob.pickup_address) {
+              pickupAddr = typeof dbJob.pickup_address === 'string' 
+                ? JSON.parse(dbJob.pickup_address) 
+                : (dbJob.pickup_address || {});
+              console.log('Parsed pickup_address:', pickupAddr);
+              console.log('pickupAddr.address:', pickupAddr.address);
+              console.log('pickupAddr keys:', Object.keys(pickupAddr));
+            }
+            if (dbJob.delivery_address) {
+              deliveryAddr = typeof dbJob.delivery_address === 'string' 
+                ? JSON.parse(dbJob.delivery_address) 
+                : (dbJob.delivery_address || {});
+              console.log('Parsed delivery_address:', deliveryAddr);
+              console.log('deliveryAddr.address:', deliveryAddr.address);
+              console.log('deliveryAddr keys:', Object.keys(deliveryAddr));
+            }
+          } catch (e) {
+            console.error('Error parsing address JSON:', e);
+          }
+          
+          // Extract address object - handle both nested (address.address) and flat structures
+          const getAddressObject = (addrObj: any) => {
+            if (!addrObj || typeof addrObj !== 'object') {
+              return {};
+            }
+            
+            // Check for nested address structure first
+            if (addrObj.address && typeof addrObj.address === 'object' && Object.keys(addrObj.address).length > 0) {
+              console.log('Found nested address structure');
+              return addrObj.address;
+            }
+            
+            // If address fields are at the top level, extract them
+            const hasAddressFields = addrObj.line1 || addrObj.line3 || addrObj.postcode || addrObj.town || addrObj.city || 
+                                   addrObj.addressLine1 || addrObj.address_line1 || addrObj.addressLine3 || addrObj.address_line3;
+            
+            if (hasAddressFields) {
+              console.log('Found flat address structure');
+              return {
+                line1: addrObj.line1 || addrObj.addressLine1 || addrObj.address_line1,
+                line2: addrObj.line2 || addrObj.addressLine2 || addrObj.address_line2,
+                line3: addrObj.line3 || addrObj.addressLine3 || addrObj.address_line3,
+                town: addrObj.town,
+                city: addrObj.city,
+                postcode: addrObj.postcode,
+              };
+            }
+            
+            console.log('No address fields found in:', addrObj);
+            return {};
+          };
+
+          // Extract metadata from special_requirements (stored as JSON string with METADATA: prefix)
+          let metadata: any = {};
+          if (dbJob.special_requirements) {
+            const metadataMatch = dbJob.special_requirements.match(/METADATA:(.+?)(?:\s*\||$)/);
+            if (metadataMatch) {
+              try {
+                metadata = JSON.parse(metadataMatch[1]);
+              } catch (e) {
+                console.error('Error parsing metadata from special_requirements:', e);
+              }
+            }
+          }
+          
+          // Extract pallet items - check metadata first, then pickup_address, then direct field
+          let palletItems: any[] = [];
+          if (metadata.pallet_items) {
+            palletItems = Array.isArray(metadata.pallet_items) ? metadata.pallet_items : [];
+          } else if (pickupAddr.pallet_items) {
+            palletItems = Array.isArray(pickupAddr.pallet_items) ? pickupAddr.pallet_items : [];
+          } else if (dbJob.pallet_items) {
+            palletItems = typeof dbJob.pallet_items === 'string' 
+              ? JSON.parse(dbJob.pallet_items) 
+              : (Array.isArray(dbJob.pallet_items) ? dbJob.pallet_items : []);
+          }
+          
+          // Extract time_sensitive - check metadata first, then pickup_address, then direct field
+          const timeSensitive = metadata.time_sensitive !== undefined
+            ? metadata.time_sensitive
+            : (pickupAddr.time_sensitive !== undefined 
+              ? pickupAddr.time_sensitive 
+              : (dbJob.time_sensitive !== undefined ? dbJob.time_sensitive : false));
+          
+          // Extract client info from metadata
+          const clientId = metadata.clientId || pickupAddr.clientId || null;
+          const clientNameFromMetadata = metadata.clientName || pickupAddr.clientName || '';
+
+          // Calculate totals from pallet items if available
+          const totalWeight = palletItems.length > 0
+            ? palletItems.reduce((sum: number, item: any) => sum + (item.totalWeight || 0), 0)
+            : (dbJob.cargo_weight || 0);
+          const totalVolume = palletItems.length > 0
+            ? palletItems.reduce((sum: number, item: any) => sum + (item.totalVolume || 0), 0)
+            : 0;
+
+              // Convert DB job to JobAssignment format
+              // Extract client data from metadata or pickup_address JSON (client data stored there, not in customer_* columns)
+              const clientName = clientNameFromMetadata || pickupAddr.clientName || dbJob.customer_name || '';
+              
+              const jobAssignment: JobAssignment = {
+                id: dbJob.id,
+                jobNumber: dbJob.job_number || dbJob.id,
+                title: dbJob.title || '',
+                description: dbJob.description || '',
+                customerName: clientName,
+                customerPhone: pickupAddr.contactPhone || dbJob.customer_phone || undefined,
+                customerEmail: pickupAddr.contactEmail || dbJob.customer_email || undefined,
+                priority: dbJob.priority || 'low',
+            status: (dbJob.status || 'pending') as JobStatus,
+            scheduledDate: dbJob.scheduled_date || '',
+            scheduledTime: dbJob.scheduled_time || '',
+            estimatedDuration: dbJob.estimated_duration || 0,
+            pickupLocation: {
+              id: `pickup-${dbJob.id}`,
+              name: pickupAddr.name || 'Pickup Location',
+              address: getAddressObject(pickupAddr),
+              contactPerson: pickupAddr.contactPerson || '',
+              contactPhone: pickupAddr.contactPhone || '',
+              contactEmail: pickupAddr.contactEmail || '',
+              deliveryInstructions: pickupAddr.deliveryInstructions || '',
+            },
+            deliveryLocation: {
+              id: `delivery-${dbJob.id}`,
+              name: deliveryAddr.name || 'Delivery Location',
+              address: getAddressObject(deliveryAddr),
+              contactPerson: deliveryAddr.contactPerson || '',
+              contactPhone: deliveryAddr.contactPhone || '',
+              contactEmail: deliveryAddr.contactEmail || '',
+              deliveryInstructions: deliveryAddr.deliveryInstructions || '',
+            },
+            useDifferentDeliveryAddress: false,
+            cargoType: dbJob.cargo_type || '',
+            cargoWeight: totalWeight,
+            specialRequirements: (() => {
+              // Extract actual special_requirements text (remove METADATA:JSON part)
+              if (!dbJob.special_requirements) return '';
+              const cleaned = dbJob.special_requirements.replace(/METADATA:.+?(?:\s*\||$)/, '').trim();
+              return cleaned || '';
+            })(),
+            notes: '',
+            createdAt: dbJob.created_at || new Date().toISOString(),
+            updatedAt: dbJob.updated_at || new Date().toISOString(),
+            createdBy: 'system',
+            authorizedBy: 'system',
+            loadDimensions: (() => {
+              if (palletItems.length > 0) {
+                // Calculate aggregate dimensions from all pallet items
+                const maxLength = Math.max(...palletItems.map((item: any) => item.length || 0));
+                const maxWidth = Math.max(...palletItems.map((item: any) => item.width || 0));
+                const totalHeight = palletItems.reduce((sum: number, item: any) => 
+                  sum + ((item.height || 0) * (item.quantity || 1)), 0);
+                
+                return {
+                  length: Math.round(maxLength),
+                  width: Math.round(maxWidth),
+                  height: Math.round(totalHeight),
+                  weight: totalWeight,
+                  volume: totalVolume,
+                  isOversized: maxLength > 300 || maxWidth > 300 || totalHeight > 400,
+                  isProtruding: false,
+                  isBalanced: true,
+                  isFragile: false,
+                };
+              } else {
+                // Fallback for jobs without pallet items
+                return {
+                  length: 0,
+                  width: 0,
+                  height: 0,
+                  weight: totalWeight,
+                  volume: totalVolume,
+                  isOversized: false,
+                  isProtruding: false,
+                  isBalanced: true,
+                  isFragile: false,
+                };
+              }
+            })(),
+          };
+
+          // Add pallet items and time sensitive flag if they exist
+          if (palletItems.length > 0) {
+            (jobAssignment as any).palletItems = palletItems;
+          }
+          (jobAssignment as any).timeSensitive = timeSensitive;
+          
+          console.log('Final jobAssignment structure:', jobAssignment);
+          console.log('Job customerName:', jobAssignment.customerName);
+          console.log('Job pickupLocation:', jobAssignment.pickupLocation);
+          console.log('Job deliveryLocation:', jobAssignment.deliveryLocation);
+          
+          // Update existing job or add new one
+          if (shouldUpdate) {
+            console.log('Updating existing job in Redux with DB data');
+            dispatch(updateJob(jobAssignment));
+          } else {
+            console.log('Adding new job to Redux');
+            dispatch(addJob(jobAssignment));
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching pending jobs:', error);
+      }
+    })();
+    
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Fetch once on mount to sync DB jobs to Redux
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -701,8 +944,141 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                         size="small"
                         variant="outlined"
                         startIcon={<Visibility />}
-                        onClick={() => {
-                          setSelectedJobForDetails(job);
+                        onClick={async () => {
+                          // Fetch fresh job data from database to ensure we have all fields
+                          try {
+                            const result = await JobService.getJob(job.id);
+                            if (result.success && result.data) {
+                              const dbJob = result.data;
+                              
+                              // Parse address data the same way we do in fetchPendingJobs
+                              let pickupAddr: any = {};
+                              let deliveryAddr: any = {};
+                              
+                              if (dbJob.pickup_address) {
+                                pickupAddr = typeof dbJob.pickup_address === 'string' 
+                                  ? JSON.parse(dbJob.pickup_address) 
+                                  : (dbJob.pickup_address || {});
+                              }
+                              if (dbJob.delivery_address) {
+                                deliveryAddr = typeof dbJob.delivery_address === 'string' 
+                                  ? JSON.parse(dbJob.delivery_address) 
+                                  : (dbJob.delivery_address || {});
+                              }
+                              
+                              const getAddressObject = (addrObj: any) => {
+                                if (!addrObj || typeof addrObj !== 'object') return {};
+                                if (addrObj.address && typeof addrObj.address === 'object' && Object.keys(addrObj.address).length > 0) {
+                                  return addrObj.address;
+                                }
+                                if (addrObj.line1 || addrObj.line3 || addrObj.postcode || addrObj.town || addrObj.city || 
+                                    addrObj.addressLine1 || addrObj.address_line1 || addrObj.addressLine3 || addrObj.address_line3) {
+                                  return {
+                                    line1: addrObj.line1 || addrObj.addressLine1 || addrObj.address_line1,
+                                    line2: addrObj.line2 || addrObj.addressLine2 || addrObj.address_line2,
+                                    line3: addrObj.line3 || addrObj.addressLine3 || addrObj.address_line3,
+                                    town: addrObj.town,
+                                    city: addrObj.city,
+                                    postcode: addrObj.postcode,
+                                  };
+                                }
+                                return {};
+                              };
+                              
+                              // Extract pallet items
+                              let palletItems: any[] = [];
+                              if (pickupAddr.pallet_items) {
+                                palletItems = Array.isArray(pickupAddr.pallet_items) ? pickupAddr.pallet_items : [];
+                              }
+                              
+                              const timeSensitive = pickupAddr.time_sensitive !== undefined 
+                                ? pickupAddr.time_sensitive 
+                                : (dbJob.time_sensitive !== undefined ? dbJob.time_sensitive : false);
+                              
+                              // Calculate load dimensions from pallet items
+                              const calculateLoadDimensions = () => {
+                                if (palletItems.length > 0) {
+                                  const maxLength = Math.max(...palletItems.map((item: any) => item.length || 0));
+                                  const maxWidth = Math.max(...palletItems.map((item: any) => item.width || 0));
+                                  const totalHeight = palletItems.reduce((sum: number, item: any) => 
+                                    sum + ((item.height || 0) * (item.quantity || 1)), 0);
+                                  const totalWeight = palletItems.reduce((sum: number, item: any) => 
+                                    sum + (item.totalWeight || 0), 0);
+                                  const totalVolume = palletItems.reduce((sum: number, item: any) => 
+                                    sum + (item.totalVolume || 0), 0);
+                                  
+                                  return {
+                                    length: Math.round(maxLength),
+                                    width: Math.round(maxWidth),
+                                    height: Math.round(totalHeight),
+                                    weight: totalWeight,
+                                    volume: totalVolume,
+                                    isOversized: maxLength > 300 || maxWidth > 300 || totalHeight > 400,
+                                    isProtruding: false,
+                                    isBalanced: true,
+                                    isFragile: false,
+                                  };
+                                }
+                                // Fallback to existing loadDimensions or default
+                                return job.loadDimensions || {
+                                  length: 0,
+                                  width: 0,
+                                  height: 0,
+                                  weight: job.cargoWeight || 0,
+                                  volume: 0,
+                                  isOversized: false,
+                                  isProtruding: false,
+                                  isBalanced: true,
+                                  isFragile: false,
+                                };
+                              };
+                              
+                              // Extract client data from pickup_address JSON (client data stored there, not in customer_* columns)
+                              const clientNameFromJSON = pickupAddr.clientName || dbJob.customer_name || job.customerName || '';
+                              
+                              // Create full job object with all parsed data
+                              const fullJob: any = {
+                                ...job,
+                                customerName: clientNameFromJSON,
+                                customerPhone: pickupAddr.contactPhone || dbJob.customer_phone || job.customerPhone,
+                                customerEmail: pickupAddr.contactEmail || dbJob.customer_email || job.customerEmail,
+                                pickupLocation: {
+                                  ...job.pickupLocation,
+                                  name: pickupAddr.name || job.pickupLocation?.name || 'Pickup Location',
+                                  address: getAddressObject(pickupAddr),
+                                  contactPerson: pickupAddr.contactPerson || job.pickupLocation?.contactPerson || '',
+                                  contactPhone: pickupAddr.contactPhone || job.pickupLocation?.contactPhone || '',
+                                  contactEmail: pickupAddr.contactEmail || job.pickupLocation?.contactEmail || '',
+                                  deliveryInstructions: pickupAddr.deliveryInstructions || job.pickupLocation?.deliveryInstructions || '',
+                                },
+                                deliveryLocation: {
+                                  ...job.deliveryLocation,
+                                  name: deliveryAddr.name || job.deliveryLocation?.name || 'Delivery Location',
+                                  address: getAddressObject(deliveryAddr),
+                                  contactPerson: deliveryAddr.contactPerson || job.deliveryLocation?.contactPerson || '',
+                                  contactPhone: deliveryAddr.contactPhone || job.deliveryLocation?.contactPhone || '',
+                                  contactEmail: deliveryAddr.contactEmail || job.deliveryLocation?.contactEmail || '',
+                                  deliveryInstructions: deliveryAddr.deliveryInstructions || job.deliveryLocation?.deliveryInstructions || '',
+                                },
+                                loadDimensions: calculateLoadDimensions(),
+                                timeSensitive,
+                              };
+                              
+                              if (palletItems.length > 0) {
+                                fullJob.palletItems = palletItems;
+                              }
+                              
+                              console.log('Full job from DB:', fullJob);
+                              setSelectedJobForDetails(fullJob);
+                            } else {
+                              // Fallback to Redux job if DB fetch fails
+                              setSelectedJobForDetails(job);
+                            }
+                          } catch (error) {
+                            console.error('Error fetching job details:', error);
+                            // Fallback to Redux job if there's an error
+                            setSelectedJobForDetails(job);
+                          }
                           setShowJobDetailsDialog(true);
                         }}
                       >
@@ -1284,6 +1660,19 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                                 size="small"
                               />
                             </Box>
+                            {/* Time Sensitive and Priority */}
+                            {jobDetails.timeSensitive !== undefined && (
+                              <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                  Time Sensitive
+                                </Typography>
+                                <Chip
+                                  label={jobDetails.timeSensitive ? 'YES' : 'NO'}
+                                  color={jobDetails.timeSensitive ? 'warning' : 'default'}
+                                  size="small"
+                                />
+                              </Box>
+                            )}
                             <Box sx={{ mb: 2 }}>
                               <Typography variant="body2" color="text.secondary">
                                 Scheduled Time
@@ -1362,14 +1751,16 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                                 </Typography>
                               )}
                               <Typography variant="body2" color="text.secondary">
-                                {jobDetails.pickupLocation.address.town}
-                                {jobDetails.pickupLocation.address.city && `, ${jobDetails.pickupLocation.address.city}`}
-                                , {jobDetails.pickupLocation.address.postcode}
+                                {[
+                                  jobDetails.pickupLocation.address.town || jobDetails.pickupLocation.address.city,
+                                  jobDetails.pickupLocation.address.postcode,
+                                ].filter(Boolean).join(', ')}
                               </Typography>
                               {jobDetails.pickupLocation.contactPerson && (
                                 <Typography variant="body2" color="text.secondary">
                                   Contact: {jobDetails.pickupLocation.contactPerson}
                                   {jobDetails.pickupLocation.contactPhone && ` (${jobDetails.pickupLocation.contactPhone})`}
+                                  {jobDetails.pickupLocation.contactEmail && ` - ${jobDetails.pickupLocation.contactEmail}`}
                                 </Typography>
                               )}
                             </Box>
@@ -1400,14 +1791,16 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                                 </Typography>
                               )}
                               <Typography variant="body2" color="text.secondary">
-                                {jobDetails.deliveryLocation.address.town}
-                                {jobDetails.deliveryLocation.address.city && `, ${jobDetails.deliveryLocation.address.city}`}
-                                , {jobDetails.deliveryLocation.address.postcode}
+                                {[
+                                  jobDetails.deliveryLocation.address.town || jobDetails.deliveryLocation.address.city,
+                                  jobDetails.deliveryLocation.address.postcode,
+                                ].filter(Boolean).join(', ')}
                               </Typography>
                               {jobDetails.deliveryLocation.contactPerson && (
                                 <Typography variant="body2" color="text.secondary">
                                   Contact: {jobDetails.deliveryLocation.contactPerson}
                                   {jobDetails.deliveryLocation.contactPhone && ` (${jobDetails.deliveryLocation.contactPhone})`}
+                                  {jobDetails.deliveryLocation.contactEmail && ` - ${jobDetails.deliveryLocation.contactEmail}`}
                                 </Typography>
                               )}
                               {jobDetails.deliveryLocation.deliveryInstructions && (
@@ -1495,6 +1888,55 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                                 <Typography variant="body1">
                                   {jobDetails.specialRequirements}
                                 </Typography>
+                              </Box>
+                            )}
+                            {/* Pallet Items (one line each) */}
+                            {Array.isArray((jobDetails as any).palletItems) && (jobDetails as any).palletItems.length > 0 && (
+                              <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  Pallet Items
+                                </Typography>
+                                <Box>
+                                  {((jobDetails as any).palletItems as any[]).map((item: any) => (
+                                    <Typography key={item.id} variant="body2" sx={{ display: 'block', mb: 0.5 }}>
+                                      {item.palletType} × {item.quantity} | {item.totalWeight}kg | {item.totalVolume?.toFixed ? item.totalVolume.toFixed(2) : item.totalVolume} m³ | Handling: {item.forkLift ? 'Fork-Lift' : item.tailLift ? 'Tail-Lift' : item.handBall ? 'Hand-Ball' : 'None'}
+                                    </Typography>
+                                  ))}
+                                </Box>
+                              </Box>
+                            )}
+                            {/* Equipment Requirements */}
+                            {(jobDetails.equipmentRequirements || 
+                              (Array.isArray((jobDetails as any).palletItems) && (jobDetails as any).palletItems.length > 0)) && (
+                              <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  Equipment Requirements
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                  {jobDetails.equipmentRequirements?.tailLift && (
+                                    <Chip label="Tail-Lift" size="small" color="primary" />
+                                  )}
+                                  {jobDetails.equipmentRequirements?.forkLift && (
+                                    <Chip label="Fork-Lift" size="small" color="primary" />
+                                  )}
+                                  {jobDetails.equipmentRequirements?.handBall && (
+                                    <Chip label="Hand-Ball" size="small" color="primary" />
+                                  )}
+                                  {/* Show equipment from pallet items if no job-level equipment */}
+                                  {!jobDetails.equipmentRequirements && Array.isArray((jobDetails as any).palletItems) && (
+                                    <>
+                                      {((jobDetails as any).palletItems as any[]).some((item: any) => item.tailLift) && (
+                                        <Chip label="Tail-Lift (via pallets)" size="small" color="primary" variant="outlined" />
+                                      )}
+                                      {((jobDetails as any).palletItems as any[]).some((item: any) => item.forkLift) && (
+                                        <Chip label="Fork-Lift (via pallets)" size="small" color="primary" variant="outlined" />
+                                      )}
+                                      {((jobDetails as any).palletItems as any[]).some((item: any) => item.handBall) && (
+                                        <Chip label="Hand-Ball (via pallets)" size="small" color="primary" variant="outlined" />
+                                      )}
+                                    </>
+                                  )}
+                                </Box>
                               </Box>
                             )}
                           </Grid>
@@ -1741,6 +2183,24 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                     color={selectedJobForDetails.priority === 'high' ? 'error' : selectedJobForDetails.priority === 'medium' ? 'warning' : 'success'}
                   />
                 </Box>
+                {/* Time Sensitive Information */}
+                {(selectedJobForDetails.timeSensitive !== undefined || selectedJobForDetails.priority) && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Time Sensitive
+                    </Typography>
+                    <Chip
+                      label={selectedJobForDetails.timeSensitive ? 'YES' : 'NO'}
+                      size="small"
+                      color={selectedJobForDetails.timeSensitive ? 'warning' : 'default'}
+                    />
+                    {selectedJobForDetails.timeSensitive && selectedJobForDetails.priority && (
+                      <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>
+                        Priority: {selectedJobForDetails.priority.toUpperCase()}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" color="text.secondary">
                     Status
@@ -1752,6 +2212,36 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                     size="small"
                   />
                 </Box>
+                {selectedJobForDetails.scheduledDate && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Scheduled Date
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedJobForDetails.scheduledDate}
+                    </Typography>
+                  </Box>
+                )}
+                {selectedJobForDetails.scheduledTime && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Scheduled Time
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedJobForDetails.scheduledTime}
+                    </Typography>
+                  </Box>
+                )}
+                {selectedJobForDetails.estimatedDuration && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Estimated Duration
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedJobForDetails.estimatedDuration} minutes
+                    </Typography>
+                  </Box>
+                )}
               </Grid>
 
               {/* Customer Information */}
@@ -1763,8 +2253,8 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                   <Typography variant="body2" color="text.secondary">
                     Customer Name
                   </Typography>
-                  <Typography variant="body1">
-                    {selectedJobForDetails.customerName}
+                  <Typography variant="body1" fontWeight="bold">
+                    {selectedJobForDetails.customerName || 'N/A'}
                   </Typography>
                 </Box>
                 <Box sx={{ mb: 2 }}>
@@ -1772,7 +2262,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                     Contact Person
                   </Typography>
                   <Typography variant="body1">
-                    {selectedJobForDetails.customerContact?.contactPerson || 'N/A'}
+                    {selectedJobForDetails.pickupLocation?.contactPerson || selectedJobForDetails.deliveryLocation?.contactPerson || selectedJobForDetails.customerName || 'N/A'}
                   </Typography>
                 </Box>
                 <Box sx={{ mb: 2 }}>
@@ -1780,7 +2270,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                     Contact Phone
                   </Typography>
                   <Typography variant="body1">
-                    {selectedJobForDetails.customerContact?.contactPhone || 'N/A'}
+                    {selectedJobForDetails.customerPhone || selectedJobForDetails.pickupLocation?.contactPhone || selectedJobForDetails.deliveryLocation?.contactPhone || 'N/A'}
                   </Typography>
                 </Box>
                 <Box sx={{ mb: 2 }}>
@@ -1788,7 +2278,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                     Email
                   </Typography>
                   <Typography variant="body1">
-                    {selectedJobForDetails.customerContact?.email || 'N/A'}
+                    {selectedJobForDetails.customerEmail || selectedJobForDetails.pickupLocation?.contactEmail || selectedJobForDetails.deliveryLocation?.contactEmail || 'N/A'}
                   </Typography>
                 </Box>
               </Grid>
@@ -1806,37 +2296,33 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                     {selectedJobForDetails.pickupLocation.name}
                   </Typography>
                 </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
+                <Box sx={{ mb: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
                     Address
                   </Typography>
-                  <Typography variant="body1">
-                    {selectedJobForDetails.pickupLocation.address?.street}, {selectedJobForDetails.pickupLocation.address?.city}
+                  <Typography variant="body1" sx={{ mb: 1 }}>
+                    {(() => {
+                      const addr = selectedJobForDetails.pickupLocation?.address || selectedJobForDetails.pickupLocation || {};
+                      return [
+                        addr.line1,
+                        addr.line2,
+                        addr.line3,
+                        addr.town || addr.city,
+                        addr.postcode,
+                      ].filter(Boolean).join(', ') || 'N/A';
+                    })()}
                   </Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Postcode
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedJobForDetails.pickupLocation.address?.postcode || 'N/A'}
-                  </Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Contact Person
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedJobForDetails.pickupLocation.contactPerson || 'N/A'}
-                  </Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Contact Phone
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedJobForDetails.pickupLocation.contactPhone || 'N/A'}
-                  </Typography>
+                  {(selectedJobForDetails.pickupLocation?.contactPerson || selectedJobForDetails.pickupLocation?.contactPhone || selectedJobForDetails.pickupLocation?.contactEmail) && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      <strong>Contact:</strong> {
+                        [
+                          selectedJobForDetails.pickupLocation?.contactPerson,
+                          selectedJobForDetails.pickupLocation?.contactPhone && `(${selectedJobForDetails.pickupLocation.contactPhone})`,
+                          selectedJobForDetails.pickupLocation?.contactEmail && `- ${selectedJobForDetails.pickupLocation.contactEmail}`
+                        ].filter(Boolean).join(' ')
+                      }
+                    </Typography>
+                  )}
                 </Box>
               </Grid>
 
@@ -1852,37 +2338,33 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                     {selectedJobForDetails.deliveryLocation.name}
                   </Typography>
                 </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
+                <Box sx={{ mb: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
                     Address
                   </Typography>
-                  <Typography variant="body1">
-                    {selectedJobForDetails.deliveryLocation.address?.street}, {selectedJobForDetails.deliveryLocation.address?.city}
+                  <Typography variant="body1" sx={{ mb: 1 }}>
+                    {(() => {
+                      const addr = selectedJobForDetails.deliveryLocation?.address || selectedJobForDetails.deliveryLocation || {};
+                      return [
+                        addr.line1,
+                        addr.line2,
+                        addr.line3,
+                        addr.town || addr.city,
+                        addr.postcode,
+                      ].filter(Boolean).join(', ') || 'N/A';
+                    })()}
                   </Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Postcode
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedJobForDetails.deliveryLocation.address?.postcode || 'N/A'}
-                  </Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Contact Person
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedJobForDetails.deliveryLocation.contactPerson || 'N/A'}
-                  </Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Contact Phone
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedJobForDetails.deliveryLocation.contactPhone || 'N/A'}
-                  </Typography>
+                  {(selectedJobForDetails.deliveryLocation?.contactPerson || selectedJobForDetails.deliveryLocation?.contactPhone || selectedJobForDetails.deliveryLocation?.contactEmail) && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      <strong>Contact:</strong> {
+                        [
+                          selectedJobForDetails.deliveryLocation?.contactPerson,
+                          selectedJobForDetails.deliveryLocation?.contactPhone && `(${selectedJobForDetails.deliveryLocation.contactPhone})`,
+                          selectedJobForDetails.deliveryLocation?.contactEmail && `- ${selectedJobForDetails.deliveryLocation.contactEmail}`
+                        ].filter(Boolean).join(' ')
+                      }
+                    </Typography>
+                  )}
                 </Box>
               </Grid>
 
@@ -1915,6 +2397,93 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                     <Typography variant="body1">
                       {selectedJobForDetails.specialRequirements}
                     </Typography>
+                  </Box>
+                )}
+
+                {/* Pallet Items - Detailed Breakdown */}
+                {Array.isArray((selectedJobForDetails as any).palletItems) && (selectedJobForDetails as any).palletItems.length > 0 && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Pallet Items
+                    </Typography>
+                    {((selectedJobForDetails as any).palletItems as any[]).map((item: any, index: number) => {
+                      // Format dimensions for display
+                      const dims = item.length && item.width && item.height
+                        ? `${Math.round(item.length * 10)}x${Math.round(item.width * 10)}x${Math.round(item.height * 10)}mm`
+                        : '';
+                      const description = dims 
+                        ? `${item.palletType} (${dims}, ${item.weight}kg) × ${item.quantity}`
+                        : `${item.palletType} × ${item.quantity}`;
+                      const handling = item.forkLift ? 'Fork-Lift' : item.tailLift ? 'Tail-Lift' : item.handBall ? 'Hand-Ball' : 'None';
+                      const cost = item.totalCost || (item.cost || 0) * (item.quantity || 1);
+                      
+                      return (
+                        <Box 
+                          key={item.id || index} 
+                          sx={{ 
+                            mb: 2, 
+                            p: 2, 
+                            bgcolor: 'background.paper', 
+                            borderRadius: 1, 
+                            border: '1px solid', 
+                            borderColor: 'divider' 
+                          }}
+                        >
+                          <Typography variant="body2" fontWeight="bold" gutterBottom>
+                            Item {index + 1}
+                          </Typography>
+                          <Typography variant="body2" sx={{ mb: 1 }}>
+                            <strong>Description:</strong> {description}
+                          </Typography>
+                          <Typography variant="body2" sx={{ mb: 1 }}>
+                            <strong>Handling:</strong> {handling}
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                            <Typography variant="body2">
+                              <strong>Cost:</strong> £{cost.toFixed(2)}
+                            </Typography>
+                            <Typography variant="body2">
+                              <strong>Weight:</strong> {item.totalWeight || (item.weight || 0) * (item.quantity || 1)}kg
+                            </Typography>
+                            {item.totalVolume && (
+                              <Typography variant="body2">
+                                <strong>Volume:</strong> {typeof item.totalVolume === 'number' ? item.totalVolume.toFixed(2) : item.totalVolume} m³
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                    
+                    {/* Totals */}
+                    {(() => {
+                      const palletItems = (selectedJobForDetails as any).palletItems || [];
+                      const totalCost = palletItems.reduce((sum: number, item: any) => 
+                        sum + (item.totalCost || (item.cost || 0) * (item.quantity || 1)), 0);
+                      const totalWeight = palletItems.reduce((sum: number, item: any) => 
+                        sum + (item.totalWeight || (item.weight || 0) * (item.quantity || 1)), 0);
+                      
+                      return (
+                        <Box sx={{ 
+                          mt: 2, 
+                          p: 2, 
+                          bgcolor: 'primary.light', 
+                          borderRadius: 1,
+                          border: '2px solid',
+                          borderColor: 'primary.main'
+                        }}>
+                          <Typography variant="body1" fontWeight="bold" gutterBottom>
+                            TOTAL
+                          </Typography>
+                          <Typography variant="body1" fontWeight="bold" color="primary.dark">
+                            £{totalCost.toFixed(2)}
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 1 }}>
+                            <strong>Total Weight:</strong> {totalWeight}kg
+                          </Typography>
+                        </Box>
+                      );
+                    })()}
                   </Box>
                 )}
               </Grid>
@@ -1960,6 +2529,9 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                   )}
                   {selectedJobForDetails.loadDimensions?.isBalanced && (
                     <Chip label="Balanced" color="success" size="small" />
+                  )}
+                  {selectedJobForDetails.timeSensitive && (
+                    <Chip label={`Time Sensitive: ${selectedJobForDetails.priority?.toUpperCase?.() || selectedJobForDetails.priority}`} color="info" size="small" />
                   )}
                 </Box>
               </Grid>

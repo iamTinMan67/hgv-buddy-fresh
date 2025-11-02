@@ -50,7 +50,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
   const [currentView, setCurrentView] = useState<'main' | 'daily' | 'route' | 'garmin' | 'trailer' | 'job'>('main');
   
   // Define the cards configuration
-  const functionalCards = 6; // Daily Planner, Route Planning, Trailer Planner, Add A New Job, Garmin Routes, Planning Analytics
+  const functionalCards = 6; // Daily Planner, Route Planning, Trailer Planner, Add New Consignment, Garmin Routes, Planning Analytics
   const comingSoonCards = 0; // No coming soon cards currently
   const columnsPerRow = 3;
   
@@ -268,7 +268,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
           </Card>
         </Grid>
 
-        {/* Add A New Job Card */}
+        {/* Add New Consignment Card */}
         <Grid item xs={12} md={4}>
           <Card 
             sx={{ 
@@ -290,10 +290,10 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
                 </Avatar>
                 <Box>
                   <Typography variant="h5" component="div">
-                    Add A New Job
+                    Add New Consignment
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Create and allocate new jobs
+                    Create and allocate new consignments
                   </Typography>
                 </Box>
               </Box>
@@ -303,7 +303,7 @@ const PlanningHub: React.FC<PlanningHubProps> = ({ onClose }) => {
               <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Chip 
                   icon={<Edit />} 
-                  label="Job Creation" 
+                  label="Consignment Creation" 
                   size="small" 
                   sx={{ width: '100%', justifyContent: 'flex-start' }} 
                 />

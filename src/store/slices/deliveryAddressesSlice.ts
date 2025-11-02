@@ -12,6 +12,7 @@ import {
 export interface DeliveryAddress {
   id: string;
   name: string;
+  clientId?: string;
   address: {
     line1: string;
     line2?: string;
@@ -67,9 +68,18 @@ const initialState: DeliveryAddressesState = {
 export const fetchDeliveryAddresses = createAsyncThunk(
   'deliveryAddresses/fetchAll',
   async (clientId?: string): Promise<DeliveryAddress[]> => {
+    console.log('🔍 fetchDeliveryAddresses called with clientId:', clientId);
+    
     const rows = clientId
       ? await fetchDeliveryAddressesByClient(clientId)
       : await fetchAllDeliveryAddresses();
+    
+    console.log('🔍 Raw addresses from database:', rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      clientId: r.clientId
+    })));
+    
     const mapped: DeliveryAddress[] = rows.map((r: DeliveryAddressRecord) => ({
       id: r.id,
       name: r.name,
@@ -87,6 +97,13 @@ export const fetchDeliveryAddresses = createAsyncThunk(
       updatedAt: r.updatedAt,
       createdBy: r.createdBy ?? 'system',
     }));
+    
+    console.log('🔍 Mapped addresses:', mapped.map(addr => ({
+      id: addr.id,
+      name: addr.name,
+      clientId: addr.clientId
+    })));
+    
     return mapped;
   }
 );
@@ -106,6 +123,7 @@ export const addDeliveryAddress = createAsyncThunk(
     const mapped: DeliveryAddress = {
       id: created.id,
       name: created.name,
+      clientId: created.clientId,
       address: created.address,
       coordinates: created.coordinates && created.coordinates.lat != null && created.coordinates.lng != null ? {
         lat: created.coordinates.lat as number,

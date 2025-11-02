@@ -50,22 +50,52 @@ function mapFromRow(row: any): DeliveryAddressRecord {
 }
 
 export async function fetchAllDeliveryAddresses(): Promise<DeliveryAddressRecord[]> {
+  console.log('🔍 fetchAllDeliveryAddresses called');
+  
   const { data, error } = await supabase
     .from('delivery_addresses')
     .select('*')
-    .order('name', { ascending: true });
-  if (error) throw error;
+    .order('address_line1', { ascending: true });
+  
+  console.log('🔍 All delivery addresses from database:', data?.map(addr => ({
+    id: addr.id,
+    address_line1: addr.address_line1,
+    postcode: addr.postcode,
+    client_id: addr.client_id
+  })));
+  
+  if (error) {
+    console.error('🔍 Supabase error in fetchAllDeliveryAddresses:', error);
+    throw error;
+  }
+  
   return (data ?? []).map(mapFromRow);
 }
 
 export async function fetchDeliveryAddressesByClient(clientId: string): Promise<DeliveryAddressRecord[]> {
+  console.log('🔍 fetchDeliveryAddressesByClient called with clientId:', clientId);
+  
   const { data, error } = await supabase
     .from('delivery_addresses')
     .select('*')
     .eq('client_id', clientId)
-    .order('name', { ascending: true });
-  if (error) throw error;
-  return (data ?? []).map(mapFromRow);
+    .order('address_line1', { ascending: true });
+  
+  console.log('🔍 Supabase query result:', { data, error });
+  
+  if (error) {
+    console.error('🔍 Supabase error:', error);
+    throw error;
+  }
+  
+  const mapped = (data ?? []).map(mapFromRow);
+  console.log('🔍 Mapped delivery addresses for client:', mapped.map(addr => ({
+    id: addr.id,
+    name: addr.name,
+    clientId: addr.clientId
+  })));
+  
+  return mapped;
 }
 
 export interface CreateDeliveryAddressInput {
@@ -86,7 +116,7 @@ export interface CreateDeliveryAddressInput {
 
 export async function createDeliveryAddress(input: CreateDeliveryAddressInput): Promise<DeliveryAddressRecord> {
   const insertRow = {
-    name: input.name ?? `${input.address.line1}, ${input.address.postcode}`,
+    // Note: 'name' column doesn't exist in delivery_addresses table - name is derived from address fields
     client_id: input.clientId ?? null,
     address_line1: input.address.line1,
     address_line2: input.address.line2 ?? null,
@@ -110,7 +140,7 @@ export async function createDeliveryAddress(input: CreateDeliveryAddressInput): 
 
 export async function updateDeliveryAddressRecord(id: string, input: Partial<CreateDeliveryAddressInput>): Promise<DeliveryAddressRecord> {
   const updateRow: any = {};
-  if (input.name !== undefined) updateRow.name = input.name;
+  // Note: 'name' column doesn't exist in delivery_addresses table - skip name updates
   if (input.address) {
     if (input.address.line1 !== undefined) updateRow.address_line1 = input.address.line1;
     if (input.address.line2 !== undefined) updateRow.address_line2 = input.address.line2 ?? null;

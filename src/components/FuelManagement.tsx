@@ -199,24 +199,25 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onClose }) => {
     <Box sx={{ py: 2, px: 2 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          Fuel Management
-        </Typography>
-        <Box>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={handleAddRecord}
-            sx={{ mr: 1 }}
-          >
-            Add Fuel Record
-          </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="h4" component="h1" sx={{ mr: 1 }}>
+            Fuel Management
+          </Typography>
           <IconButton
             onClick={onClose}
             sx={{ color: 'yellow', fontSize: '1.5rem' }}
           >
             <Home />
           </IconButton>
+        </Box>
+        <Box>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={handleAddRecord}
+          >
+            Add Fuel Record
+          </Button>
         </Box>
       </Box>
 

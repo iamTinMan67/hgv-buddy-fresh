@@ -29,10 +29,9 @@ import {
   Add,
   Edit,
   Visibility,
-  DirectionsCar,
+  LocalShipping,
   CheckCircle,
   Warning,
-  LocalShipping,
   Home,
   Circle,
   Build,
@@ -43,8 +42,7 @@ import {
 } from '@mui/icons-material';
 import { RootState } from '../store';
 
-
-interface FleetManagementProps {
+interface TrailerFleetProps {
   onClose: () => void;
 }
 
@@ -60,8 +58,8 @@ function TabPanel(props: TabPanelProps) {
     <div
       role="tabpanel"
       hidden={value !== index}
-      id={`fleet-tabpanel-${index}`}
-      aria-labelledby={`fleet-tab-${index}`}
+      id={`trailer-tabpanel-${index}`}
+      aria-labelledby={`trailer-tab-${index}`}
       {...other}
     >
       {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
@@ -69,7 +67,7 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
+const TrailerFleet: React.FC<TrailerFleetProps> = ({ onClose }) => {
   const { vehicles, defectReports, fleetStatus } = useSelector((state: RootState) => state.vehicle);
   
   const [tabValue, setTabValue] = useState(0);
@@ -169,7 +167,7 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
           onChange={(_, newValue) => setTabValue(newValue)}
           sx={{
             '& .MuiTab-root': {
-              color: '#FFD700', // Yellow color for inactive tabs
+              color: '#FFD700',
               fontWeight: 'bold',
               '&.Mui-selected': {
                 color: 'primary.main',
@@ -177,23 +175,23 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
             },
           }}
         >
-          <Tab label="Fleet Overview" />
+          <Tab label="Trailer Overview" />
           <Tab label="Defect Reports" />
           <Tab label="Maintenance Schedule" />
-          <Tab label="Vehicle Assignment" />
+          <Tab label="Trailer Assignment" />
         </Tabs>
       </Box>
 
-      {/* Fleet Overview Tab */}
+      {/* Trailer Overview Tab */}
       <TabPanel value={tabValue} index={0}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6">Vehicle Fleet</Typography>
+          <Typography variant="h6">Trailer Fleet</Typography>
           <Button
             variant="contained"
             startIcon={<Add />}
             onClick={() => setShowAddVehicleDialog(true)}
           >
-            Add Vehicle
+            Add Trailer
           </Button>
         </Box>
 
@@ -201,7 +199,7 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Vehicle</TableCell>
+                <TableCell>Trailer</TableCell>
                 <TableCell>Registration</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Current Driver</TableCell>
@@ -249,7 +247,7 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
                         <Visibility />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Edit Vehicle">
+                    <Tooltip title="Edit Trailer">
                       <IconButton
                         size="small"
                         onClick={() => openVehicleDialog(vehicle)}
@@ -282,7 +280,7 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Vehicle</TableCell>
+                <TableCell>Trailer</TableCell>
                 <TableCell>Driver</TableCell>
                 <TableCell>Defect Type</TableCell>
                 <TableCell>Priority</TableCell>
@@ -346,7 +344,7 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
         </Typography>
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="body2">
-            <strong>Maintenance Schedule:</strong> Track scheduled maintenance, MOT tests, and service intervals for all vehicles.
+            <strong>Maintenance Schedule:</strong> Track scheduled maintenance, MOT tests, and service intervals for all trailers.
           </Typography>
         </Alert>
         
@@ -380,22 +378,22 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
         </Grid>
       </TabPanel>
 
-      {/* Vehicle Assignment Tab */}
+      {/* Trailer Assignment Tab */}
       <TabPanel value={tabValue} index={3}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6">Vehicle Assignment Management</Typography>
+          <Typography variant="h6">Trailer Assignment Management</Typography>
           <Button
             variant="contained"
             startIcon={<Assignment />}
             onClick={() => {/* Add assignment handler */}}
           >
-            Assign Vehicle
+            Assign Trailer
           </Button>
         </Box>
 
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="body2">
-            <strong>Vehicle Assignment:</strong> Manage driver-vehicle assignments, track current allocations, and view assignment history.
+            <strong>Trailer Assignment:</strong> Manage trailer allocations, track current usage, and view assignment history.
           </Typography>
         </Alert>
 
@@ -403,7 +401,7 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Vehicle</TableCell>
+                <TableCell>Trailer</TableCell>
                 <TableCell>Registration</TableCell>
                 <TableCell>Current Driver</TableCell>
                 <TableCell>Assignment Date</TableCell>
@@ -486,7 +484,7 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
             <Card sx={{ bgcolor: 'success.light', color: 'white' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Assigned Vehicles
+                  Assigned Trailers
                 </Typography>
                 <Typography variant="h4">
                   {vehicles.filter(v => v.currentDriver).length}
@@ -501,7 +499,7 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
             <Card sx={{ bgcolor: 'warning.light', color: 'white' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Available Vehicles
+                  Available Trailers
                 </Typography>
                 <Typography variant="h4">
                   {vehicles.filter(v => !v.currentDriver).length}
@@ -516,13 +514,13 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
             <Card sx={{ bgcolor: 'info.light', color: 'white' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Total Fleet
+                  Total Trailers
                 </Typography>
                 <Typography variant="h4">
                   {vehicles.length}
                 </Typography>
                 <Typography variant="body2">
-                  All vehicles
+                  All trailers
                 </Typography>
               </CardContent>
             </Card>
@@ -530,27 +528,27 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
         </Grid>
       </TabPanel>
 
-      {/* Add Vehicle Dialog */}
+      {/* Add Trailer Dialog */}
       <Dialog open={showAddVehicleDialog} onClose={() => setShowAddVehicleDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add New Vehicle</DialogTitle>
+        <DialogTitle>Add New Trailer</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary">
-            Vehicle addition form will be implemented here.
+            Trailer addition form will be implemented here.
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowAddVehicleDialog(false)}>Cancel</Button>
-          <Button onClick={handleAddVehicle} variant="contained">Add Vehicle</Button>
+          <Button onClick={handleAddVehicle} variant="contained">Add Trailer</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Vehicle Details Dialog */}
+      {/* Trailer Details Dialog */}
       {selectedVehicle && (
         <Dialog open={showVehicleDialog} onClose={() => setShowVehicleDialog(false)} maxWidth="md" fullWidth>
-          <DialogTitle>Vehicle Details: {selectedVehicle.make} {selectedVehicle.model}</DialogTitle>
+          <DialogTitle>Trailer Details: {selectedVehicle.make} {selectedVehicle.model}</DialogTitle>
           <DialogContent>
             <Typography variant="body2" color="text.secondary">
-              Vehicle details and status update form will be implemented here.
+              Trailer details and status update form will be implemented here.
             </Typography>
           </DialogContent>
           <DialogActions>
@@ -579,4 +577,6 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
   );
 };
 
-export default FleetManagement;
+export default TrailerFleet;
+
+

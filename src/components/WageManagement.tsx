@@ -319,16 +319,19 @@ const WageManagement: React.FC<WageManagementProps> = ({ onClose }) => {
   return (
     <Box sx={{ py: 2, px: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          <AttachMoney sx={{ mr: 1, verticalAlign: 'middle' }} />
-          Wage Management
-        </Typography>
-                                     <IconButton
-             onClick={onClose}
-             sx={{ color: 'yellow', fontSize: '1.5rem' }}
-           >
-             <Home />
-           </IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="h4" gutterBottom sx={{ mr: 1 }}>
+            <AttachMoney sx={{ mr: 1, verticalAlign: 'middle' }} />
+            Wage Management
+          </Typography>
+          <IconButton
+            onClick={onClose}
+            sx={{ color: 'yellow', fontSize: '1.5rem' }}
+          >
+            <Home />
+          </IconButton>
+        </Box>
+        <Box />
       </Box>
 
       {/* Summary Cards */}

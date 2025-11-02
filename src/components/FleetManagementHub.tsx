@@ -9,6 +9,8 @@ import {
   Divider,
   Chip,
   IconButton,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   LocalShipping,
@@ -27,6 +29,7 @@ import {
 } from '@mui/icons-material';
 
 import FleetManagement from './FleetManagement';
+import TrailerFleet from './TrailerFleet';
 import FuelManagement from './FuelManagement';
 import DriverManagement from './DriverManagement';
 import RoutePlanning from './RoutePlanning';
@@ -37,32 +40,47 @@ interface FleetManagementHubProps {
   userRole?: 'admin' | 'driver' | 'owner';
 }
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`fleet-tabpanel-${index}`}
+      aria-labelledby={`fleet-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
 const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose, userRole = 'admin' }) => {
-  const [currentView, setCurrentView] = useState<'main' | 'fleet' | 'fuel' | 'drivers' | 'routePlanning'>('main');
+  const [currentView, setCurrentView] = useState<'main' | 'fleet' | 'trailers' | 'fuel' | 'drivers' | 'routePlanning'>('main');
+  const [fleetTabValue, setFleetTabValue] = useState(0);
   
   // Define the cards configuration based on user role
-  const getCardConfiguration = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return { functionalCards: 4, comingSoonCards: 2 }; // Fleet, Drivers, Fuel, Route Planning + 2 coming soon
-      case 'driver':
-        return { functionalCards: 3, comingSoonCards: 2 }; // Fleet, Drivers, Fuel + 2 coming soon
-      default:
-        return { functionalCards: 4, comingSoonCards: 2 };
-    }
-  };
+  // Count actual cards that will be rendered
+  const functionalCardsCount = userRole === 'admin' ? 4 : 3; // Fleet, Drivers, Fuel, (Route Planning if admin)
+  const comingSoonCardsCount = 2; // Maintenance Hub, Analytics Dashboard
   
-  const { functionalCards, comingSoonCards } = getCardConfiguration(userRole);
   const columnsPerRow = 3;
+  const totalCardsBeforePlaceholders = functionalCardsCount + comingSoonCardsCount;
   
   // Generate placeholder cards to complete incomplete rows
-  const placeholderCards = generatePlaceholderCards(functionalCards, comingSoonCards, columnsPerRow);
+  const placeholderCards = generatePlaceholderCards(functionalCardsCount, comingSoonCardsCount, columnsPerRow);
   
   // Debug: Log the card counts
-  console.log('Functional cards:', functionalCards);
-  console.log('Coming soon cards:', comingSoonCards);
+  console.log('Functional cards:', functionalCardsCount);
+  console.log('Coming soon cards:', comingSoonCardsCount);
   console.log('Placeholder cards:', placeholderCards.length);
-  console.log('Total cards:', functionalCards + comingSoonCards + placeholderCards.length);
+  console.log('Total cards:', totalCardsBeforePlaceholders + placeholderCards.length);
 
 
   const handleNavigateToFleet = () => setCurrentView('fleet');
@@ -70,8 +88,48 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose, userRo
   const handleNavigateToDrivers = () => setCurrentView('drivers');
   const handleBackToMain = () => setCurrentView('main');
 
+  // Fleet/Trailer view with tabs
   if (currentView === 'fleet') {
-    return <FleetManagement onClose={handleBackToMain} />;
+    return (
+      <Box sx={{ py: 2, px: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h4" gutterBottom sx={{ mr: 2 }}>
+            <LocalShipping sx={{ mr: 1, verticalAlign: 'middle' }} />
+            Fleet Management
+          </Typography>
+          <IconButton onClick={handleBackToMain} sx={{ color: 'yellow', fontSize: '1.5rem' }}>
+            <Home />
+          </IconButton>
+        </Box>
+
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs 
+            value={fleetTabValue} 
+            onChange={(_, newValue) => setFleetTabValue(newValue)}
+            sx={{
+              '& .MuiTab-root': {
+                color: '#FFD700',
+                fontWeight: 'bold',
+                '&.Mui-selected': {
+                  color: 'primary.main',
+                },
+              },
+            }}
+          >
+            <Tab label="Vehicles" />
+            <Tab label="Trailers" />
+          </Tabs>
+        </Box>
+
+        <TabPanel value={fleetTabValue} index={0}>
+          <FleetManagement onClose={handleBackToMain} />
+        </TabPanel>
+
+        <TabPanel value={fleetTabValue} index={1}>
+          <TrailerFleet onClose={handleBackToMain} />
+        </TabPanel>
+      </Box>
+    );
   }
 
   if (currentView === 'fuel') {
@@ -127,7 +185,7 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose, userRo
                     Fleet
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Vehicle management and defect tracking
+                    Vehicles & Trailers management
                   </Typography>
                 </Box>
               </Box>
@@ -137,19 +195,19 @@ const FleetManagementHub: React.FC<FleetManagementHubProps> = ({ onClose, userRo
               <Box sx={{ mt: 2, minHeight: '60px' }}>
                 <Chip 
                   icon={<LocalShipping />} 
-                  label="Vehicle Management" 
+                  label="Vehicles" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<LocalShipping />} 
+                  label="Trailers" 
                   size="small" 
                   sx={{ mr: 1, mb: 1 }}
                 />
                 <Chip 
                   icon={<Build />} 
                   label="Defect Tracking" 
-                  size="small" 
-                  sx={{ mr: 1, mb: 1 }}
-                />
-                <Chip 
-                  icon={<Assessment />} 
-                  label="Maintenance" 
                   size="small" 
                   sx={{ mb: 1 }}
                 />
