@@ -173,48 +173,62 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
         const { supabase } = await import('../lib/supabase');
         const { data, error } = await supabase
           .from('staff_members')
-          .select('*')
+          .select('*, staff_id') // Ensure staff_id is included (it should be with *, but explicit for clarity)
           .eq('role', 'driver')
           .order('created_at', { ascending: false });
         if (error) {
           console.error('Error loading drivers:', error);
           return;
         }
-        const mapped: Driver[] = (data || []).map((d: any) => ({
-          id: d.id,
-          firstName: d.first_name,
-          lastName: d.family_name,
-          email: d.email,
-          phone: d.phone || '',
-          addressLine1: d.address_line1 || '',
-          addressLine2: d.address_line2 || '',
-          addressLine3: d.address_line3 || '',
-          town: d.town || '',
-          city: '',
-          postcode: d.postcode || '',
-          dateOfBirth: d.date_of_birth || '',
-          employeeNumber: d.employee_number || '',
-          hireDate: d.start_date || '',
-          status: d.is_active ? 'active' : 'inactive',
-          role: 'driver',
-          licenseNumber: d.license_number || '',
-          licenseExpiry: d.license_expiry || '',
-          cpcCardNumber: d.cpc_card_number || '',
-          cpcExpiry: d.cpc_expiry || '',
-          medicalCertificate: d.medical_certificate || '',
-          medicalExpiry: d.medical_expiry || '',
-          currentVehicle: d.current_vehicle || '',
-          totalHours: d.total_hours || 0,
-          totalMiles: d.total_miles || 0,
-          safetyScore: d.safety_score || 0,
-          performanceRating: d.performance_rating || 0,
-          notes: d.notes || '',
-          emergencyContact: {
-            name: d.next_of_kin_name || '',
-            relationship: d.next_of_kin_relationship || '',
-            phone: d.next_of_kin_phone || ''
-          }
-        }));
+        const mapped: Driver[] = (data || []).map((d: any) => {
+          // Use staff_id as employee number if employee_number is not set
+          // staff_id is auto-generated in format EMP-YYYY-MM-001 and should always be available
+          const employeeNum = d.employee_number || d.staff_id || '';
+          
+          console.log('Loading driver:', {
+            id: d.id,
+            name: `${d.first_name} ${d.family_name}`,
+            staff_id: d.staff_id,
+            employee_number: d.employee_number,
+            final_employeeNumber: employeeNum
+          });
+          
+          return {
+            id: d.id,
+            firstName: d.first_name,
+            lastName: d.family_name,
+            email: d.email,
+            phone: d.phone || '',
+            addressLine1: d.address_line1 || '',
+            addressLine2: d.address_line2 || '',
+            addressLine3: d.address_line3 || '',
+            town: d.town || '',
+            city: '',
+            postcode: d.postcode || '',
+            dateOfBirth: d.date_of_birth || '',
+            employeeNumber: employeeNum,
+            hireDate: d.start_date || '',
+            status: d.is_active ? 'active' : 'inactive',
+            role: 'driver',
+            licenseNumber: d.license_number || '',
+            licenseExpiry: d.license_expiry || '',
+            cpcCardNumber: d.cpc_card_number || '',
+            cpcExpiry: d.cpc_expiry || '',
+            medicalCertificate: d.medical_certificate || '',
+            medicalExpiry: d.medical_expiry || '',
+            currentVehicle: d.current_vehicle || '',
+            totalHours: d.total_hours || 0,
+            totalMiles: d.total_miles || 0,
+            safetyScore: d.safety_score || 0,
+            performanceRating: d.performance_rating || 0,
+            notes: d.notes || '',
+            emergencyContact: {
+              name: d.next_of_kin_name || '',
+              relationship: d.next_of_kin_relationship || '',
+              phone: d.next_of_kin_phone || ''
+            }
+          };
+        });
         setDrivers(mapped);
       } catch (e) {
         console.error('Failed to load drivers:', e);
@@ -623,12 +637,12 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
                           {driver.firstName} {driver.lastName}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {driver.email}
+                          Employee #{driver.employeeNumber || 'N/A'}
                         </Typography>
                       </Box>
                     </Box>
                   </TableCell>
-                  <TableCell>{driver.employeeNumber}</TableCell>
+                  <TableCell>{driver.employeeNumber || 'N/A'}</TableCell>
                   <TableCell>
                     <Chip
                       label={getRoleLabel(driver.role)}
@@ -705,7 +719,7 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
           {drivers
             .filter(driver => driver.status === 'active')
             .map(driver => (
-              <Grid item xs={12} md={6} lg={4} key={driver.id}>
+              <Grid item xs={12} md={8} lg={6} key={driver.id}>
                 <Card>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -1016,15 +1030,6 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Email"
-                type="email"
-                value={newDriver.email}
-                onChange={(e) => setNewDriver({ ...newDriver, email: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
                 label="Phone"
                 value={newDriver.phone}
                 onChange={(e) => setNewDriver({ ...newDriver, phone: e.target.value })}
@@ -1248,7 +1253,7 @@ const DriverManagement: React.FC<DriverManagementProps> = ({ onClose }) => {
                   <strong>Name:</strong> {selectedDriver.firstName} {selectedDriver.lastName}
                 </Typography>
                 <Typography variant="body2" gutterBottom>
-                  <strong>Email:</strong> {selectedDriver.email}
+                  <strong>Employee #:</strong> {selectedDriver.employeeNumber || 'N/A'}
                 </Typography>
                 <Typography variant="body2" gutterBottom>
                   <strong>Phone:</strong> {editMode ? (

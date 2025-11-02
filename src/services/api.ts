@@ -121,7 +121,27 @@ export class ApiService {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Safely extract error message from Supabase error
+        let errorMsg = 'Failed to update record';
+        if (error?.message && typeof error.message === 'string') {
+          errorMsg = error.message;
+        } else if (error?.details && typeof error.details === 'string') {
+          errorMsg = error.details;
+        } else if (error?.hint && typeof error.hint === 'string') {
+          errorMsg = error.hint;
+        } else if (typeof error === 'string') {
+          errorMsg = error;
+        } else {
+          // Only stringify if it's not a React component
+          try {
+            errorMsg = JSON.stringify(error);
+          } catch (e) {
+            errorMsg = String(error) || 'Failed to update record';
+          }
+        }
+        throw new Error(errorMsg);
+      }
 
       return {
         data: result,
@@ -129,9 +149,23 @@ export class ApiService {
         success: true
       };
     } catch (error: any) {
+      // Safely extract error message
+      let errorMessage = 'Failed to update record';
+      if (error) {
+        if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error?.message && typeof error.message === 'string') {
+          errorMessage = error.message;
+        } else if (error?.error) {
+          errorMessage = typeof error.error === 'string' ? error.error : JSON.stringify(error.error);
+        } else {
+          errorMessage = JSON.stringify(error);
+        }
+      }
+      
       return {
         data: null,
-        error: error.message || 'Failed to update record',
+        error: errorMessage,
         success: false
       };
     }

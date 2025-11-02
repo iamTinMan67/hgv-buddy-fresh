@@ -35,6 +35,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  InputAdornment,
 } from '@mui/material';
 import { staffIdGenerator } from '../utils/staffIdGenerator';
 import { staffAuthService } from '../services/staffAuthService';
@@ -62,6 +63,8 @@ import {
   DirectionsCar,
   TableChart,
   ViewModule,
+  Search,
+  Clear,
 } from '@mui/icons-material';
 
 interface StaffManagementProps {
@@ -231,32 +234,23 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
   };
 
   const validateCurrentPage = async (): Promise<boolean> => {
-          // Validating page
+          // Validating page - All fields are now optional except employee number (auto-generated)
     const errors: Record<string, string> = {};
     
     switch (currentPage) {
       case 0: // Personal, Address and Contact Information
-        if (!currentStaff.firstName) errors.firstName = 'First name is required';
-        if (!currentStaff.familyName) errors.familyName = 'Family name is required';
-        if (!currentStaff.address?.line1) errors.addressLine1 = 'Address line 1 is required';
-        if (!currentStaff.address?.town) errors.town = 'Town is required';
-        if (!currentStaff.address?.postCode) errors.postCode = 'Post code is required';
-        if (!currentStaff.contact?.mobile) errors.mobile = 'Mobile is required';
-        if (!currentStaff.contact?.email) errors.email = 'Email is required';
+        // All fields optional - no validation required
         break;
       case 1: // Next of Kin Information
-        if (!currentStaff.nextOfKin?.name) errors.nextOfKinName = 'Next of kin name is required';
-        if (!currentStaff.nextOfKin?.relationship) errors.relationship = 'Relationship is required';
+        // All fields optional - no validation required
         break;
       case 2: // Employment Details
-        if (!currentStaff.taxCode) errors.taxCode = 'Tax code is required';
-        if (!currentStaff.nationalInsurance) errors.nationalInsurance = 'NI number is required';
-        if (!currentStaff.startDate) errors.startDate = 'Start date is required';
-        if (!currentStaff.username) errors.username = 'Username is required';
-        if (!currentStaff.password) errors.password = 'Password is required';
-        if (currentStaff.password && currentStaff.password.length < 6) errors.password = 'Password must be at least 6 characters';
+        // Password validation only if password is provided
+        if (currentStaff.password && currentStaff.password.length < 6) {
+          errors.password = 'Password must be at least 6 characters';
+        }
         
-        // Check for duplicate username (only for new staff, not when editing)
+        // Check for duplicate username (only for new staff, not when editing, and only if username is provided)
         if (currentStaff.username && !editingId) {
           const isUsernameTaken = await staffAuthService.isUsernameTaken(currentStaff.username);
           if (isUsernameTaken) {
@@ -266,13 +260,9 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
         break;
       case 3: // Qualifications and Licenses
         // Optional page - no validation required
-        // Page 3 (Qualifications) - no validation required
         break;
       case 4: // Bank Details
-        if (!currentStaff.bankDetails?.accountName) errors.accountName = 'Account name is required';
-        if (!currentStaff.bankDetails?.accountNumber) errors.accountNumber = 'Account number is required';
-        if (!currentStaff.bankDetails?.sortCode) errors.sortCode = 'Sort code is required';
-        if (!currentStaff.bankDetails?.bankName) errors.bankName = 'Bank name is required';
+        // All fields optional - no validation required
         break;
     }
     
@@ -373,20 +363,31 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
     }));
   };
 
-  // Auto-generate Staff ID when start date changes
+  // Auto-generate Staff ID and Employee Number when start date changes
   useEffect(() => {
     const generateStaffId = async () => {
       if (currentStaff.startDate && !editingId) {
         try {
           const newStaffId = await staffIdGenerator.generateStaffId(currentStaff.startDate);
-          setCurrentStaff(prev => ({ ...prev, staffId: newStaffId }));
+          setCurrentStaff(prev => ({ 
+            ...prev, 
+            staffId: newStaffId,
+            employeeNumber: newStaffId // Auto-generate employee number from staff ID
+          }));
         } catch (error) {
           console.error('Error generating Staff ID:', error);
           // Fallback to a timestamp-based ID if generation fails
           const startYear = new Date(currentStaff.startDate).getFullYear();
           const fallbackId = `EMP-${startYear}-${Date.now().toString().slice(-3)}`;
-          setCurrentStaff(prev => ({ ...prev, staffId: fallbackId }));
+          setCurrentStaff(prev => ({ 
+            ...prev, 
+            staffId: fallbackId,
+            employeeNumber: fallbackId // Auto-generate employee number from staff ID
+          }));
         }
+      } else if (!currentStaff.startDate && !editingId) {
+        // Clear employee number if start date is cleared
+        setCurrentStaff(prev => ({ ...prev, employeeNumber: '' }));
       }
     };
     
@@ -434,7 +435,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
             contact: {
               phone: staff.phone || '',
               mobile: staff.mobile || '',
-              email: staff.email
+              email: staff.email || ''
             },
             nextOfKin: {
               name: staff.next_of_kin_name || '',
@@ -494,8 +495,9 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
 
   const handleAddStaff = async () => {
     try {
-      // Generate staff ID
-      const newStaffId = await staffIdGenerator.generateStaffId(currentStaff.startDate);
+      // Generate staff ID (this will be used as employee_number too)
+      const startDateForGeneration = currentStaff.startDate || new Date().toISOString().split('T')[0];
+      const newStaffId = await staffIdGenerator.generateStaffId(startDateForGeneration);
       
       // Import Supabase client
       const { supabase } = await import('../lib/supabase');
@@ -521,6 +523,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       }
 
       // Create detailed staff record in staff_members table
+      // Employee number is auto-generated from staff_id
       const { error: staffError } = await supabase
         .from('staff_members')
         .insert({
@@ -544,13 +547,13 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
           next_of_kin_email: currentStaff.nextOfKin?.email || '',
           role: currentStaff.role || 'driver',
           is_active: true,
-          start_date: currentStaff.startDate || new Date().toISOString().split('T')[0],
+          start_date: startDateForGeneration,
           tax_code: currentStaff.taxCode || '',
           national_insurance: currentStaff.nationalInsurance || '',
-          employee_number: currentStaff.employeeNumber || '',
-          date_of_birth: currentStaff.dateOfBirth || '',
+          employee_number: newStaffId, // Auto-generated employee number (same as staff_id)
+          date_of_birth: currentStaff.dateOfBirth && currentStaff.dateOfBirth.trim() ? currentStaff.dateOfBirth : null,
           license_number: currentStaff.licenseNumber || '',
-          license_expiry: currentStaff.licenseExpiry || '',
+          license_expiry: currentStaff.licenseExpiry && currentStaff.licenseExpiry.trim() ? currentStaff.licenseExpiry : null,
           bank_account_number: currentStaff.bankDetails?.accountNumber || '',
           bank_sort_code: currentStaff.bankDetails?.sortCode || '',
           bank_name: currentStaff.bankDetails?.bankName || '',
@@ -692,24 +695,54 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       const { supabase } = await import('../lib/supabase');
       
       // Update user record in Supabase
-      const { error: userError } = await supabase
-        .from('users')
-        .update({
-          email: currentStaff.contact?.email || '',
-          first_name: currentStaff.firstName || '',
-          last_name: currentStaff.familyName || '',
-          role: currentStaff.role || 'driver'
-        })
-        .eq('id', editingId);
-
-      if (userError) {
-        console.error('Failed to update user record:', userError);
-        alert(`Failed to update user record: ${userError.message}`);
+      let userError: any = null;
+      try {
+        const result = await supabase
+          .from('users')
+          .update({
+            email: currentStaff.contact?.email || '',
+            first_name: currentStaff.firstName || '',
+            last_name: currentStaff.familyName || '',
+            role: currentStaff.role || 'driver',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingId);
+        
+        userError = result.error;
+        
+        if (userError) {
+          console.error('Failed to update user record:', userError);
+          // Check if it's a CORS or network error
+          const errorMessage = userError.message || '';
+          if (errorMessage.includes('CORS') || errorMessage.includes('NetworkError') || errorMessage.includes('fetch')) {
+            alert(`Network/CORS error when updating user. This may be a Supabase configuration issue.\n\nPlease check:\n1. Supabase project is active\n2. Network connectivity\n3. Supabase CORS settings\n\nError: ${errorMessage}`);
+          } else {
+            alert(`Failed to update user record: ${errorMessage}`);
+          }
+          return;
+        }
+      } catch (err: any) {
+        console.error('Exception updating user record:', err);
+        const errorMsg = err?.message || String(err) || 'Unknown error';
+        if (errorMsg.includes('CORS') || errorMsg.includes('NetworkError') || errorMsg.includes('fetch')) {
+          alert(`Network/CORS error when updating user.\n\nThis may indicate:\n1. Supabase project is paused or unavailable\n2. Network connectivity issues\n3. Supabase CORS configuration issue\n\nPlease check your Supabase dashboard and try again.\n\nError: ${errorMsg}`);
+        } else {
+          alert(`Error updating user record: ${errorMsg}`);
+        }
         return;
       }
 
-      // Update detailed staff record in staff_members table
-      const { error: staffError } = await supabase
+      // editingId is the staff_members.id (from StaffMember.id which maps to staff_members.id)
+      // Update detailed staff record in staff_members table using staff_members.id
+      console.log('Updating staff member with ID:', editingId);
+      console.log('Current staff data being saved:', {
+        firstName: currentStaff.firstName,
+        email: currentStaff.contact?.email,
+        phone: currentStaff.contact?.phone,
+        mobile: currentStaff.contact?.mobile
+      });
+      
+      const { data: updateResult, error: staffError } = await supabase
         .from('staff_members')
         .update({
           first_name: currentStaff.firstName || '',
@@ -731,19 +764,34 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
           tax_code: currentStaff.taxCode || '',
           national_insurance: currentStaff.nationalInsurance || '',
           employee_number: currentStaff.employeeNumber || '',
-          date_of_birth: currentStaff.dateOfBirth || '',
+          date_of_birth: currentStaff.dateOfBirth && currentStaff.dateOfBirth.trim() ? currentStaff.dateOfBirth : null,
           license_number: currentStaff.licenseNumber || '',
-          license_expiry: currentStaff.licenseExpiry || '',
+          license_expiry: currentStaff.licenseExpiry && currentStaff.licenseExpiry.trim() ? currentStaff.licenseExpiry : null,
           bank_account_number: currentStaff.bankDetails?.accountNumber || '',
           bank_sort_code: currentStaff.bankDetails?.sortCode || '',
-          bank_name: currentStaff.bankDetails?.bankName || ''
+          bank_name: currentStaff.bankDetails?.bankName || '',
+          updated_at: new Date().toISOString()
         })
-        .eq('user_id', editingId);
+        .eq('id', editingId)
+        .select();
 
       if (staffError) {
         console.error('Failed to update staff record:', staffError);
-        alert(`Failed to update staff record: ${staffError.message}`);
+        const errorMsg = staffError?.message || staffError?.details || staffError?.hint || JSON.stringify(staffError) || 'Unknown error';
+        alert(`Failed to update staff record: ${errorMsg}`);
         return;
+      }
+      
+      console.log('✅ Staff member update query executed');
+      console.log('Update result:', updateResult);
+      console.log('Number of rows updated:', updateResult?.length || 0);
+      
+      if (!updateResult || updateResult.length === 0) {
+        console.warn('⚠️ No rows were updated. Check if the ID matches a record.');
+        alert('Warning: Update completed but no rows were modified. Please check if the staff member ID is correct.');
+      } else {
+        console.log('✅ Staff member updated successfully in database');
+        console.log('Updated record:', updateResult[0]);
       }
       
       // Deep clone the current staff data to ensure all nested objects are preserved
@@ -767,10 +815,84 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
       localStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
       
       setStaffMembers(updatedStaffMembers);
+      // Reload staff members from database to reflect changes
+      const { data: reloadedStaff, error: reloadError } = await supabase
+        .from('staff_members')
+        .select(`
+          *,
+          staff_qualifications (*),
+          staff_licenses (*)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (!reloadError && reloadedStaff) {
+        const staffData: StaffMember[] = reloadedStaff.map(staff => ({
+          id: staff.user_id || staff.id, // Use user_id as the main id
+          staffId: staff.staff_id,
+          firstName: staff.first_name,
+          middleName: staff.middle_name || '',
+          familyName: staff.family_name,
+          address: {
+            line1: staff.address_line1 || '',
+            line2: staff.address_line2 || '',
+            line3: staff.address_line3 || '',
+            town: staff.town || '',
+            postCode: staff.postcode || ''
+          },
+          contact: {
+            phone: staff.phone || '',
+            mobile: staff.mobile || '',
+            email: staff.email || ''
+          },
+          nextOfKin: {
+            name: staff.next_of_kin_name || '',
+            relationship: staff.next_of_kin_relationship || '',
+            phone: staff.next_of_kin_phone || '',
+            email: staff.next_of_kin_email || ''
+          },
+          taxCode: staff.tax_code || '',
+          nationalInsurance: staff.national_insurance || '',
+          role: staff.role as 'manager' | 'admin' | 'driver',
+          isActive: staff.is_active,
+          startDate: staff.start_date,
+          lastUpdated: staff.updated_at,
+          username: staff.email?.split('@')[0] || '',
+          password: '',
+          employeeNumber: staff.employee_number,
+          dateOfBirth: staff.date_of_birth,
+          licenseNumber: staff.license_number,
+          licenseExpiry: staff.license_expiry,
+          bankDetails: staff.bank_account_number ? {
+            accountNumber: staff.bank_account_number,
+            sortCode: staff.bank_sort_code || '',
+            bankName: staff.bank_name || ''
+          } : undefined,
+          qualifications: staff.staff_qualifications?.map((qual: any) => ({
+            name: qual.name,
+            issuingBody: qual.issuing_body,
+            issueDate: qual.issue_date,
+            expiryDate: qual.expiry_date,
+            documentUrl: qual.document_url
+          })) || [],
+          licenses: staff.staff_licenses?.map((license: any) => ({
+            type: license.type,
+            number: license.number,
+            issuingBody: license.issuing_body,
+            issueDate: license.issue_date,
+            expiryDate: license.expiry_date,
+            documentUrl: license.document_url
+          })) || []
+        }));
+        
+        setStaffMembers(staffData);
+        localStorage.setItem('staffMembers', JSON.stringify(staffData));
+      }
+      
       resetForm();
       setEditingId(null);
       setShowAddDialog(false);
       
+      alert('✅ Staff member updated successfully!');
       console.log('✅ Staff member updated successfully');
       
     } catch (error) {
@@ -850,14 +972,31 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
   // Filter staff members based on current filters
   const filteredStaffMembers = staffMembers.filter(staff => {
     const matchesRole = roleFilter === 'all' || staff.role === roleFilter;
-    const matchesName = nameFilter === '' || 
-      `${staff.firstName} ${staff.middleName} ${staff.familyName}`.toLowerCase().includes(nameFilter.toLowerCase()) ||
-      staff.staffId.toLowerCase().includes(nameFilter.toLowerCase());
     const matchesStatus = statusFilter === 'all' || 
       (statusFilter === 'active' && staff.isActive) || 
       (statusFilter === 'inactive' && !staff.isActive);
     
-    return matchesRole && matchesName && matchesStatus;
+    // Enhanced search - search across multiple fields
+    const searchTerm = nameFilter.toLowerCase().trim();
+    if (searchTerm) {
+      const fullName = `${staff.firstName} ${staff.middleName} ${staff.familyName}`.toLowerCase();
+      const staffId = staff.staffId?.toLowerCase() || '';
+      const email = staff.contact?.email?.toLowerCase() || '';
+      const phone = staff.contact?.phone?.toLowerCase() || '';
+      const mobile = staff.contact?.mobile?.toLowerCase() || '';
+      const employeeNumber = staff.employeeNumber?.toLowerCase() || '';
+      
+      const matchesName = fullName.includes(searchTerm) ||
+        staffId.includes(searchTerm) ||
+        email.includes(searchTerm) ||
+        phone.includes(searchTerm) ||
+        mobile.includes(searchTerm) ||
+        employeeNumber.includes(searchTerm);
+      
+      return matchesRole && matchesName && matchesStatus;
+    }
+    
+    return matchesRole && matchesStatus;
   });
 
   const activeStaff = staffMembers.filter(s => s.isActive).length;
@@ -918,37 +1057,80 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
 
       {/* Staff Directory Tab */}
       <TabPanel value={tabValue} index={0}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">Staff Directory</Typography>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => {
-              // Opening Add Staff Member dialog
-              console.log('Current form state before opening:', currentStaff);
-              setShowAddDialog(true);
-            }}
-            disabled={!canAddDelete}
-          >
-            Add Staff Member
-          </Button>
-        </Box>
-
-
-
-        {/* Filter Controls */}
+        {/* Search and Filter Controls - Placed at the top */}
         <Box sx={{ mb: 3, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
-          <Typography variant="subtitle2" gutterBottom color="primary">
-            Filter Staff Directory
-          </Typography>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Role</InputLabel>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                size="medium"
+                label="Search Staff"
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                placeholder="Search by name, staff ID, email, or phone..."
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search sx={{ color: '#FFD700' }} />
+                    </InputAdornment>
+                  ),
+                  sx: { 
+                    fontSize: '1rem',
+                    color: 'white',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#FFD700',
+                      borderWidth: '2px',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#FFD700',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#FFD700',
+                      borderWidth: '2px',
+                    },
+                  }
+                }}
+                InputLabelProps={{
+                  sx: {
+                    color: 'white',
+                    '&.Mui-focused': {
+                      color: '#FFD700',
+                    },
+                  },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <FormControl 
+                fullWidth 
+                size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: '#FFD700', // Golden border
+                      borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#FFD700',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#FFD700',
+                      borderWidth: '2px',
+                    },
+                  },
+                }}
+              >
+                <InputLabel sx={{ color: 'white' }}>Role</InputLabel>
                 <Select
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
                   label="Role"
+                  sx={{
+                    color: 'white',
+                    '& .MuiSvgIcon-root': {
+                      color: '#FFD700',
+                    },
+                  }}
                 >
                   <MenuItem value="all">All Roles</MenuItem>
                   <MenuItem value="manager">Manager</MenuItem>
@@ -956,16 +1138,6 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   <MenuItem value="driver">Driver</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Search by Name or Staff ID"
-                value={nameFilter}
-                onChange={(e) => setNameFilter(e.target.value)}
-                placeholder="Enter name or staff ID..."
-              />
             </Grid>
             <Grid item xs={12} md={3}>
               <FormControl fullWidth size="small">
@@ -982,24 +1154,55 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
               </FormControl>
             </Grid>
             <Grid item xs={12} md={3}>
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 <Button
                   variant="outlined"
                   size="small"
+                  color="warning"
+                  startIcon={<Clear />}
                   onClick={() => {
                     setRoleFilter('all');
                     setNameFilter('');
                     setStatusFilter('all');
                   }}
+                  sx={{
+                    borderColor: '#FFD700',
+                    color: '#FFD700',
+                    '&:hover': {
+                      borderColor: '#FFD700',
+                      backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                    },
+                  }}
                 >
                   Clear Filters
                 </Button>
-                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
                   Showing {filteredStaffMembers.length} of {totalStaff} staff members
                 </Typography>
               </Box>
             </Grid>
           </Grid>
+        </Box>
+
+        {/* Staff Directory Title */}
+        <Typography variant="h5" gutterBottom sx={{ mb: 2, color: 'white' }}>
+          Staff Directory
+        </Typography>
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ flexGrow: 1 }} />
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => {
+              // Opening Add Staff Member dialog
+              console.log('Current form state before opening:', currentStaff);
+              setShowAddDialog(true);
+            }}
+            disabled={!canAddDelete}
+          >
+            Add Staff Member
+          </Button>
         </Box>
 
         {/* View Toggle */}
@@ -1136,7 +1339,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
         ) : (
           <Grid container spacing={3}>
             {filteredStaffMembers.map((staff) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={staff.id}>
+              <Grid item xs={12} sm={6} md={6} lg={4} key={staff.id}>
                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <CardContent sx={{ flexGrow: 1, p: 2 }}>
                     {/* Header with Avatar and Role */}
@@ -1169,15 +1372,15 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                         <Phone sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                        <Typography variant="body2">{staff.contact.phone}</Typography>
+                        <Typography variant="body2">{staff.contact?.phone || 'N/A'}</Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                         <PhoneAndroid sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                        <Typography variant="body2">{staff.contact.mobile}</Typography>
+                        <Typography variant="body2">{staff.contact?.mobile || 'N/A'}</Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <AlternateEmail sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                        <Typography variant="body2" noWrap>{staff.contact.email}</Typography>
+                        <Typography variant="body2" noWrap>{staff.contact?.email || 'N/A'}</Typography>
                       </Box>
                     </Box>
 
@@ -1705,9 +1908,12 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onClose }) => {
                   <TextField
                     fullWidth
                     label="Employee Number"
-                    value={currentStaff.employeeNumber || ''}
+                    value={currentStaff.employeeNumber || currentStaff.staffId || ''}
                     onChange={(e) => setCurrentStaff({ ...currentStaff, employeeNumber: e.target.value })}
-                    placeholder="e.g., EMP001"
+                    placeholder="Auto-generated when start date is set"
+                    disabled={!editingId} // Read-only for new staff (auto-generated), editable when editing
+                    helperText={!editingId ? "Auto-generated from staff ID (set start date first)" : "Can be edited for existing staff"}
+                    InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
                 <Grid item xs={12} md={6}>

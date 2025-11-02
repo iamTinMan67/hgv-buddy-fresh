@@ -61,6 +61,7 @@ import {
   Calculate,
   Storage,
   LocalShipping,
+  Edit,
 } from '@mui/icons-material';
 import { RootState, AppDispatch } from '../store';
 import {
@@ -68,6 +69,8 @@ import {
   JobAssignment as JobAssignmentType,
   JobStatus,
 } from '../store/slices/jobSlice';
+import { JobService } from '../services/api';
+import { PlotAllocationService, PlotAllocation } from '../services/plotAllocationService';
 
 interface TrailerPlannerProps {
   onClose: () => void;
@@ -144,6 +147,12 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
   const { vehicles } = useSelector((state: RootState) => state.vehicle);
   const { user } = useSelector((state: RootState) => state.auth);
 
+  // Log vehicles for debugging
+  useEffect(() => {
+    console.log('TrailerPlanner - Vehicles from Redux:', vehicles);
+    console.log('TrailerPlanner - Number of vehicles:', vehicles?.length || 0);
+  }, [vehicles]);
+
   const [tabValue, setTabValue] = useState(0);
   const [showLayoutDialog, setShowLayoutDialog] = useState(false);
   const [showCargoDialog, setShowCargoDialog] = useState(false);
@@ -153,6 +162,78 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
   const [selectedDriverId, setSelectedDriverId] = useState<string>('');
   const [drivers, setDrivers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [pendingJobs, setPendingJobs] = useState<JobAssignmentType[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+  const [draggedJobId, setDraggedJobId] = useState<string | null>(null);
+  const [plotAllocations, setPlotAllocations] = useState<Record<string, PlotAllocation[]>>({}); // vehicleId -> allocations
+  const [showEditTrailerDialog, setShowEditTrailerDialog] = useState(false);
+  const [trailerDimensions, setTrailerDimensions] = useState<{
+    length: number;
+    width: number;
+    height: number;
+    maxWeight: number;
+  } | null>(null);
+  const [editingVehicleId, setEditingVehicleId] = useState<string>('');
+
+  // Fetch pending jobs from database
+  useEffect(() => {
+    const loadPendingJobs = async () => {
+      setLoadingJobs(true);
+      try {
+        const result = await JobService.getJobs({ status: 'pending' });
+        if (result.success && result.data) {
+          // Convert DB jobs to JobAssignment format (similar to DailyPlanner)
+          const jobAssignments = result.data.map((dbJob: any) => {
+            // Parse metadata from special_requirements
+            let metadata: any = {};
+            if (dbJob.special_requirements) {
+              const metadataMatch = dbJob.special_requirements.match(/METADATA:(.+?)(?:\s*\||$)/);
+              if (metadataMatch) {
+                try {
+                  metadata = JSON.parse(metadataMatch[1]);
+                } catch (e) {
+                  console.error('Error parsing metadata:', e);
+                }
+              }
+            }
+            
+            const palletItems = metadata.pallet_items || [];
+            
+            return {
+              id: dbJob.id,
+              jobNumber: dbJob.job_number || '',
+              title: dbJob.title || '',
+              description: dbJob.description || '',
+              customerName: metadata.clientName || dbJob.customer_name || '',
+              priority: dbJob.priority || 'low',
+              status: dbJob.status || 'pending',
+              loadDimensions: {
+                length: 0,
+                width: 0,
+                height: 0,
+                weight: palletItems.reduce((sum: number, item: any) => sum + (item.totalWeight || 0), 0),
+                volume: palletItems.reduce((sum: number, item: any) => sum + (item.totalVolume || 0), 0),
+                isOversized: false,
+                isProtruding: false,
+                isBalanced: true,
+                isFragile: false,
+              },
+              palletItems,
+            } as JobAssignmentType;
+          });
+          
+          setPendingJobs(jobAssignments.filter((job: JobAssignmentType) => 
+            job.palletItems && (job.palletItems as any[]).length > 0
+          ));
+        }
+      } catch (error) {
+        console.error('Failed to load pending jobs:', error);
+      } finally {
+        setLoadingJobs(false);
+      }
+    };
+    loadPendingJobs();
+  }, []);
 
   useEffect(() => {
     const loadDrivers = async () => {
@@ -179,41 +260,202 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
     loadDrivers();
   }, []);
 
-  // Mock trailer layouts data
-  const [trailerLayouts, setTrailerLayouts] = useState<TrailerLayout[]>([
-    {
-      id: '1',
-      vehicleId: '1',
-      vehicleRegistration: 'AB12 CDE',
-      trailerLength: 1350, // 13.5m
-      trailerWidth: 255, // 2.55m
-      trailerHeight: 270, // 2.7m
-      maxWeight: 26000, // 26 tons
-      maxVolume: 92.5, // cubic meters
-      cargoItems: [],
-      totalWeight: 0,
-      totalVolume: 0,
-      utilizationPercentage: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: '2',
-      vehicleId: '2',
-      vehicleRegistration: 'EF34 FGH',
-      trailerLength: 1600, // 16m
-      trailerWidth: 255, // 2.55m
-      trailerHeight: 270, // 2.7m
-      maxWeight: 44000, // 44 tons
-      maxVolume: 109.4, // cubic meters
-      cargoItems: [],
-      totalWeight: 0,
-      totalVolume: 0,
-      utilizationPercentage: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ]);
+  // Initialize trailer layouts from vehicles
+  const [trailerLayouts, setTrailerLayouts] = useState<TrailerLayout[]>([]);
+
+  // Load existing plot allocations from database
+  useEffect(() => {
+    const loadExistingAllocations = async () => {
+      try {
+        const { supabase } = await import('../lib/supabase');
+        const { data, error } = await supabase
+          .from('trailer_plot_allocations')
+          .select('*')
+          .eq('status', 'allocated');
+        
+        if (error) {
+          console.error('Failed to load allocations:', error);
+          return;
+        }
+        
+        if (data) {
+          const allocationsByVehicle: Record<string, PlotAllocation[]> = {};
+          
+          for (const row of data) {
+            if (!allocationsByVehicle[row.vehicle_id]) {
+              allocationsByVehicle[row.vehicle_id] = [];
+            }
+            
+            allocationsByVehicle[row.vehicle_id].push({
+              plotId: row.plot_id,
+              plotType: row.plot_type,
+              position: row.plot_position,
+              palletItems: row.pallet_items || [],
+              totalWeight: row.total_weight,
+              totalVolume: row.total_volume,
+              jobId: row.job_id,
+              jobTitle: '', // Could fetch from job if needed
+            });
+          }
+          
+          setPlotAllocations(allocationsByVehicle);
+        }
+      } catch (error) {
+        console.error('Error loading allocations:', error);
+      }
+    };
+    
+    loadExistingAllocations();
+  }, []);
+
+  // Load routes and their assigned trailers
+  const [routes, setRoutes] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const loadRoutes = async () => {
+      try {
+        const { supabase } = await import('../lib/supabase');
+        const { data, error } = await supabase
+          .from('routes')
+          .select('*')
+          .order('date', { ascending: false });
+        
+        if (error) {
+          console.error('Failed to load routes:', error);
+          return;
+        }
+        
+        setRoutes(data || []);
+      } catch (error) {
+        console.error('Failed to load routes:', error);
+      }
+    };
+    
+    loadRoutes();
+  }, []);
+
+  // Load trailer layouts from vehicles and routes
+  useEffect(() => {
+    console.log('Available vehicles for allocation:', vehicles);
+    console.log('Vehicle types:', vehicles.map(v => ({ id: v.id, type: v.type, status: v.status })));
+    console.log('Routes with trailers:', routes);
+    
+    // Get trailers from routes (if vehicle has a permanent trailer assigned to a route)
+    const routeTrailerIds = new Set<string>();
+    routes.forEach((route: any) => {
+      if (route.trailer_id) {
+        routeTrailerIds.add(route.trailer_id);
+      }
+      // Also check if the vehicle has a permanent trailer
+      if (route.vehicle_id) {
+        const vehicle = vehicles.find(v => v.id === route.vehicle_id);
+        if (vehicle && (vehicle as any).permanent_trailer_id) {
+          routeTrailerIds.add((vehicle as any).permanent_trailer_id);
+        }
+      }
+    });
+    
+    // Filter for vehicles that can carry cargo (HGV, Articulated, trailers, trucks, Vans)
+    // Also include trailers assigned to routes
+    const eligibleVehicles = vehicles.filter(v => {
+      const isEligibleType = v.type === 'HGV' || v.type === 'Articulated' || v.type === 'trailer' || v.type === 'truck' || v.type === 'Van';
+      const isAvailable = v.status === 'Available';
+      const isRouteTrailer = routeTrailerIds.has(v.id); // Include trailers assigned to routes
+      
+      return (isEligibleType && isAvailable) || isRouteTrailer;
+    });
+    
+    console.log('Eligible vehicles after filtering:', eligibleVehicles);
+    
+    const layouts: TrailerLayout[] = eligibleVehicles
+      .map((vehicle, index) => {
+        // First, try to read cubage dimensions from vehicle notes (stored as CUBAGE_METADATA:JSON)
+        let lengthCm = 0, widthCm = 0, heightCm = 0;
+        if (vehicle.notes) {
+          try {
+            const metadataMatch = vehicle.notes.match(/CUBAGE_METADATA:(.+?)(?:\s*\||$)/);
+            if (metadataMatch) {
+              const metadata = JSON.parse(metadataMatch[1]);
+              lengthCm = metadata.length || 0;
+              widthCm = metadata.width || 0;
+              heightCm = metadata.height || 0;
+            }
+          } catch (e) {
+            console.error('Error parsing cubage metadata from vehicle notes:', e);
+          }
+        }
+        
+        // Default trailer dimensions based on type and capacity
+        let defaultDimensions;
+        if (lengthCm > 0 && widthCm > 0 && heightCm > 0) {
+          // Use cubage dimensions from notes if available
+          defaultDimensions = {
+            length: lengthCm,
+            width: widthCm,
+            height: heightCm,
+            maxWeight: vehicle.capacity ? vehicle.capacity * 1000 : 26000,
+            maxVolume: (lengthCm * widthCm * heightCm) / 1000000, // cm³ to m³
+          };
+        } else if (vehicle.type === 'Articulated') {
+          defaultDimensions = { length: 1600, width: 255, height: 270, maxWeight: 44000, maxVolume: 109.4 };
+        } else if (vehicle.type === 'HGV') {
+          defaultDimensions = { length: 1350, width: 255, height: 270, maxWeight: 26000, maxVolume: 92.5 };
+        } else if (vehicle.type === 'Van') {
+          defaultDimensions = { length: 600, width: 200, height: 200, maxWeight: 3500, maxVolume: 24 };
+        } else {
+          // Default for truck/trailer
+          defaultDimensions = { length: 800, width: 250, height: 250, maxWeight: 7500, maxVolume: 50 };
+        }
+        
+        // Use vehicle capacity if available (in tons, convert to kg)
+        if (vehicle.capacity) {
+          defaultDimensions.maxWeight = vehicle.capacity * 1000;
+          // Only recalculate volume if we don't have custom cubage dimensions
+          if (!(lengthCm > 0 && widthCm > 0 && heightCm > 0)) {
+            // Volume = (length × width × height) / 1,000,000 (cm³ to m³)
+            defaultDimensions.maxVolume = (defaultDimensions.length * defaultDimensions.width * defaultDimensions.height) / 1000000;
+          }
+        }
+        
+        const allocations = plotAllocations[vehicle.id] || [];
+        const totalWeight = allocations.reduce((sum, a) => sum + a.totalWeight, 0);
+        const totalVolume = allocations.reduce((sum, a) => sum + a.totalVolume, 0);
+        
+        return {
+          id: vehicle.id,
+          vehicleId: vehicle.id,
+          vehicleRegistration: vehicle.registration || vehicle.name || `Vehicle ${index + 1}`,
+          trailerLength: defaultDimensions.length, // cm
+          trailerWidth: defaultDimensions.width,
+          trailerHeight: defaultDimensions.height,
+          maxWeight: defaultDimensions.maxWeight, // kg
+          maxVolume: defaultDimensions.maxVolume, // m³
+          cargoItems: allocations.map(alloc => ({
+            id: alloc.plotId,
+            jobId: alloc.jobId,
+            jobTitle: alloc.jobTitle,
+            customerName: '',
+            description: `${alloc.palletItems.length} pallet(s)`,
+            length: alloc.position.length,
+            width: alloc.position.width,
+            height: alloc.position.height,
+            weight: alloc.totalWeight,
+            volume: alloc.totalVolume,
+            priority: 'medium',
+            fragility: 'standard',
+            position: alloc.position,
+            plotId: alloc.plotId,
+          })),
+          totalWeight,
+          totalVolume,
+          utilizationPercentage: (totalVolume / defaultDimensions.maxVolume) * 100,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      });
+    
+    setTrailerLayouts(layouts);
+  }, [vehicles, plotAllocations, routes]);
 
   const [newCargoItem, setNewCargoItem] = useState<Partial<CargoItem>>({
     jobId: '',
@@ -487,14 +729,349 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
             }
           }}
         >
+          <Tab label="Allocate Consignments" />
           <Tab label="Trailer Layouts" />
           <Tab label="Cubage Calculator" />
           <Tab label="Loading Optimization" />
         </Tabs>
       </Box>
 
-      {/* Trailer Layouts Tab */}
+      {/* Allocate Consignments Tab */}
       <TabPanel value={tabValue} index={0}>
+        <Grid container spacing={3}>
+          {/* Pending Consignments List */}
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Pending Consignments
+                </Typography>
+                {loadingJobs ? (
+                  <Box sx={{ textAlign: 'center', py: 3 }}>
+                    <Typography>Loading...</Typography>
+                  </Box>
+                ) : pendingJobs.length === 0 ? (
+                  <Alert severity="info">No pending consignments with pallet items</Alert>
+                ) : (
+                  <List dense>
+                    {pendingJobs.map((job) => {
+                      const palletItems = (job.palletItems as any[]) || [];
+                      const totalWeight = palletItems.reduce((sum, item) => sum + (item.totalWeight || 0), 0);
+                      // Normalize volume - calculate from dimensions if volume seems wrong
+                      const normalizedVolumes = palletItems.map(item => {
+                        let vol = item.totalVolume || 0;
+                        // If volume is suspiciously large (> 100 m³), recalculate from dimensions
+                        if (vol > 100 && item.length && item.width && item.height) {
+                          vol = (item.length * item.width * item.height) / 1000000; // cm³ to m³
+                        }
+                        return vol;
+                      });
+                      const totalVolume = normalizedVolumes.reduce((sum, vol) => sum + vol, 0);
+                      
+                      return (
+                        <ListItem
+                          key={job.id}
+                          draggable
+                          onDragStart={(e) => {
+                            setDraggedJobId(job.id);
+                            e.dataTransfer.effectAllowed = 'move';
+                          }}
+                          onDragEnd={() => setDraggedJobId(null)}
+                          sx={{
+                            mb: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            cursor: 'move',
+                            bgcolor: draggedJobId === job.id ? 'action.selected' : 'background.paper',
+                            '&:hover': { bgcolor: 'action.hover' },
+                          }}
+                        >
+                          <ListItemText
+                            primary={job.title}
+                            secondary={
+                              <>
+                                <Typography variant="caption" display="block">
+                                  {job.customerName}
+                                </Typography>
+                                <Typography variant="caption" display="block">
+                                  {palletItems.length} pallet(s) • {totalWeight}kg • {totalVolume > 1000 ? (totalVolume / 1000000).toFixed(2) : totalVolume.toFixed(2)}m³
+                                  {totalVolume > 1000 && (
+                                    <Chip label="Volume corrected" size="small" color="warning" sx={{ ml: 1, height: 16, fontSize: '0.65rem' }} />
+                                  )}
+                                </Typography>
+                              </>
+                            }
+                          />
+                        </ListItem>
+                      );
+                    })}
+                  </List>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Trailer Selection and Allocation */}
+          <Grid item xs={12} md={8}>
+            {trailerLayouts.length === 0 ? (
+              <Card>
+                <CardContent>
+                  <Alert severity="warning">
+                    <Typography variant="body1" gutterBottom>
+                      No Available Vehicles Found
+                    </Typography>
+                    <Typography variant="body2" component="div">
+                      <Box component="ul" sx={{ pl: 2, mt: 1 }}>
+                        <li>Total vehicles in fleet: {vehicles.length}</li>
+                        <li>Available vehicles: {vehicles.filter(v => v.status === 'Available').length}</li>
+                        <li>Vehicle types: {[...new Set(vehicles.map(v => v.type))].join(', ') || 'None'}</li>
+                      </Box>
+                      <Typography variant="body2" sx={{ mt: 2 }}>
+                        To allocate consignments, ensure you have vehicles with:
+                      </Typography>
+                      <Box component="ul" sx={{ pl: 2, mt: 1 }}>
+                        <li>Type: "HGV", "Articulated", "trailer", "truck", or "Van"</li>
+                        <li>Status: "Available"</li>
+                      </Box>
+                    </Typography>
+                  </Alert>
+                </CardContent>
+              </Card>
+            ) : (
+              <Grid container spacing={2}>
+                {trailerLayouts.map((layout) => (
+                <Grid item xs={12} key={layout.id}>
+                  <Card>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6">
+                          {layout.vehicleRegistration}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                          <Chip
+                            label={`${Math.round(layout.utilizationPercentage)}% Utilized`}
+                            color={layout.utilizationPercentage > 90 ? 'error' : layout.utilizationPercentage > 70 ? 'warning' : 'success'}
+                          />
+                          <Tooltip title="Configure Trailer Capacity">
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setEditingVehicleId(layout.vehicleId);
+                                setTrailerDimensions({
+                                  length: layout.trailerLength,
+                                  width: layout.trailerWidth,
+                                  height: layout.trailerHeight,
+                                  maxWeight: layout.maxWeight,
+                                });
+                                setShowEditTrailerDialog(true);
+                              }}
+                            >
+                              <Edit />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </Box>
+
+                      {/* Trailer Visualization */}
+                      <Paper
+                        sx={{
+                          p: 2,
+                          mb: 2,
+                          minHeight: 300,
+                          position: 'relative',
+                          bgcolor: '#f5f5f5',
+                          border: '2px solid #333',
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+                        }}
+                        onDrop={async (e) => {
+                          e.preventDefault();
+                          if (!draggedJobId) return;
+                          
+                          const job = pendingJobs.find(j => j.id === draggedJobId);
+                          if (!job || !job.palletItems) return;
+                          
+                          // Normalize pallet items - ensure volumes are in m³
+                          const palletItems = (job.palletItems as any[]).map(item => {
+                            let normalizedVolume = item.totalVolume || 0;
+                            
+                            // If volume seems too large (> 100 m³), it might be in cm³ - convert it
+                            if (normalizedVolume > 100) {
+                              console.warn(`Volume too large (${normalizedVolume}), recalculating from dimensions`);
+                              if (item.length && item.width && item.height) {
+                                // Dimensions are in cm, convert to m³
+                                normalizedVolume = (item.length * item.width * item.height) / 1000000;
+                              } else {
+                                // Fallback: assume it's cm³ and convert
+                                normalizedVolume = normalizedVolume / 1000000;
+                              }
+                            }
+                            
+                            // If volume is 0 or missing, calculate from dimensions
+                            if (normalizedVolume === 0 && item.length && item.width && item.height) {
+                              normalizedVolume = (item.length * item.width * item.height) / 1000000;
+                            }
+                            
+                            return {
+                              ...item,
+                              jobId: job.id,
+                              totalVolume: normalizedVolume, // Use normalized volume
+                            };
+                          });
+                          
+                          const trailerCapacity = {
+                            length: layout.trailerLength,
+                            width: layout.trailerWidth,
+                            height: layout.trailerHeight,
+                            maxWeight: layout.maxWeight,
+                            maxVolume: layout.maxVolume,
+                          };
+                          
+                          const existingAllocations = plotAllocations[layout.vehicleId] || [];
+                          const canAllocate = PlotAllocationService.canAllocate(
+                            palletItems,
+                            trailerCapacity,
+                            existingAllocations
+                          );
+                          
+                          if (!canAllocate.canAllocate) {
+                            alert(`Cannot allocate: ${canAllocate.reason}`);
+                            return;
+                          }
+                          
+                          const newAllocations = PlotAllocationService.allocatePlots(
+                            palletItems,
+                            trailerCapacity,
+                            existingAllocations
+                          );
+                          
+                          setPlotAllocations(prev => ({
+                            ...prev,
+                            [layout.vehicleId]: [...existingAllocations, ...newAllocations],
+                          }));
+                          
+                          // Save to database
+                          try {
+                            const { supabase } = await import('../lib/supabase');
+                            
+                            // First check if table exists - if not, inform user to run migration
+                            let allocationError: any = null;
+                            for (const allocation of newAllocations) {
+                              const { error } = await supabase.from('trailer_plot_allocations').insert({
+                                job_id: job.id,
+                                vehicle_id: layout.vehicleId,
+                                plot_id: allocation.plotId,
+                                plot_position: allocation.position,
+                                pallet_items: allocation.palletItems,
+                                total_weight: allocation.totalWeight,
+                                total_volume: allocation.totalVolume,
+                                plot_type: allocation.plotType,
+                                status: 'allocated',
+                              });
+                              
+                              if (error) {
+                                console.error('Failed to insert allocation:', error);
+                                allocationError = error;
+                                throw error;
+                              }
+                            }
+                            
+                            // Update job status to assigned
+                            const updateResult = await JobService.updateJob(job.id, {
+                              status: 'assigned',
+                              assigned_vehicle_id: layout.vehicleId,
+                            });
+                            
+                            if (!updateResult.success) {
+                              console.error('Failed to update job status:', updateResult.error);
+                              throw new Error(`Failed to update job status: ${updateResult.error}`);
+                            }
+                            
+                            // Remove from pending list
+                            setPendingJobs(prev => prev.filter(j => j.id !== job.id));
+                          } catch (error: any) {
+                            console.error('Failed to save allocation:', error);
+                            const errorMessage = error?.message || error?.details || error?.hint || 
+                              (typeof error === 'string' ? error : JSON.stringify(error)) || 'Unknown error';
+                            
+                            // Check if it's a table missing error
+                            if (errorMessage.includes('does not exist') || errorMessage.includes('trailer_plot_allocations')) {
+                              alert(`Database table missing. Please run the migration: database/migrations/create_trailer_plot_allocations.sql\n\nError: ${errorMessage}`);
+                            } else {
+                              alert(`Failed to save allocation: ${errorMessage}`);
+                            }
+                          }
+                          
+                          setDraggedJobId(null);
+                        }}
+                      >
+                        <Typography variant="subtitle2" gutterBottom>
+                          Drag consignments here to allocate
+                        </Typography>
+                        
+                        {/* Visual representation of allocated plots */}
+                        {layout.cargoItems.map((item) => (
+                          <Box
+                            key={item.id}
+                            sx={{
+                              position: 'absolute',
+                              left: `${(item.position?.x || 0) / layout.trailerLength * 100}%`,
+                              bottom: `${(item.position?.z || 0) / layout.trailerHeight * 100}%`,
+                              width: `${(item.position?.width || 0) / layout.trailerWidth * 100}%`,
+                              height: `${(item.position?.height || 0) / layout.trailerHeight * 100}%`,
+                              bgcolor: item.priority === 'high' ? '#ff6b6b' : 
+                                      item.priority === 'medium' ? '#ffd93d' : '#6bcf7f',
+                              border: '1px solid #333',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.7rem',
+                              color: 'white',
+                              fontWeight: 'bold',
+                              cursor: 'pointer',
+                              '&:hover': { opacity: 0.8 },
+                            }}
+                            title={`${item.jobTitle} - ${item.description}`}
+                          >
+                            {item.plotId}
+                          </Box>
+                        ))}
+                      </Paper>
+
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            Weight: {layout.totalWeight / 1000}t / {layout.maxWeight / 1000}t
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            Volume: {layout.totalVolume.toFixed(2)}m³ / {layout.maxVolume}m³
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={layout.utilizationPercentage}
+                            color={layout.utilizationPercentage > 90 ? 'error' : layout.utilizationPercentage > 70 ? 'warning' : 'success'}
+                          />
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+              </Grid>
+            )}
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      {/* Trailer Layouts Tab */}
+      <TabPanel value={tabValue} index={1}>
         <Grid container spacing={3}>
           {filteredLayouts.map((layout) => (
             <Grid item xs={12} md={6} lg={4} key={layout.id}>
@@ -596,7 +1173,7 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
       </TabPanel>
 
       {/* Cubage Calculator Tab */}
-      <TabPanel value={tabValue} index={1}>
+      <TabPanel value={tabValue} index={2}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <Card>
@@ -743,7 +1320,7 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
       </TabPanel>
 
       {/* Loading Optimization Tab */}
-      <TabPanel value={tabValue} index={2}>
+      <TabPanel value={tabValue} index={3}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Card>
@@ -884,6 +1461,101 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
               </Grid>
               
               <Grid item xs={12} md={4}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Trailer Capacity
+                  </Typography>
+                  <Tooltip title="Edit Trailer Capacity">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        if (!selectedLayout) return;
+                        setEditingVehicleId(selectedLayout.vehicleId);
+                        setTrailerDimensions({
+                          length: selectedLayout.trailerLength,
+                          width: selectedLayout.trailerWidth,
+                          height: selectedLayout.trailerHeight,
+                          maxWeight: selectedLayout.maxWeight,
+                        });
+                        setShowEditTrailerDialog(true);
+                      }}
+                    >
+                      <Edit />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+                
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Length
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedLayout.trailerLength / 100}m
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Width
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedLayout.trailerWidth / 100}m
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Height
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedLayout.trailerHeight / 100}m
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Max Weight
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedLayout.maxWeight / 1000}t
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      Max Volume
+                    </Typography>
+                    <Typography variant="body1" color="primary">
+                      {selectedLayout.maxVolume.toFixed(2)}m³
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Current Weight
+                    </Typography>
+                    <Typography variant="body1">
+                      {(selectedLayout.totalWeight / 1000).toFixed(2)}t
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Current Volume
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedLayout.totalVolume.toFixed(2)}m³
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Utilization: {Math.round(selectedLayout.utilizationPercentage)}%
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={selectedLayout.utilizationPercentage}
+                      color={selectedLayout.utilizationPercentage > 90 ? 'error' : selectedLayout.utilizationPercentage > 70 ? 'warning' : 'success'}
+                    />
+                  </Grid>
+                </Grid>
+                
+                <Divider sx={{ my: 2 }} />
+                
                 <Typography variant="h6" gutterBottom>
                   Cargo Items
                 </Typography>
@@ -953,7 +1625,7 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
                       label="Select Driver"
                     >
                       {drivers.map(d => (
-                        <MenuItem key={d.id} value={d.id}>{d.name} ({d.email})</MenuItem>
+                        <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
                       ))}
                     </Select>
                   </FormControl>
@@ -978,6 +1650,140 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
           </Button>
           <Button variant="contained">
             Export Layout
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Trailer Capacity Dialog */}
+      <Dialog open={showEditTrailerDialog} onClose={() => setShowEditTrailerDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          Configure Trailer Capacity: {trailerLayouts.find(l => l.vehicleId === editingVehicleId)?.vehicleRegistration}
+        </DialogTitle>
+        <DialogContent>
+          {trailerDimensions && (
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12}>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <Typography variant="body2">
+                    Configure the actual dimensions and capacity of this trailer/vehicle. 
+                    Volume will be automatically calculated from dimensions.
+                  </Typography>
+                </Alert>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Length (cm)"
+                  type="number"
+                  value={trailerDimensions.length}
+                  onChange={(e) => {
+                    const length = Number(e.target.value);
+                    setTrailerDimensions(prev => prev ? {
+                      ...prev,
+                      length,
+                    } : null);
+                  }}
+                  helperText={`${(trailerDimensions.length / 100).toFixed(2)}m`}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Width (cm)"
+                  type="number"
+                  value={trailerDimensions.width}
+                  onChange={(e) => {
+                    const width = Number(e.target.value);
+                    setTrailerDimensions(prev => prev ? {
+                      ...prev,
+                      width,
+                    } : null);
+                  }}
+                  helperText={`${(trailerDimensions.width / 100).toFixed(2)}m`}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Height (cm)"
+                  type="number"
+                  value={trailerDimensions.height}
+                  onChange={(e) => {
+                    const height = Number(e.target.value);
+                    setTrailerDimensions(prev => prev ? {
+                      ...prev,
+                      height,
+                    } : null);
+                  }}
+                  helperText={`${(trailerDimensions.height / 100).toFixed(2)}m`}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Max Weight (kg)"
+                  type="number"
+                  value={trailerDimensions.maxWeight}
+                  onChange={(e) => {
+                    const maxWeight = Number(e.target.value);
+                    setTrailerDimensions(prev => prev ? {
+                      ...prev,
+                      maxWeight,
+                    } : null);
+                  }}
+                  helperText={`${(trailerDimensions.maxWeight / 1000).toFixed(2)} tons`}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Calculated Max Volume
+                  </Typography>
+                  <Typography variant="h6" color="primary">
+                    {trailerDimensions ? 
+                      ((trailerDimensions.length * trailerDimensions.width * trailerDimensions.height) / 1000000).toFixed(2)
+                      : 0}m³
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    (Length × Width × Height) / 1,000,000
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowEditTrailerDialog(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              if (!trailerDimensions || !editingVehicleId) return;
+              
+              // Update the trailer layout with new dimensions
+              const calculatedVolume = (trailerDimensions.length * trailerDimensions.width * trailerDimensions.height) / 1000000;
+              
+              setTrailerLayouts(prev => prev.map(layout => {
+                if (layout.vehicleId === editingVehicleId) {
+                  return {
+                    ...layout,
+                    trailerLength: trailerDimensions.length,
+                    trailerWidth: trailerDimensions.width,
+                    trailerHeight: trailerDimensions.height,
+                    maxWeight: trailerDimensions.maxWeight,
+                    maxVolume: calculatedVolume,
+                    // Recalculate utilization
+                    utilizationPercentage: (layout.totalVolume / calculatedVolume) * 100,
+                  };
+                }
+                return layout;
+              }));
+              
+              setShowEditTrailerDialog(false);
+            }}
+          >
+            Save Capacity
           </Button>
         </DialogActions>
       </Dialog>

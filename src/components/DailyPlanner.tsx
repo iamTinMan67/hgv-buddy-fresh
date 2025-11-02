@@ -94,9 +94,24 @@ interface NewSchedule {
   notes: string;
 }
 
+interface Route {
+  id: string;
+  name: string;
+  vehicle_id: string | null;
+  driver_id: string | null;
+  date: string;
+  status: string;
+  total_distance: number;
+  estimated_duration: number;
+  start_location: string | null;
+  end_location: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
-
   return (
     <div
       role="tabpanel"
@@ -114,6 +129,34 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+// Helper function to map DB priority values back to UI display labels
+const getPriorityDisplayLabel = (priority: string | undefined, originalPriority?: string | null): string => {
+  // If originalPriority is available, use it directly for display
+  if (originalPriority) {
+    const originalPriorityMap: Record<string, string> = {
+      'before_9am': 'Before 9am',
+      'am_timed': 'AM Timed',
+      'pm_timed': 'PM Timed',
+      'any_time': 'Any time',
+    };
+    return originalPriorityMap[originalPriority] || originalPriority;
+  }
+  
+  // Otherwise, map database priority values to display labels
+  const priorityMap: Record<string, string> = {
+    'urgent': 'Before 9am',
+    'high': 'AM Timed',
+    'medium': 'PM Timed',
+    'low': 'Any time',
+    // Handle legacy values if any
+    'before_9am': 'Before 9am',
+    'am_timed': 'AM Timed',
+    'pm_timed': 'PM Timed',
+    'any_time': 'Any time',
+  };
+  return priorityMap[priority || ''] || priority || 'Any time';
+};
+
 const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { dailySchedules, jobs } = useSelector((state: RootState) => state.job);
@@ -130,6 +173,10 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
   const [selectedJobForDetails, setSelectedJobForDetails] = useState<any>(null);
   const [showEditJobDialog, setShowEditJobDialog] = useState(false);
   const [jobToEdit, setJobToEdit] = useState<any>(null);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [loadingRoutes, setLoadingRoutes] = useState(false);
+  const [routeSelectionMode, setRouteSelectionMode] = useState<'existing' | 'new'>('new');
+  const [newRouteName, setNewRouteName] = useState('');
   const [newSchedule, setNewSchedule] = useState<NewSchedule>({
     vehicleId: 'V001', // Default to Vehicle 1
     runTitle: 'City', // Default to "City" as requested
@@ -145,15 +192,15 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
     notes: '',
   });
 
-  // Mock data for vehicles (in a real app, this would come from Redux store)
-  const vehicles = [
-    { id: 'V001', name: 'HGV-001', type: 'Rigid Truck' },
-    { id: 'V002', name: 'HGV-002', type: 'Articulated Lorry' },
-    { id: 'V003', name: 'HGV-003', type: 'Box Van' },
-  ];
+  // Get vehicles from Redux store
+  const { vehicles } = useSelector((state: RootState) => state.vehicle);
 
-  // Pending jobs available for scheduling (exclude hardcoded demo seeds)
-  const availableJobs = jobs.filter(j => j.status === 'pending' && !['1','2','3'].includes(j.id));
+  // Pending jobs available for scheduling (exclude hardcoded demo seeds and jobs already assigned to routes)
+  const availableJobs = jobs.filter(j => 
+    j.status === 'pending' && 
+    !['1','2','3'].includes(j.id) &&
+    !(j as any).routeId // Exclude jobs already assigned to a route
+  );
 
   // Cache of delivery_addresses from DB to resolve names/addresses for DB-backed jobs
   const [addressCache, setAddressCache] = useState<Record<string, any>>({});
@@ -168,6 +215,30 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
         }
       } catch {}
     })();
+  }, []);
+
+  // Fetch routes from database
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setLoadingRoutes(true);
+      try {
+        const { data, error } = await supabase
+          .from('routes')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!error && data && mounted) {
+          setRoutes(data);
+        }
+      } catch (error) {
+        console.error('Error fetching routes:', error);
+      } finally {
+        if (mounted) setLoadingRoutes(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Fetch pending jobs from database on component mount
@@ -275,15 +346,21 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
           }
           
           // Extract time_sensitive - check metadata first, then pickup_address, then direct field
+          // Also auto-enable if priority is set to a non-"low" value (time sensitive by default when priority is set)
           const timeSensitive = metadata.time_sensitive !== undefined
             ? metadata.time_sensitive
             : (pickupAddr.time_sensitive !== undefined 
               ? pickupAddr.time_sensitive 
-              : (dbJob.time_sensitive !== undefined ? dbJob.time_sensitive : false));
+              : (dbJob.time_sensitive !== undefined
+                ? dbJob.time_sensitive
+                : (dbJob.priority && dbJob.priority !== 'low' ? true : false)));
           
           // Extract client info from metadata
           const clientId = metadata.clientId || pickupAddr.clientId || null;
           const clientNameFromMetadata = metadata.clientName || pickupAddr.clientName || '';
+          
+          // Extract original UI priority value from metadata for display (e.g., "before_9am" instead of "urgent")
+          const originalPriority = metadata.originalPriority || null;
 
           // Calculate totals from pallet items if available
           const totalWeight = palletItems.length > 0
@@ -383,6 +460,15 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
             (jobAssignment as any).palletItems = palletItems;
           }
           (jobAssignment as any).timeSensitive = timeSensitive;
+          // Store original UI priority for display (if available from metadata)
+          if (originalPriority) {
+            (jobAssignment as any).originalPriority = originalPriority;
+          }
+          
+          // Store route_id if available from database
+          if (dbJob.route_id) {
+            (jobAssignment as any).routeId = dbJob.route_id;
+          }
           
           console.log('Final jobAssignment structure:', jobAssignment);
           console.log('Job customerName:', jobAssignment.customerName);
@@ -565,45 +651,183 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
         const city = firstJob.deliveryLocation.address.city || firstJob.deliveryLocation.address.town;
         if (city) {
           setNewSchedule(prev => ({ ...prev, runTitle: city }));
+          // Also update route name if in new route mode
+          if (routeSelectionMode === 'new') {
+            setNewRouteName(city);
+          }
         }
       }
     } else {
       setNewSchedule(prev => ({ ...prev, runTitle: '' }));
+      if (routeSelectionMode === 'new') {
+        setNewRouteName('');
+      }
     }
   };
 
-  const handleAddSchedule = () => {
-    const schedule: DailySchedule = {
-      id: Date.now().toString(),
-      vehicleId: newSchedule.vehicleId,
-      driverId: undefined, // No driver assigned initially
-      date: newSchedule.date,
-      routePlanId: newSchedule.routePlanId,
-      jobs: newSchedule.jobs.map(jobId => ({
-        jobId,
-        scheduledTime: '09:00', // Default time, would be configurable
-        estimatedDuration: 120, // Default duration, would come from job
-        status: 'scheduled' as JobStatus,
-      })),
-      totalJobs: newSchedule.jobs.length,
-      completedJobs: 0,
-      totalDistance: 0,
-      totalDuration: newSchedule.jobs.length * 120, // Default calculation
-      status: 'scheduled',
-      notes: newSchedule.notes,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    dispatch(addDailySchedule(schedule));
-    setShowAddDialog(false);
-    setNewSchedule({
-      vehicleId: 'V001', // Reset to default Vehicle 1
-      runTitle: 'City', // Reset to default "City"
-      date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Reset to Today + 1
-      routePlanId: '',
-      jobs: [],
-      notes: '',
-    });
+  const handleAddSchedule = async () => {
+    try {
+      let routeId = newSchedule.routePlanId;
+      
+      // If creating a new route
+      if (routeSelectionMode === 'new' && newRouteName.trim()) {
+        // Find the permanent trailer for the selected vehicle
+        let permanentTrailerId = null;
+        if (newSchedule.vehicleId) {
+          const selectedVehicle = vehicles.find(v => v.id === newSchedule.vehicleId);
+          if (selectedVehicle && (selectedVehicle as any).permanent_trailer_id) {
+            permanentTrailerId = (selectedVehicle as any).permanent_trailer_id;
+          }
+        }
+        
+        const { data: newRoute, error: routeError } = await supabase
+          .from('routes')
+          .insert({
+            name: newRouteName.trim(),
+            vehicle_id: newSchedule.vehicleId || null,
+            trailer_id: permanentTrailerId, // Auto-assign permanent trailer if available
+            date: newSchedule.date,
+            status: 'planned',
+            total_distance: 0,
+            estimated_duration: 0,
+            created_by: user?.id || null,
+          })
+          .select()
+          .single();
+        
+        if (routeError || !newRoute) {
+          alert(`Failed to create route: ${routeError?.message || 'Unknown error'}`);
+          return;
+        }
+        routeId = newRoute.id;
+        setRoutes(prev => [newRoute, ...prev]);
+        
+        // If a permanent trailer was assigned, notify user
+        let permanentTrailerName = '';
+        if (permanentTrailerId) {
+          const trailer = vehicles.find(v => v.id === permanentTrailerId);
+          if (trailer) {
+            permanentTrailerName = (trailer as any).trailerName || (trailer as any).model || 'the trailer';
+            console.log(`Permanent trailer "${permanentTrailerName}" automatically assigned to route`);
+          }
+        }
+      }
+      
+      // If using an existing route, also check for permanent trailer
+      if (routeSelectionMode === 'existing' && newSchedule.routePlanId) {
+        const existingRoute = routes.find(r => r.id === newSchedule.routePlanId);
+        if (existingRoute && existingRoute.vehicle_id) {
+          const routeVehicle = vehicles.find(v => v.id === existingRoute.vehicle_id);
+          if (routeVehicle && (routeVehicle as any).permanent_trailer_id && !existingRoute.trailer_id) {
+            // Update the route with the permanent trailer if not already set
+            const { error: updateError } = await supabase
+              .from('routes')
+              .update({ trailer_id: (routeVehicle as any).permanent_trailer_id })
+              .eq('id', existingRoute.id);
+            
+            if (!updateError) {
+              const trailer = vehicles.find(v => v.id === (routeVehicle as any).permanent_trailer_id);
+              if (trailer) {
+                const trailerName = (trailer as any).trailerName || (trailer as any).model || 'the trailer';
+                console.log(`Permanent trailer "${trailerName}" automatically assigned to existing route`);
+              }
+            }
+          }
+        }
+      }
+      
+      if (!routeId) {
+        alert('Please select or create a route');
+        return;
+      }
+      
+      // Update all selected jobs with route_id
+      const updatePromises = newSchedule.jobs.map(jobId =>
+        supabase
+          .from('jobs')
+          .update({ route_id: routeId })
+          .eq('id', jobId)
+      );
+      
+      const updateResults = await Promise.all(updatePromises);
+      const hasErrors = updateResults.some(result => result.error);
+      
+      if (hasErrors) {
+        console.error('Some jobs failed to update:', updateResults);
+        alert('Some jobs failed to be assigned to the route. Please check and try again.');
+        return;
+      }
+      
+      // Check if route has a trailer assigned
+      let finalRoute = routes.find(r => r.id === routeId);
+      if (!finalRoute) {
+        // Fetch from database if not in local state
+        const { data: routeData } = await supabase
+          .from('routes')
+          .select('*')
+          .eq('id', routeId)
+          .single();
+        finalRoute = routeData as any;
+      }
+      const routeHasTrailer = finalRoute && (finalRoute as any).trailer_id;
+      
+      // Create the schedule in Redux
+      const schedule: DailySchedule = {
+        id: Date.now().toString(),
+        vehicleId: newSchedule.vehicleId,
+        driverId: undefined, // No driver assigned initially
+        date: newSchedule.date,
+        routePlanId: routeId,
+        jobs: newSchedule.jobs.map(jobId => ({
+          jobId,
+          scheduledTime: '09:00', // Default time, would be configurable
+          estimatedDuration: 120, // Default duration, would come from job
+          status: 'scheduled' as JobStatus,
+        })),
+        totalJobs: newSchedule.jobs.length,
+        completedJobs: 0,
+        totalDistance: 0,
+        totalDuration: newSchedule.jobs.length * 120, // Default calculation
+        status: 'scheduled',
+        notes: newSchedule.notes,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      dispatch(addDailySchedule(schedule));
+      
+      // Notify user about trailer planner if a trailer is assigned
+      if (routeHasTrailer) {
+        const trailer = vehicles.find(v => v.id === (finalRoute as any).trailer_id);
+        const trailerName = trailer ? ((trailer as any).trailerName || (trailer as any).model || 'the trailer') : 'the trailer';
+        alert(`Route created successfully!\n\nTrailer "${trailerName}" has been assigned to this route.\n\nOpen the Trailer Planner to allocate consignments and plan the load.`);
+      }
+      
+      // Update jobs in Redux to mark them as assigned to route
+      newSchedule.jobs.forEach(jobId => {
+        const job = jobs.find(j => j.id === jobId);
+        if (job) {
+          dispatch(updateJob({
+            ...job,
+            status: 'assigned' as JobStatus,
+          } as JobAssignment));
+        }
+      });
+      
+      setShowAddDialog(false);
+      setNewSchedule({
+        vehicleId: 'V001', // Reset to default Vehicle 1
+        runTitle: 'City', // Reset to default "City"
+        date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Reset to Today + 1
+        routePlanId: '',
+        jobs: [],
+        notes: '',
+      });
+      setRouteSelectionMode('new');
+      setNewRouteName('');
+    } catch (error: any) {
+      console.error('Error creating schedule:', error);
+      alert(`Failed to create schedule: ${error?.message || 'Unknown error'}`);
+    }
   };
 
   const handleEditJob = (job: any) => {
@@ -900,9 +1124,9 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                           Priority
                         </Typography>
                         <Chip
-                          label={job.priority}
+                          label={getPriorityDisplayLabel(job.priority, (job as any).originalPriority)}
                           size="small"
-                          color={job.priority === 'high' ? 'error' : job.priority === 'medium' ? 'warning' : 'success'}
+                          color={job.priority === 'high' || job.priority === 'urgent' ? 'error' : job.priority === 'medium' ? 'warning' : 'success'}
                         />
                       </Grid>
                       <Grid item xs={6}>
@@ -985,15 +1209,43 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                                 return {};
                               };
                               
-                              // Extract pallet items
-                              let palletItems: any[] = [];
-                              if (pickupAddr.pallet_items) {
-                                palletItems = Array.isArray(pickupAddr.pallet_items) ? pickupAddr.pallet_items : [];
+                              // Extract metadata from special_requirements (stored as JSON string with METADATA: prefix)
+                              let metadata: any = {};
+                              if (dbJob.special_requirements) {
+                                const metadataMatch = dbJob.special_requirements.match(/METADATA:(.+?)(?:\s*\||$)/);
+                                if (metadataMatch) {
+                                  try {
+                                    metadata = JSON.parse(metadataMatch[1]);
+                                  } catch (e) {
+                                    console.error('Error parsing metadata from special_requirements:', e);
+                                  }
+                                }
                               }
                               
-                              const timeSensitive = pickupAddr.time_sensitive !== undefined 
-                                ? pickupAddr.time_sensitive 
-                                : (dbJob.time_sensitive !== undefined ? dbJob.time_sensitive : false);
+                              // Extract pallet items - check metadata first, then pickup_address, then direct field
+                              let palletItems: any[] = [];
+                              if (metadata.pallet_items) {
+                                palletItems = Array.isArray(metadata.pallet_items) ? metadata.pallet_items : [];
+                              } else if (pickupAddr.pallet_items) {
+                                palletItems = Array.isArray(pickupAddr.pallet_items) ? pickupAddr.pallet_items : [];
+                              } else if (dbJob.pallet_items) {
+                                palletItems = typeof dbJob.pallet_items === 'string'
+                                  ? JSON.parse(dbJob.pallet_items)
+                                  : (Array.isArray(dbJob.pallet_items) ? dbJob.pallet_items : []);
+                              }
+                              
+                              // Extract time_sensitive - check metadata first, then pickup_address, then direct field
+                              // Also auto-enable if priority is set to a non-"low" value (time sensitive by default when priority is set)
+                              const timeSensitive = metadata.time_sensitive !== undefined
+                                ? metadata.time_sensitive
+                                : (pickupAddr.time_sensitive !== undefined
+                                  ? pickupAddr.time_sensitive
+                                  : (dbJob.time_sensitive !== undefined
+                                    ? dbJob.time_sensitive
+                                    : (dbJob.priority && dbJob.priority !== 'low' ? true : false)));
+                              
+                              // Extract original UI priority value from metadata for display (e.g., "before_9am" instead of "urgent")
+                              const originalPriority = metadata.originalPriority || null;
                               
                               // Calculate load dimensions from pallet items
                               const calculateLoadDimensions = () => {
@@ -1066,6 +1318,10 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                               
                               if (palletItems.length > 0) {
                                 fullJob.palletItems = palletItems;
+                              }
+                              // Store original UI priority for display (if available from metadata)
+                              if (originalPriority) {
+                                fullJob.originalPriority = originalPriority;
                               }
                               
                               console.log('Full job from DB:', fullJob);
@@ -1450,14 +1706,67 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                 helperText="Default: Tomorrow's date"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Route Plan ID (Optional)"
-                value={newSchedule.routePlanId}
-                onChange={(e) => setNewSchedule({ ...newSchedule, routePlanId: e.target.value })}
-              />
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Route Selection</InputLabel>
+                <Select
+                  value={routeSelectionMode}
+                  onChange={(e) => {
+                    const mode = e.target.value as 'existing' | 'new';
+                    setRouteSelectionMode(mode);
+                    if (mode === 'new') {
+                      setNewSchedule({ ...newSchedule, routePlanId: '' });
+                      // Auto-populate route name from run title if available
+                      if (newSchedule.runTitle) {
+                        setNewRouteName(newSchedule.runTitle);
+                      }
+                    } else {
+                      setNewRouteName('');
+                    }
+                  }}
+                  label="Route Selection"
+                >
+                  <MenuItem value="new">Create New Route</MenuItem>
+                  <MenuItem value="existing">Add to Existing Route</MenuItem>
+                </Select>
+                <FormHelperText>
+                  Choose to create a new route or add consignments to an existing route
+                </FormHelperText>
+              </FormControl>
             </Grid>
+            {routeSelectionMode === 'new' ? (
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="New Route Name"
+                  value={newRouteName}
+                  onChange={(e) => setNewRouteName(e.target.value)}
+                  placeholder={newSchedule.runTitle || 'Enter route name'}
+                  helperText="Route name will be auto-populated from run title if available"
+                />
+              </Grid>
+            ) : (
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>Select Existing Route</InputLabel>
+                  <Select
+                    value={newSchedule.routePlanId}
+                    onChange={(e) => setNewSchedule({ ...newSchedule, routePlanId: e.target.value })}
+                    label="Select Existing Route"
+                    disabled={loadingRoutes}
+                  >
+                    {routes.map((route) => (
+                      <MenuItem key={route.id} value={route.id}>
+                        {route.name} - {new Date(route.date).toLocaleDateString()} ({route.status})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText>
+                    {loadingRoutes ? 'Loading routes...' : routes.length === 0 ? 'No existing routes found' : 'Select a route to add consignments to'}
+                  </FormHelperText>
+                </FormControl>
+              </Grid>
+            )}
             <Grid item xs={12}>
               <FormControl fullWidth>
                 <InputLabel>Select Jobs to Schedule</InputLabel>
@@ -1534,7 +1843,12 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
           <Button 
             onClick={handleAddSchedule} 
             variant="contained"
-            disabled={!newSchedule.vehicleId || newSchedule.jobs.length === 0}
+            disabled={
+              !newSchedule.vehicleId || 
+              newSchedule.jobs.length === 0 ||
+              (routeSelectionMode === 'new' && !newRouteName.trim()) ||
+              (routeSelectionMode === 'existing' && !newSchedule.routePlanId)
+            }
           >
             Create Schedule
           </Button>
@@ -1653,7 +1967,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                                 Priority
                               </Typography>
                               <Chip
-                                label={jobDetails.priority}
+                                label={getPriorityDisplayLabel(jobDetails.priority, (jobDetails as any).originalPriority)}
                                 color={jobDetails.priority === 'urgent' ? 'error' : 
                                        jobDetails.priority === 'high' ? 'warning' : 
                                        jobDetails.priority === 'medium' ? 'info' : 'default'}
@@ -2178,9 +2492,9 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                     Priority
                   </Typography>
                   <Chip
-                    label={selectedJobForDetails.priority}
+                    label={getPriorityDisplayLabel(selectedJobForDetails.priority, selectedJobForDetails.originalPriority)}
                     size="small"
-                    color={selectedJobForDetails.priority === 'high' ? 'error' : selectedJobForDetails.priority === 'medium' ? 'warning' : 'success'}
+                    color={selectedJobForDetails.priority === 'high' || selectedJobForDetails.priority === 'urgent' ? 'error' : selectedJobForDetails.priority === 'medium' ? 'warning' : 'success'}
                   />
                 </Box>
                 {/* Time Sensitive Information */}
@@ -2196,7 +2510,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                     />
                     {selectedJobForDetails.timeSensitive && selectedJobForDetails.priority && (
                       <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>
-                        Priority: {selectedJobForDetails.priority.toUpperCase()}
+                        Priority: {getPriorityDisplayLabel(selectedJobForDetails.priority, selectedJobForDetails.originalPriority)}
                       </Typography>
                     )}
                   </Box>
@@ -2531,7 +2845,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                     <Chip label="Balanced" color="success" size="small" />
                   )}
                   {selectedJobForDetails.timeSensitive && (
-                    <Chip label={`Time Sensitive: ${selectedJobForDetails.priority?.toUpperCase?.() || selectedJobForDetails.priority}`} color="info" size="small" />
+                    <Chip label={`Time Sensitive: ${getPriorityDisplayLabel(selectedJobForDetails.priority, selectedJobForDetails.originalPriority)}`} color="info" size="small" />
                   )}
                 </Box>
               </Grid>

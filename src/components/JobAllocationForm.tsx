@@ -752,6 +752,7 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                 clientName: formData.clientName || '',
                 pickupId: pickupId || null,
                 deliveryId: deliveryId || null,
+                originalPriority: formData.priority || null, // Store original UI priority value (e.g., "before_9am") for display
               };
               const existingReqs = jobAssignment.specialRequirements || '';
               // Store metadata as JSON, append existing requirements if any
@@ -2875,7 +2876,13 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                           </Grid>
                           <Grid item xs={12} md={6}>
                             <Typography variant="body2" sx={{ color: 'grey.400' }}>Priority:</Typography>
-                            <Typography variant="body1" sx={{ color: 'white' }}>{formData.priority.toUpperCase()}</Typography>
+                            <Typography variant="body1" sx={{ color: 'white' }}>
+                              {formData.priority === 'before_9am' ? 'Before 9am' :
+                               formData.priority === 'am_timed' ? 'AM Timed' :
+                               formData.priority === 'pm_timed' ? 'PM Timed' :
+                               formData.priority === 'any_time' ? 'Any time' :
+                               formData.priority.toUpperCase()}
+                            </Typography>
                           </Grid>
 
                           {/* Pickup Location Details */}
