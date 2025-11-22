@@ -51,6 +51,7 @@ const {
   InvoiceUpload,
   ClientHub,
   CompanyInfo,
+  PricingConfiguration,
 } = DynamicComponents;
 
 interface User {
@@ -99,6 +100,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [showInvoiceUpload, setShowInvoiceUpload] = useState(false);
   const [showClientHub, setShowClientHub] = useState(false);
   const [showCompanyInfo, setShowCompanyInfo] = useState(false);
+  const [showPricingConfiguration, setShowPricingConfiguration] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -314,6 +316,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         <ErrorBoundary>
           <Suspense fallback={<LoadingSpinner />}>
             <CompanyInfo onClose={() => setShowCompanyInfo(false)} />
+          </Suspense>
+        </ErrorBoundary>
+      </Box>
+    );
+  }
+
+  // Show pricing configuration if requested (Admin only)
+  if (showPricingConfiguration) {
+    return (
+      <Box sx={{ py: 2, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSpinner />}>
+            <PricingConfiguration onClose={() => setShowPricingConfiguration(false)} />
           </Suspense>
         </ErrorBoundary>
       </Box>
@@ -665,6 +680,30 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 </CardContent>
               </Card>
             </Grid>
+
+            {/* Pricing Configuration - Admin Only */}
+            {(user.role === 'admin' || user.role === 'supa_admin') && (
+              <Grid item xs={12} md={6} lg={4}>
+                <Card sx={{ transform: 'scale(0.94)', width: '100%', border: '2px solid', borderColor: 'warning.main' }}>
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <Receipt sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
+                    <Typography variant="h6">Pricing Configuration</Typography>
+                    <Chip 
+                      label="Admin Only" 
+                      size="small" 
+                      sx={{ mt: 1, mb: 1, bgcolor: 'warning.main', color: 'black' }} 
+                    />
+                    <Button 
+                      variant="contained" 
+                      sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'warning.main', color: 'black', '&:hover': { backgroundColor: 'warning.dark' } }}
+                      onClick={() => setShowPricingConfiguration(true)}
+                    >
+                      Configure Pricing
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            )}
 
             {/* Dynamic Placeholder Cards */}
             {placeholderCards.map((card) => (

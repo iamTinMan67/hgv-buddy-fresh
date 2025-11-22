@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import JobAllocationForm from './JobAllocationForm';
 import {
@@ -178,7 +178,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
   const [routeSelectionMode, setRouteSelectionMode] = useState<'existing' | 'new'>('new');
   const [newRouteName, setNewRouteName] = useState('');
   const [newSchedule, setNewSchedule] = useState<NewSchedule>({
-    vehicleId: 'V001', // Default to Vehicle 1
+    vehicleId: '', // Will be set to first valid vehicle if available
     runTitle: 'City', // Default to "City" as requested
     date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Today + 1
     routePlanId: '',
@@ -193,7 +193,48 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
   });
 
   // Get vehicles from Redux store
-  const { vehicles } = useSelector((state: RootState) => state.vehicle);
+  const { vehicles: reduxVehicles } = useSelector((state: RootState) => state.vehicle);
+  const [vehicles, setVehicles] = useState(reduxVehicles);
+
+  // Set default vehicle to first valid UUID vehicle when vehicles load
+  useEffect(() => {
+    if (vehicles.length > 0) {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const firstValidVehicle = vehicles.find(v => uuidRegex.test(v.id));
+      if (firstValidVehicle && !newSchedule.vehicleId) {
+        setNewSchedule(prev => {
+          // Only set if current vehicleId is empty or invalid
+          const currentVehicleValid = prev.vehicleId && uuidRegex.test(prev.vehicleId);
+          if (!currentVehicleValid) {
+            return { ...prev, vehicleId: firstValidVehicle.id };
+          }
+          return prev;
+        });
+      }
+    }
+  }, [vehicles]);
+
+  // Load vehicles from database on mount
+  useEffect(() => {
+    const loadVehicles = async () => {
+      try {
+        const { VehicleService } = await import('../services/api');
+        const result = await VehicleService.getVehicles();
+        if (result.success && result.data && result.data.length > 0) {
+          console.log('DailyPlanner - Loaded vehicles from database:', result.data.length);
+          setVehicles(result.data);
+        } else {
+          console.warn('DailyPlanner - No vehicles found in database, using Redux vehicles');
+          setVehicles(reduxVehicles);
+        }
+      } catch (error) {
+        console.error('DailyPlanner - Error loading vehicles from database:', error);
+        setVehicles(reduxVehicles);
+      }
+    };
+    
+    loadVehicles();
+  }, []);
 
   // Pending jobs available for scheduling (exclude hardcoded demo seeds and jobs already assigned to routes)
   const availableJobs = jobs.filter(j => 
@@ -671,12 +712,25 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
       
       // If creating a new route
       if (routeSelectionMode === 'new' && newRouteName.trim()) {
+        // Validate vehicle ID is a valid UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (newSchedule.vehicleId && !uuidRegex.test(newSchedule.vehicleId)) {
+          alert(`Cannot create route: Vehicle ID "${newSchedule.vehicleId}" is not a valid UUID.\n\nThis vehicle appears to be demo data. Please:\n1. Go to Fleet Management\n2. Add a vehicle from the database (with a valid UUID)\n3. Ensure the vehicle has Status: "Available"`);
+          return;
+        }
+        
         // Find the permanent trailer for the selected vehicle
         let permanentTrailerId = null;
         if (newSchedule.vehicleId) {
           const selectedVehicle = vehicles.find(v => v.id === newSchedule.vehicleId);
           if (selectedVehicle && (selectedVehicle as any).permanent_trailer_id) {
-            permanentTrailerId = (selectedVehicle as any).permanent_trailer_id;
+            const trailerId = (selectedVehicle as any).permanent_trailer_id;
+            // Validate trailer ID is also a valid UUID
+            if (uuidRegex.test(trailerId)) {
+              permanentTrailerId = trailerId;
+            } else {
+              console.warn(`Skipping permanent trailer with invalid UUID: ${trailerId}`);
+            }
           }
         }
         
@@ -684,7 +738,7 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
           .from('routes')
           .insert({
             name: newRouteName.trim(),
-            vehicle_id: newSchedule.vehicleId || null,
+            vehicle_id: newSchedule.vehicleId && uuidRegex.test(newSchedule.vehicleId) ? newSchedule.vehicleId : null,
             trailer_id: permanentTrailerId, // Auto-assign permanent trailer if available
             date: newSchedule.date,
             status: 'planned',
@@ -696,7 +750,13 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
           .single();
         
         if (routeError || !newRoute) {
-          alert(`Failed to create route: ${routeError?.message || 'Unknown error'}`);
+          const errorMessage = routeError?.message || 'Unknown error';
+          // Check if it's a UUID validation error
+          if (errorMessage.includes('invalid input syntax for type uuid')) {
+            alert(`Failed to create route: Invalid UUID format.\n\nVehicle ID: "${newSchedule.vehicleId}"\nTrailer ID: "${permanentTrailerId || 'none'}"\n\nPlease ensure you are using vehicles from the database (not demo data).`);
+          } else {
+            alert(`Failed to create route: ${errorMessage}`);
+          }
           return;
         }
         routeId = newRoute.id;
@@ -814,8 +874,11 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
       });
       
       setShowAddDialog(false);
+      // Reset to first valid vehicle if available
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const firstValidVehicle = vehicles.find(v => uuidRegex.test(v.id));
       setNewSchedule({
-        vehicleId: 'V001', // Reset to default Vehicle 1
+        vehicleId: firstValidVehicle?.id || '', // Reset to first valid vehicle or empty
         runTitle: 'City', // Reset to default "City"
         date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Reset to Today + 1
         routePlanId: '',
@@ -1676,13 +1739,31 @@ const DailyPlanner: React.FC<DailyPlannerProps> = ({ onClose }) => {
                   onChange={(e) => setNewSchedule({ ...newSchedule, vehicleId: e.target.value })}
                   label="Vehicle"
                 >
-                  {vehicles.map((vehicle) => (
-                    <MenuItem key={vehicle.id} value={vehicle.id}>
-                      {vehicle.name} - {vehicle.type}
-                    </MenuItem>
-                  ))}
+                  {(() => {
+                    // Filter to only show vehicles with valid UUIDs
+                    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                    const validVehicles = vehicles.filter(v => uuidRegex.test(v.id));
+                    
+                    if (validVehicles.length === 0) {
+                      return (
+                        <MenuItem disabled value="">
+                          <em>No valid vehicles found. Please add vehicles in Fleet Management.</em>
+                        </MenuItem>
+                      );
+                    }
+                    
+                    return validVehicles.map((vehicle) => (
+                      <MenuItem key={vehicle.id} value={vehicle.id}>
+                        {vehicle.registration || vehicle.name || vehicle.fleetNumber || vehicle.id} - {vehicle.type}
+                      </MenuItem>
+                    ));
+                  })()}
                 </Select>
-                <FormHelperText>Default: Vehicle 1 in the fleet</FormHelperText>
+                <FormHelperText>
+                  {vehicles.length === 0 
+                    ? 'No vehicles available. Add vehicles in Fleet Management.' 
+                    : 'Only vehicles with valid UUIDs from database are shown'}
+                </FormHelperText>
               </FormControl>
             </Grid>
             <Grid item xs={12} md={6}>

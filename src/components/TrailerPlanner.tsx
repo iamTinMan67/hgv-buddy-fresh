@@ -144,13 +144,49 @@ function TabPanel(props: TabPanelProps) {
 const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { routePlans, jobs } = useSelector((state: RootState) => state.job);
-  const { vehicles } = useSelector((state: RootState) => state.vehicle);
+  const { vehicles: reduxVehicles } = useSelector((state: RootState) => state.vehicle);
   const { user } = useSelector((state: RootState) => state.auth);
+  const [vehicles, setVehicles] = useState(reduxVehicles);
+
+  // Load vehicles from database on mount
+  useEffect(() => {
+    const loadVehicles = async () => {
+      try {
+        const { VehicleService } = await import('../services/api');
+        const result = await VehicleService.getVehicles();
+        if (result.success && result.data) {
+          console.log('Loaded vehicles from database:', result.data.length);
+          setVehicles(result.data);
+        } else {
+          console.warn('Failed to load vehicles from database, using Redux vehicles');
+          setVehicles(reduxVehicles);
+        }
+      } catch (error) {
+        console.error('Error loading vehicles from database:', error);
+        setVehicles(reduxVehicles);
+      }
+    };
+    
+    loadVehicles();
+  }, []);
+
+  // Also update when Redux vehicles change (if they're loaded elsewhere)
+  useEffect(() => {
+    // Only update if Redux has vehicles with valid UUIDs (not demo data)
+    const hasValidVehicles = reduxVehicles.some(v => {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      return uuidRegex.test(v.id);
+    });
+    
+    if (hasValidVehicles && vehicles.length === 0) {
+      setVehicles(reduxVehicles);
+    }
+  }, [reduxVehicles, vehicles.length]);
 
   // Log vehicles for debugging
   useEffect(() => {
-    console.log('TrailerPlanner - Vehicles from Redux:', vehicles);
-    console.log('TrailerPlanner - Number of vehicles:', vehicles?.length || 0);
+    console.log('TrailerPlanner - Vehicles:', vehicles.length);
+    console.log('TrailerPlanner - Vehicle IDs:', vehicles.map(v => v.id));
   }, [vehicles]);
 
   const [tabValue, setTabValue] = useState(0);
@@ -165,6 +201,8 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
   const [pendingJobs, setPendingJobs] = useState<JobAssignmentType[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
   const [draggedJobId, setDraggedJobId] = useState<string | null>(null);
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null); // For repositioning items within map
+  const [draggingPosition, setDraggingPosition] = useState<{ x: number; y: number } | null>(null); // Mouse position during drag
   const [plotAllocations, setPlotAllocations] = useState<Record<string, PlotAllocation[]>>({}); // vehicleId -> allocations
   const [showEditTrailerDialog, setShowEditTrailerDialog] = useState(false);
   const [trailerDimensions, setTrailerDimensions] = useState<{
@@ -222,9 +260,21 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
             } as JobAssignmentType;
           });
           
-          setPendingJobs(jobAssignments.filter((job: JobAssignmentType) => 
-            job.palletItems && (job.palletItems as any[]).length > 0
-          ));
+          // Filter out demo data with invalid UUIDs and only include jobs with pallet items
+          setPendingJobs(jobAssignments.filter((job: JobAssignmentType) => {
+            // Exclude demo/test data with non-UUID IDs
+            if (['1', '2', '3'].includes(job.id)) {
+              return false;
+            }
+            // Validate that job.id is a valid UUID format
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(job.id)) {
+              console.warn(`Skipping job with invalid UUID: ${job.id}`);
+              return false;
+            }
+            // Only include jobs with pallet items
+            return job.palletItems && (job.palletItems as any[]).length > 0;
+          }));
         }
       } catch (error) {
         console.error('Failed to load pending jobs:', error);
@@ -337,19 +387,22 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
   // Load trailer layouts from vehicles and routes
   useEffect(() => {
     console.log('Available vehicles for allocation:', vehicles);
-    console.log('Vehicle types:', vehicles.map(v => ({ id: v.id, type: v.type, status: v.status })));
+    console.log('Vehicle types:', vehicles.map(v => ({ id: v.id, type: v.type, status: v.status, registration: v.registration })));
     console.log('Routes with trailers:', routes);
+    console.log('Total vehicles:', vehicles.length);
     
     // Get trailers from routes (if vehicle has a permanent trailer assigned to a route)
+    // Validate UUIDs to exclude demo/test data
+    const uuidRegexForRoutes = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const routeTrailerIds = new Set<string>();
     routes.forEach((route: any) => {
-      if (route.trailer_id) {
+      if (route.trailer_id && uuidRegexForRoutes.test(route.trailer_id)) {
         routeTrailerIds.add(route.trailer_id);
       }
       // Also check if the vehicle has a permanent trailer
-      if (route.vehicle_id) {
+      if (route.vehicle_id && uuidRegexForRoutes.test(route.vehicle_id)) {
         const vehicle = vehicles.find(v => v.id === route.vehicle_id);
-        if (vehicle && (vehicle as any).permanent_trailer_id) {
+        if (vehicle && (vehicle as any).permanent_trailer_id && uuidRegexForRoutes.test((vehicle as any).permanent_trailer_id)) {
           routeTrailerIds.add((vehicle as any).permanent_trailer_id);
         }
       }
@@ -357,15 +410,41 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
     
     // Filter for vehicles that can carry cargo (HGV, Articulated, trailers, trucks, Vans)
     // Also include trailers assigned to routes
+    // Note: We'll allow vehicles for display, but validate UUIDs only when saving to database
     const eligibleVehicles = vehicles.filter(v => {
-      const isEligibleType = v.type === 'HGV' || v.type === 'Articulated' || v.type === 'trailer' || v.type === 'truck' || v.type === 'Van';
-      const isAvailable = v.status === 'Available';
+      // Normalize type and status for comparison (case-insensitive)
+      const normalizedType = (v.type || '').toLowerCase().trim();
+      const normalizedStatus = (v.status || '').toLowerCase().trim();
+      
+      const isEligibleType = normalizedType === 'hgv' || 
+                            normalizedType === 'articulated' || 
+                            normalizedType === 'trailer' || 
+                            normalizedType === 'truck' || 
+                            normalizedType === 'van';
+      const isAvailable = normalizedStatus === 'available';
       const isRouteTrailer = routeTrailerIds.has(v.id); // Include trailers assigned to routes
       
-      return (isEligibleType && isAvailable) || isRouteTrailer;
+      const passesFilter = (isEligibleType && isAvailable) || isRouteTrailer;
+      
+      if (!passesFilter) {
+        console.log(`Vehicle filtered out: ${v.registration || v.id} - Type: "${v.type}" (normalized: "${normalizedType}"), Status: "${v.status}" (normalized: "${normalizedStatus}"), IsEligibleType: ${isEligibleType}, IsAvailable: ${isAvailable}, IsRouteTrailer: ${isRouteTrailer}`);
+      }
+      
+      return passesFilter;
     });
     
-    console.log('Eligible vehicles after filtering:', eligibleVehicles);
+    console.log('Vehicles before filtering:', vehicles.length);
+    console.log('Vehicles by type:', vehicles.reduce((acc, v) => {
+      acc[v.type] = (acc[v.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>));
+    console.log('Vehicles by status:', vehicles.reduce((acc, v) => {
+      acc[v.status] = (acc[v.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>));
+    
+    console.log('Eligible vehicles after filtering:', eligibleVehicles.length, 'vehicles');
+    console.log('Eligible vehicles details:', eligibleVehicles.map(v => ({ id: v.id, registration: v.registration, type: v.type, status: v.status })));
     
     const layouts: TrailerLayout[] = eligibleVehicles
       .map((vehicle, index) => {
@@ -733,6 +812,7 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
           <Tab label="Trailer Layouts" />
           <Tab label="Cubage Calculator" />
           <Tab label="Loading Optimization" />
+          <Tab label="Daily Manifest Report" />
         </Tabs>
       </Box>
 
@@ -824,16 +904,42 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
                     <Typography variant="body2" component="div">
                       <Box component="ul" sx={{ pl: 2, mt: 1 }}>
                         <li>Total vehicles in fleet: {vehicles.length}</li>
-                        <li>Available vehicles: {vehicles.filter(v => v.status === 'Available').length}</li>
+                        <li>Available vehicles (exact match): {vehicles.filter(v => v.status === 'Available').length}</li>
+                        <li>Available vehicles (case-insensitive): {vehicles.filter(v => (v.status || '').toLowerCase() === 'available').length}</li>
                         <li>Vehicle types: {[...new Set(vehicles.map(v => v.type))].join(', ') || 'None'}</li>
+                        <li>Vehicle statuses: {[...new Set(vehicles.map(v => v.status))].join(', ') || 'None'}</li>
+                        <li>Eligible types with Available status (case-insensitive): {vehicles.filter(v => {
+                          const normalizedType = (v.type || '').toLowerCase().trim();
+                          const normalizedStatus = (v.status || '').toLowerCase().trim();
+                          const isEligibleType = normalizedType === 'hgv' || normalizedType === 'articulated' || normalizedType === 'trailer' || normalizedType === 'truck' || normalizedType === 'van';
+                          return isEligibleType && normalizedStatus === 'available';
+                        }).length}</li>
                       </Box>
+                      <Typography variant="body2" sx={{ mt: 1, fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                        Vehicle details: {vehicles.map(v => `${v.registration || v.id}: type="${v.type}", status="${v.status}"`).join(' | ')}
+                      </Typography>
                       <Typography variant="body2" sx={{ mt: 2 }}>
                         To allocate consignments, ensure you have vehicles with:
                       </Typography>
                       <Box component="ul" sx={{ pl: 2, mt: 1 }}>
                         <li>Type: "HGV", "Articulated", "trailer", "truck", or "Van"</li>
-                        <li>Status: "Available"</li>
+                        <li>Status: "Available" (case-sensitive)</li>
                       </Box>
+                      <Typography variant="body2" sx={{ mt: 2, color: 'warning.main' }}>
+                        <strong>Note:</strong> If vehicles are showing in your fleet but not here, check the browser console for filtering details.
+                      </Typography>
+                      <Button 
+                        variant="outlined" 
+                        sx={{ mt: 2 }}
+                        onClick={() => {
+                          const { VehicleService } = require('../services/api');
+                          VehicleService.getVehicles().then((result: any) => {
+                            alert(`Database vehicles: ${result.data?.length || 0}\nRedux vehicles: ${vehicles.length}\nEligible vehicles: ${trailerLayouts.length}`);
+                          });
+                        }}
+                      >
+                        Check Database Connection
+                      </Button>
                     </Typography>
                   </Alert>
                 </CardContent>
@@ -889,7 +995,68 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
                         }}
                         onDrop={async (e) => {
                           e.preventDefault();
+                          
+                          // Handle repositioning existing items
+                          if (draggedItemId && draggedItemId !== draggedJobId) {
+                            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                            const dropX = e.clientX - rect.left;
+                            const dropY = rect.bottom - e.clientY; // Y is from bottom for trailer visualization
+                            
+                            // Convert pixel coordinates to cm coordinates
+                            const xCm = (dropX / rect.width) * layout.trailerLength;
+                            const zCm = (dropY / rect.height) * layout.trailerHeight;
+                            
+                            // Find the item being repositioned
+                            const allocations = plotAllocations[layout.vehicleId] || [];
+                            const itemIndex = allocations.findIndex(a => a.plotId === draggedItemId);
+                            if (itemIndex !== -1) {
+                              const item = allocations[itemIndex];
+                              const updatedItem = {
+                                ...item,
+                                position: {
+                                  ...item.position,
+                                  x: Math.max(0, Math.min(xCm - item.position.length / 2, layout.trailerLength - item.position.length)),
+                                  z: Math.max(0, Math.min(zCm - item.position.height / 2, layout.trailerHeight - item.position.height)),
+                                }
+                              };
+                              
+                              const updatedAllocations = [...allocations];
+                              updatedAllocations[itemIndex] = updatedItem;
+                              setPlotAllocations(prev => ({
+                                ...prev,
+                                [layout.vehicleId]: updatedAllocations,
+                              }));
+                              
+                              // Update database
+                              try {
+                                const { supabase } = await import('../lib/supabase');
+                                const { error } = await supabase
+                                  .from('trailer_plot_allocations')
+                                  .update({ plot_position: updatedItem.position })
+                                  .eq('plot_id', draggedItemId)
+                                  .eq('vehicle_id', layout.vehicleId);
+                                
+                                if (error) throw error;
+                              } catch (error: any) {
+                                console.error('Failed to update position:', error);
+                                alert(`Failed to update position: ${error.message}`);
+                              }
+                              
+                              setDraggedItemId(null);
+                              return;
+                            }
+                          }
+                          
                           if (!draggedJobId) return;
+                          
+                          // Calculate drop position from mouse coordinates
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          const dropX = e.clientX - rect.left;
+                          const dropY = rect.bottom - e.clientY; // Y is from bottom for trailer visualization
+                          
+                          // Convert pixel coordinates to cm coordinates
+                          const targetX = (dropX / rect.width) * layout.trailerLength;
+                          const targetZ = (dropY / rect.height) * layout.trailerHeight;
                           
                           const job = pendingJobs.find(j => j.id === draggedJobId);
                           if (!job || !job.palletItems) return;
@@ -942,16 +1109,45 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
                             return;
                           }
                           
+                          // Allocate plots, but adjust positions to target drop location
                           const newAllocations = PlotAllocationService.allocatePlots(
                             palletItems,
                             trailerCapacity,
                             existingAllocations
                           );
                           
+                          // Adjust first allocation to target position if space allows
+                          if (newAllocations.length > 0 && targetX > 0 && targetZ > 0) {
+                            const firstAlloc = newAllocations[0];
+                            const adjustedX = Math.max(0, Math.min(targetX - firstAlloc.position.length / 2, layout.trailerLength - firstAlloc.position.length));
+                            const adjustedZ = Math.max(0, Math.min(targetZ - firstAlloc.position.height / 2, layout.trailerHeight - firstAlloc.position.height));
+                            newAllocations[0] = {
+                              ...firstAlloc,
+                              position: {
+                                ...firstAlloc.position,
+                                x: adjustedX,
+                                z: adjustedZ,
+                              }
+                            };
+                          }
+                          
                           setPlotAllocations(prev => ({
                             ...prev,
                             [layout.vehicleId]: [...existingAllocations, ...newAllocations],
                           }));
+                          
+                          // Validate IDs before saving - show helpful error if invalid
+                          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                          if (!uuidRegex.test(job.id)) {
+                            alert(`Cannot save allocation: Job ID "${job.id}" is not a valid UUID. This job appears to be demo/test data. Please use a job created through the "Add New Consignment" form.`);
+                            setDraggedJobId(null);
+                            return;
+                          }
+                          if (!uuidRegex.test(layout.vehicleId)) {
+                            alert(`Cannot save allocation: Vehicle ID "${layout.vehicleId}" is not a valid UUID.\n\nThis vehicle appears to be demo data. Please:\n1. Go to Fleet Management\n2. Add vehicles with valid UUIDs from the database\n3. Ensure vehicles have Status: "Available" and Type: "HGV", "Articulated", "trailer", "truck", or "Van"`);
+                            setDraggedJobId(null);
+                            return;
+                          }
                           
                           // Save to database
                           try {
@@ -974,6 +1170,7 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
                               
                               if (error) {
                                 console.error('Failed to insert allocation:', error);
+                                console.error('Job ID:', job.id, 'Vehicle ID:', layout.vehicleId);
                                 allocationError = error;
                                 throw error;
                               }
@@ -994,11 +1191,15 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
                             setPendingJobs(prev => prev.filter(j => j.id !== job.id));
                           } catch (error: any) {
                             console.error('Failed to save allocation:', error);
+                            console.error('Job ID:', job.id, 'Type:', typeof job.id);
+                            console.error('Vehicle ID:', layout.vehicleId, 'Type:', typeof layout.vehicleId);
                             const errorMessage = error?.message || error?.details || error?.hint || 
                               (typeof error === 'string' ? error : JSON.stringify(error)) || 'Unknown error';
                             
-                            // Check if it's a table missing error
-                            if (errorMessage.includes('does not exist') || errorMessage.includes('trailer_plot_allocations')) {
+                            // Check if it's a UUID validation error
+                            if (errorMessage.includes('invalid input syntax for type uuid') || errorMessage.includes('UUID')) {
+                              alert(`Failed to save allocation: Invalid UUID format.\n\nJob ID: "${job.id}"\nVehicle ID: "${layout.vehicleId}"\n\nPlease ensure you are using valid job and vehicle data from the database. Demo/test data cannot be allocated.`);
+                            } else if (errorMessage.includes('does not exist') || errorMessage.includes('trailer_plot_allocations')) {
                               alert(`Database table missing. Please run the migration: database/migrations/create_trailer_plot_allocations.sql\n\nError: ${errorMessage}`);
                             } else {
                               alert(`Failed to save allocation: ${errorMessage}`);
@@ -1016,6 +1217,14 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
                         {layout.cargoItems.map((item) => (
                           <Box
                             key={item.id}
+                            draggable
+                            onDragStart={(e) => {
+                              setDraggedItemId(item.plotId || item.id);
+                              e.dataTransfer.effectAllowed = 'move';
+                            }}
+                            onDragEnd={() => {
+                              setDraggedItemId(null);
+                            }}
                             sx={{
                               position: 'absolute',
                               left: `${(item.position?.x || 0) / layout.trailerLength * 100}%`,
@@ -1024,19 +1233,28 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
                               height: `${(item.position?.height || 0) / layout.trailerHeight * 100}%`,
                               bgcolor: item.priority === 'high' ? '#ff6b6b' : 
                                       item.priority === 'medium' ? '#ffd93d' : '#6bcf7f',
-                              border: '1px solid #333',
+                              border: '2px solid #333',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               fontSize: '0.7rem',
                               color: 'white',
                               fontWeight: 'bold',
-                              cursor: 'pointer',
-                              '&:hover': { opacity: 0.8 },
+                              cursor: 'grab',
+                              transition: 'all 0.2s',
+                              '&:hover': { 
+                                opacity: 0.9,
+                                borderColor: '#FFD700',
+                                boxShadow: '0 2px 8px rgba(255, 215, 0, 0.5)',
+                              },
+                              '&:active': {
+                                cursor: 'grabbing',
+                                opacity: 0.7,
+                              },
                             }}
-                            title={`${item.jobTitle} - ${item.description}`}
+                            title={`${item.jobTitle} - ${item.description}\nDrag to reposition`}
                           >
-                            {item.plotId}
+                            {item.plotId || item.id?.substring(0, 8)}
                           </Box>
                         ))}
                       </Paper>
@@ -1313,6 +1531,154 @@ const TrailerPlanner: React.FC<TrailerPlannerProps> = ({ onClose }) => {
                     />
                   </ListItem>
                 </List>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      {/* Daily Manifest Report Tab */}
+      <TabPanel value={tabValue} index={4}>
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                  <Typography variant="h6">
+                    Daily Manifest Report
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<Assignment />}
+                    onClick={() => window.print()}
+                  >
+                    Print Manifest
+                  </Button>
+                </Box>
+                
+                {trailerLayouts.length === 0 ? (
+                  <Alert severity="info">
+                    No trailers have consignments allocated. Allocate consignments to see manifest details.
+                  </Alert>
+                ) : (
+                  trailerLayouts
+                    .filter(layout => layout.cargoItems.length > 0)
+                    .map((layout) => {
+                      const vehicle = vehicles.find(v => v.id === layout.vehicleId);
+                      const allocations = plotAllocations[layout.vehicleId] || [];
+                      
+                      // Sort allocations by position (x coordinate for load sequence)
+                      const sortedAllocations = [...allocations].sort((a, b) => a.position.x - b.position.x);
+                      
+                      return (
+                        <Box key={layout.id} sx={{ mb: 4 }}>
+                          <Typography variant="h5" gutterBottom sx={{ mt: 3, mb: 2 }}>
+                            {layout.vehicleRegistration}
+                          </Typography>
+                          
+                          {/* Vehicle and Driver Info */}
+                          <Grid container spacing={2} sx={{ mb: 3 }}>
+                            <Grid item xs={12} md={6}>
+                              <Card variant="outlined">
+                                <CardContent>
+                                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Vehicle Information
+                                  </Typography>
+                                  <Typography variant="body1"><strong>Registration:</strong> {layout.vehicleRegistration}</Typography>
+                                  <Typography variant="body1"><strong>Type:</strong> {vehicle?.type || 'N/A'}</Typography>
+                                  <Typography variant="body1"><strong>Dimensions:</strong> {(layout.trailerLength / 100).toFixed(1)}m × {(layout.trailerWidth / 100).toFixed(1)}m × {(layout.trailerHeight / 100).toFixed(1)}m</Typography>
+                                  <Typography variant="body1"><strong>Capacity:</strong> {(layout.maxWeight / 1000).toFixed(1)}t / {layout.maxVolume.toFixed(2)}m³</Typography>
+                                </CardContent>
+                              </Card>
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                              <Card variant="outlined">
+                                <CardContent>
+                                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Load Summary
+                                  </Typography>
+                                  <Typography variant="body1"><strong>Total Weight:</strong> {(layout.totalWeight / 1000).toFixed(2)}t</Typography>
+                                  <Typography variant="body1"><strong>Total Volume:</strong> {layout.totalVolume.toFixed(2)}m³</Typography>
+                                  <Typography variant="body1"><strong>Utilization:</strong> {Math.round(layout.utilizationPercentage)}%</Typography>
+                                  <Typography variant="body1"><strong>Number of Consignments:</strong> {sortedAllocations.length}</Typography>
+                                </CardContent>
+                              </Card>
+                            </Grid>
+                          </Grid>
+                          
+                          {/* Consignment Details Table */}
+                          <TableContainer component={Paper} sx={{ mb: 3 }}>
+                            <Table>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell><strong>Plot ID</strong></TableCell>
+                                  <TableCell><strong>Job Number</strong></TableCell>
+                                  <TableCell><strong>Customer</strong></TableCell>
+                                  <TableCell><strong>Description</strong></TableCell>
+                                  <TableCell><strong>Position (X, Y, Z)</strong></TableCell>
+                                  <TableCell><strong>Dimensions (L×W×H)</strong></TableCell>
+                                  <TableCell><strong>Weight</strong></TableCell>
+                                  <TableCell><strong>Volume</strong></TableCell>
+                                  <TableCell><strong>Load Sequence</strong></TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {sortedAllocations.map((allocation, index) => {
+                                  const job = jobs.find(j => j.id === allocation.jobId);
+                                  const palletItem = allocation.palletItems[0];
+                                  
+                                  return (
+                                    <TableRow key={allocation.plotId}>
+                                      <TableCell>{allocation.plotId}</TableCell>
+                                      <TableCell>{job?.jobNumber || 'N/A'}</TableCell>
+                                      <TableCell>{job?.customerName || 'N/A'}</TableCell>
+                                      <TableCell>
+                                        {palletItem?.palletType || allocation.jobTitle || 'Consignment'}
+                                        {palletItem?.quantity && ` (${palletItem.quantity}x)`}
+                                      </TableCell>
+                                      <TableCell>
+                                        {Math.round(allocation.position.x)}cm, {Math.round(allocation.position.y)}cm, {Math.round(allocation.position.z)}cm
+                                      </TableCell>
+                                      <TableCell>
+                                        {Math.round(allocation.position.length)}×{Math.round(allocation.position.width)}×{Math.round(allocation.position.height)}cm
+                                      </TableCell>
+                                      <TableCell>{(allocation.totalWeight / 1000).toFixed(2)}t</TableCell>
+                                      <TableCell>{allocation.totalVolume.toFixed(2)}m³</TableCell>
+                                      <TableCell>
+                                        <Chip 
+                                          label={`#${index + 1}`} 
+                                          size="small" 
+                                          color="primary"
+                                        />
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                          
+                          {/* Loading Instructions */}
+                          <Card variant="outlined">
+                            <CardContent>
+                              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Loading Instructions
+                              </Typography>
+                              <Typography variant="body2">
+                                • Load consignments in the sequence shown above (Plot #1 first, then #2, etc.)
+                              </Typography>
+                              <Typography variant="body2">
+                                • Position items according to coordinates: X (front to back), Y (left to right), Z (bottom to top)
+                              </Typography>
+                              <Typography variant="body2">
+                                • Ensure weight distribution is balanced - current utilization: {Math.round(layout.utilizationPercentage)}%
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        </Box>
+                      );
+                    })
+                )}
               </CardContent>
             </Card>
           </Grid>

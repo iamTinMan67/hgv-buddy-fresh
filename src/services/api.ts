@@ -40,9 +40,39 @@ export class ApiService {
         success: true
       };
     } catch (error: any) {
+      // Safely extract error message - ensure it's always a string
+      let errorMessage = 'Failed to create record';
+      
+      if (error) {
+        if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error.message && typeof error.message === 'string') {
+          errorMessage = error.message;
+        } else if (error.details && typeof error.details === 'string') {
+          errorMessage = error.details;
+        } else if (error.hint && typeof error.hint === 'string') {
+          errorMessage = error.hint;
+        } else {
+          // Only try to stringify if it's not a React component
+          try {
+            if (typeof error === 'object' && !('$$typeof' in error)) {
+              const stringified = JSON.stringify(error);
+              if (stringified && stringified !== '{}') {
+                errorMessage = stringified;
+              }
+            } else {
+              console.error('Error object contains React component or invalid format:', error);
+              errorMessage = 'Failed to create record. Invalid error format.';
+            }
+          } catch (e) {
+            errorMessage = 'Failed to create record';
+          }
+        }
+      }
+      
       return {
         data: null,
-        error: error.message || 'Failed to create record',
+        error: errorMessage,
         success: false
       };
     }

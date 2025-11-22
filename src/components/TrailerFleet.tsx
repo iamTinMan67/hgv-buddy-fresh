@@ -93,7 +93,7 @@ const TrailerFleet: React.FC<TrailerFleetProps> = ({ onClose }) => {
     trailerName: '',
     registration: '',
     year: new Date().getFullYear(),
-    type: 'HGV' as 'HGV' | 'Articulated' | 'PCV' | 'PSV' | 'Van' | 'Car',
+    type: 'HGV' as 'HGV' | 'Articulated' | 'Van' | 'Rigid',
     status: 'Available' as any,
     capacity: 0, // in tons
     location: '',
@@ -1215,10 +1215,8 @@ const TrailerFleet: React.FC<TrailerFleetProps> = ({ onClose }) => {
                   >
                     <MenuItem value="HGV">HGV</MenuItem>
                     <MenuItem value="Articulated">Articulated</MenuItem>
-                    <MenuItem value="PCV">PCV</MenuItem>
-                    <MenuItem value="PSV">PSV</MenuItem>
                     <MenuItem value="Van">Van</MenuItem>
-                    <MenuItem value="Car">Car</MenuItem>
+                    <MenuItem value="Rigid">Rigid</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>

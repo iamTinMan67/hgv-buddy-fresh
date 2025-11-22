@@ -84,6 +84,12 @@ interface PalletItem {
   tailLift: boolean;
   forkLift: boolean;
   handBall: boolean;
+  distance?: number; // Distance in miles
+  distanceCost?: number; // Calculated distance cost
+  plotSpaceCost?: number; // Plot space cost (separate from distance)
+  weightRatio?: number; // Weight ratio (actual weight / standard plot weight)
+  weightRatioCost?: number; // Cost based on weight ratio
+  totalItemCost?: number; // Combined plot space + distance + weight ratio cost
 }
 
 interface JobAllocationFormProps {
@@ -173,6 +179,7 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
   const [palletItems, setPalletItems] = useState<PalletItem[]>([]);
   const [selectedPalletForCounter, setSelectedPalletForCounter] = useState<string>('');
   const [palletQuantity, setPalletQuantity] = useState<number>(1);
+  const [distance, setDistance] = useState<number>(0); // Distance in miles
   const [newPalletFlags, setNewPalletFlags] = useState<{ tailLift: boolean; forkLift: boolean; handBall: boolean }>({
     tailLift: false,
     forkLift: true,
@@ -240,12 +247,29 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
     const itemWidth = isCustom ? Number(dimensions.width) : pallet.width;
     const itemHeight = isCustom ? Number(dimensions.height) : pallet.height;
 
+    // Calculate plot space cost
+    const plotSpaceCost = unitCost * qty;
+    
+    // Calculate distance cost using tiered pricing
+    const distanceCost = PalletPricingService.calculateDistanceCost(distance, qty);
+    
+    // Get distance tier info for display
+    const distanceTier = PalletPricingService.getDistanceTierInfo(distance);
+    
+    // Calculate weight ratio and weight ratio cost
+    const weightRatio = PalletPricingService.calculateWeightRatio(unitWeight, selectedPalletForCounter);
+    const weightRatioCost = PalletPricingService.calculateWeightRatioCost(plotSpaceCost, weightRatio);
+    const weightRatioTier = PalletPricingService.getWeightRatioTierInfo(weightRatio);
+    
+    // Total item cost = plot space + distance + weight ratio
+    const totalItemCost = plotSpaceCost + distanceCost + weightRatioCost;
+
     const newItem: PalletItem = {
       id: Date.now().toString(),
       palletType: selectedPalletForCounter,
       quantity: qty,
       cost: unitCost,
-      totalCost: unitCost * qty,
+      totalCost: totalItemCost, // Now includes distance cost
       weight: unitWeight,
       totalWeight: unitWeight * qty,
       volume: unitVolume,
@@ -256,6 +280,12 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
       tailLift: newPalletFlags.tailLift,
       forkLift: newPalletFlags.forkLift,
       handBall: newPalletFlags.handBall,
+      distance: distance,
+      distanceCost: distanceCost,
+      plotSpaceCost: plotSpaceCost,
+      weightRatio: weightRatio,
+      weightRatioCost: weightRatioCost,
+      totalItemCost: totalItemCost,
     };
 
     setPalletItems(prev => [...prev, newItem]);
@@ -272,12 +302,19 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
   const updatePalletItemQuantity = (id: string, newQuantity: number) => {
     setPalletItems(prev => prev.map(item => {
       if (item.id === id) {
+        const plotSpaceCost = item.cost * newQuantity;
+        const distanceCost = item.distance ? PalletPricingService.calculateDistanceCost(item.distance, newQuantity) : 0;
+        const totalItemCost = plotSpaceCost + distanceCost;
+        
         return {
           ...item,
           quantity: newQuantity,
-          totalCost: item.cost * newQuantity,
+          totalCost: totalItemCost,
           totalWeight: item.weight * newQuantity,
           totalVolume: (item.volume * newQuantity),
+          plotSpaceCost: plotSpaceCost,
+          distanceCost: distanceCost,
+          totalItemCost: totalItemCost,
         };
       }
       return item;
@@ -557,6 +594,7 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
     setPalletItems([]);
     setSelectedPalletForCounter('');
     setPalletQuantity(1);
+    setDistance(0);
     onClose();
   };
 
@@ -578,7 +616,11 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
 
   const handleSubmit = () => {
     // Calculate totals from pallet items
-    const totalCost = palletItems.reduce((sum, item) => sum + item.totalCost, 0);
+    // Use totalItemCost if available (includes plot space + distance + weight ratio), otherwise fall back to totalCost
+    const totalCost = palletItems.reduce((sum, item) => sum + (item.totalItemCost || item.totalCost), 0);
+    const totalPlotSpaceCost = palletItems.reduce((sum, item) => sum + (item.plotSpaceCost || item.cost * item.quantity), 0);
+    const totalDistanceCost = palletItems.reduce((sum, item) => sum + (item.distanceCost || 0), 0);
+    const totalWeightRatioCost = palletItems.reduce((sum, item) => sum + (item.weightRatioCost || 0), 0);
     const totalWeight = palletItems.reduce((sum, item) => sum + item.totalWeight, 0);
     const totalVolume = palletItems.reduce((sum, item) => sum + item.totalVolume, 0);
 
@@ -2524,7 +2566,7 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                                   </Select>
                                 </FormControl>
                               </Grid>
-                              <Grid item xs={12} md={3}>
+                              <Grid item xs={12} md={2}>
                                 <TextField
                                   fullWidth
                                   type="number"
@@ -2536,6 +2578,26 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                                     '& .MuiOutlinedInput-root': { color: 'white' },
                                     '& .MuiInputLabel-root': { color: 'grey.400' },
                                     '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                                  }}
+                                />
+                              </Grid>
+                              <Grid item xs={12} md={2}>
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  label="Distance (miles)"
+                                  value={distance}
+                                  onChange={(e) => {
+                                    const dist = Number(e.target.value) || 0;
+                                    setDistance(dist);
+                                  }}
+                                  inputProps={{ min: 0, step: 0.1 }}
+                                  helperText={distance > 0 ? PalletPricingService.getDistanceTierInfo(distance).description : 'Enter distance for pricing'}
+                                  sx={{ 
+                                    '& .MuiOutlinedInput-root': { color: 'white' },
+                                    '& .MuiInputLabel-root': { color: 'grey.400' },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' },
+                                    '& .MuiFormHelperText-root': { color: 'grey.500' }
                                   }}
                                 />
                               </Grid>
@@ -2623,32 +2685,42 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                                 
                                 {/* Table Header */}
                                 <Grid container spacing={1} sx={{ mb: 1, px: 1 }}>
-                                  <Grid item xs={3}>
+                                  <Grid item xs={2}>
                                     <Typography variant="body2" sx={{ color: 'grey.400', fontWeight: 'bold' }}>
                                       Pallet Type
                                     </Typography>
                                   </Grid>
-                                  <Grid item xs={2}>
+                                  <Grid item xs={1.5}>
                                     <Typography variant="body2" sx={{ color: 'grey.400', fontWeight: 'bold' }}>
                                       Qty
                                     </Typography>
                                   </Grid>
-                                  <Grid item xs={2}>
+                                  <Grid item xs={1.5}>
                                     <Typography variant="body2" sx={{ color: 'grey.400', fontWeight: 'bold' }}>
-                                      Unit Cost
+                                      Plot Cost
                                     </Typography>
                                   </Grid>
-                                  <Grid item xs={2}>
+                                  <Grid item xs={1.2}>
+                                    <Typography variant="body2" sx={{ color: 'grey.400', fontWeight: 'bold' }}>
+                                      Distance Cost
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item xs={1.2}>
+                                    <Typography variant="body2" sx={{ color: 'grey.400', fontWeight: 'bold' }}>
+                                      Weight Ratio Cost
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item xs={1.2}>
                                     <Typography variant="body2" sx={{ color: 'grey.400', fontWeight: 'bold' }}>
                                       Total Cost
                                     </Typography>
                                   </Grid>
-                                  <Grid item xs={2}>
+                                  <Grid item xs={1.2}>
                                     <Typography variant="body2" sx={{ color: 'grey.400', fontWeight: 'bold' }}>
                                       Weight
                                     </Typography>
                                   </Grid>
-                                  <Grid item xs={3}>
+                                  <Grid item xs={2}>
                                     <Typography variant="body2" sx={{ color: 'grey.400', fontWeight: 'bold' }}>
                                       Equipment
                                     </Typography>
@@ -2661,105 +2733,198 @@ const JobAllocationForm: React.FC<JobAllocationFormProps> = ({ onClose, initialD
                                 </Grid>
 
                                 {/* Table Rows */}
-                              {palletItems.map((item, index) => (
-                                  <Grid container spacing={1} key={item.id} sx={{ 
-                                    mb: 1, 
-                                    px: 1, 
-                                    py: 1, 
-                                    bgcolor: 'rgba(255, 255, 255, 0.05)',
-                                    borderRadius: 1,
-                                    alignItems: 'center'
-                                  }}>
-                                    <Grid item xs={3}>
-                                      <Typography variant="body2" sx={{ color: 'white' }}>
-                                        {item.palletType}
-                                      </Typography>
-                                    </Grid>
-                                    <Grid item xs={2}>
-                                      <TextField
-                                        type="number"
-                                        value={item.quantity}
-                                        onChange={(e) => updatePalletItemQuantity(item.id, Number(e.target.value))}
-                                        inputProps={{ min: 1 }}
-                                        size="small"
-                                        sx={{ 
-                                          '& .MuiOutlinedInput-root': { color: 'white' },
-                                          '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
-                                        }}
-                                      />
-                                    </Grid>
-                                    <Grid item xs={2}>
-                                      <Typography variant="body2" sx={{ color: 'white' }}>
-                                        £{item.cost.toFixed(2)}
-                                      </Typography>
-                                    </Grid>
-                                    <Grid item xs={2}>
-                                      <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                                        £{item.totalCost.toFixed(2)}
-                                      </Typography>
-                                    </Grid>
-                                    <Grid item xs={2}>
-                                      <Typography variant="body2" sx={{ color: 'white' }}>
-                                        {item.totalWeight}kg
-                                      </Typography>
-                                    </Grid>
-                                    <Grid item xs={3}>
-                                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                                        <FormControlLabel
-                                          control={<Checkbox checked={item.tailLift} onChange={(e) => updatePalletItemFlag(item.id, 'tailLift', e.target.checked)} sx={{ color: 'grey.400', '&.Mui-checked': { color: 'primary.main' } }} />}
-                                          label="TL"
-                                          sx={{ color: 'white' }}
+                              {palletItems.map((item, index) => {
+                                  const plotSpaceCost = item.plotSpaceCost || (item.cost * item.quantity);
+                                  const distanceCost = item.distanceCost || 0;
+                                  const weightRatioCost = item.weightRatioCost || 0;
+                                  const totalItemCost = item.totalItemCost || item.totalCost;
+                                  
+                                  return (
+                                    <Grid container spacing={1} key={item.id} sx={{ 
+                                      mb: 1, 
+                                      px: 1, 
+                                      py: 1, 
+                                      bgcolor: 'rgba(255, 255, 255, 0.05)',
+                                      borderRadius: 1,
+                                      alignItems: 'center'
+                                    }}>
+                                      <Grid item xs={2}>
+                                        <Typography variant="body2" sx={{ color: 'white' }}>
+                                          {item.palletType}
+                                        </Typography>
+                                        {item.distance && (
+                                          <Typography variant="caption" sx={{ color: 'grey.500', display: 'block' }}>
+                                            {item.distance} miles
+                                          </Typography>
+                                        )}
+                                        {item.weightRatio && (
+                                          <Typography variant="caption" sx={{ color: 'grey.500', display: 'block' }}>
+                                            Ratio: {(item.weightRatio * 100).toFixed(0)}%
+                                          </Typography>
+                                        )}
+                                      </Grid>
+                                      <Grid item xs={1.5}>
+                                        <TextField
+                                          type="number"
+                                          value={item.quantity}
+                                          onChange={(e) => updatePalletItemQuantity(item.id, Number(e.target.value))}
+                                          inputProps={{ min: 1 }}
+                                          size="small"
+                                          sx={{ 
+                                            '& .MuiOutlinedInput-root': { color: 'white' },
+                                            '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' }
+                                          }}
                                         />
-                                        <FormControlLabel
-                                          control={<Checkbox checked={item.forkLift} onChange={(e) => updatePalletItemFlag(item.id, 'forkLift', e.target.checked)} sx={{ color: 'grey.400', '&.Mui-checked': { color: 'primary.main' } }} />}
-                                          label="FL"
-                                          sx={{ color: 'white' }}
-                                        />
-                                        <FormControlLabel
-                                          control={<Checkbox checked={item.handBall} onChange={(e) => updatePalletItemFlag(item.id, 'handBall', e.target.checked)} sx={{ color: 'grey.400', '&.Mui-checked': { color: 'primary.main' } }} />}
-                                          label="HB"
-                                          sx={{ color: 'white' }}
-                                        />
-                                      </Box>
+                                      </Grid>
+                                      <Grid item xs={1.5}>
+                                        <Typography variant="body2" sx={{ color: 'white' }}>
+                                          £{plotSpaceCost.toFixed(2)}
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={1.2}>
+                                        <Typography variant="body2" sx={{ color: item.distanceCost ? 'info.main' : 'grey.500' }}>
+                                          {item.distanceCost ? `£${item.distanceCost.toFixed(2)}` : 'N/A'}
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={1.2}>
+                                        <Typography variant="body2" sx={{ color: weightRatioCost !== 0 ? (weightRatioCost > 0 ? 'warning.main' : 'success.main') : 'grey.500' }}>
+                                          {weightRatioCost !== 0 ? `£${weightRatioCost.toFixed(2)}` : 'N/A'}
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={1.2}>
+                                        <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                                          £{totalItemCost.toFixed(2)}
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={1.2}>
+                                        <Typography variant="body2" sx={{ color: 'white' }}>
+                                          {item.totalWeight}kg
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={2}>
+                                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                          <FormControlLabel
+                                            control={<Checkbox checked={item.tailLift} onChange={(e) => updatePalletItemFlag(item.id, 'tailLift', e.target.checked)} sx={{ color: 'grey.400', '&.Mui-checked': { color: 'primary.main' } }} />}
+                                            label="TL"
+                                            sx={{ color: 'white' }}
+                                          />
+                                          <FormControlLabel
+                                            control={<Checkbox checked={item.forkLift} onChange={(e) => updatePalletItemFlag(item.id, 'forkLift', e.target.checked)} sx={{ color: 'grey.400', '&.Mui-checked': { color: 'primary.main' } }} />}
+                                            label="FL"
+                                            sx={{ color: 'white' }}
+                                          />
+                                          <FormControlLabel
+                                            control={<Checkbox checked={item.handBall} onChange={(e) => updatePalletItemFlag(item.id, 'handBall', e.target.checked)} sx={{ color: 'grey.400', '&.Mui-checked': { color: 'primary.main' } }} />}
+                                            label="HB"
+                                            sx={{ color: 'white' }}
+                                          />
+                                        </Box>
+                                      </Grid>
+                                      <Grid item xs={1}>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => removePalletItem(item.id)}
+                                          sx={{ color: 'error.main' }}
+                                        >
+                                          <Delete />
+                                        </IconButton>
+                                      </Grid>
                                     </Grid>
-                                    <Grid item xs={1}>
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => removePalletItem(item.id)}
-                                        sx={{ color: 'error.main' }}
-                                      >
-                                        <Delete />
-                                      </IconButton>
-                                    </Grid>
-                                  </Grid>
-                                ))}
+                                  );
+                                })}
 
                                 {/* Totals Row */}
-                                <Grid container spacing={1} sx={{ 
-                                  mt: 2, 
-                                  px: 1, 
-                                  py: 2, 
-                                  bgcolor: 'rgba(76, 175, 80, 0.1)',
-                                  borderRadius: 1,
-                                  border: '1px solid rgba(76, 175, 80, 0.3)'
-                                }}>
-                                  <Grid item xs={7}>
-                                    <Typography variant="h6" sx={{ color: 'success.main', fontWeight: 'bold' }}>
-                                      RUNNING TOTALS
-                                    </Typography>
-                                  </Grid>
-                                  <Grid item xs={2}>
-                                    <Typography variant="h6" sx={{ color: 'success.main', fontWeight: 'bold' }}>
-                                      £{totalCost.toFixed(2)}
-                                    </Typography>
-                                  </Grid>
-                                  <Grid item xs={2}>
-                                    <Typography variant="h6" sx={{ color: 'success.main', fontWeight: 'bold' }}>
-                                      {totalWeight}kg
-                                    </Typography>
-                                  </Grid>
-                                  <Grid item xs={1}></Grid>
-                                </Grid>
+                                {(() => {
+                                  const totalPlotSpaceCost = palletItems.reduce((sum, item) => sum + (item.plotSpaceCost || item.cost * item.quantity), 0);
+                                  const totalDistanceCost = palletItems.reduce((sum, item) => sum + (item.distanceCost || 0), 0);
+                                  const totalWeightRatioCost = palletItems.reduce((sum, item) => sum + (item.weightRatioCost || 0), 0);
+                                  const grandTotal = totalPlotSpaceCost + totalDistanceCost + totalWeightRatioCost;
+                                  const totalWeight = palletItems.reduce((sum, item) => sum + item.totalWeight, 0);
+                                  const totalDistance = palletItems.length > 0 && palletItems[0].distance ? palletItems[0].distance : 0;
+                                  const avgWeightRatio = palletItems.length > 0 
+                                    ? palletItems.reduce((sum, item) => sum + (item.weightRatio || 0), 0) / palletItems.length 
+                                    : 0;
+                                  
+                                  return (
+                                    <Grid container spacing={1} sx={{ 
+                                      mt: 2, 
+                                      px: 1, 
+                                      py: 2, 
+                                      bgcolor: 'rgba(76, 175, 80, 0.1)',
+                                      borderRadius: 1,
+                                      border: '1px solid rgba(76, 175, 80, 0.3)'
+                                    }}>
+                                      <Grid item xs={12}>
+                                        <Typography variant="h6" sx={{ color: 'success.main', fontWeight: 'bold', mb: 1 }}>
+                                          PRICING BREAKDOWN
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={6}>
+                                        <Typography variant="body2" sx={{ color: 'grey.400' }}>
+                                          Total Plot Space Cost:
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={6}>
+                                        <Typography variant="body1" sx={{ color: 'white', fontWeight: 'bold' }}>
+                                          £{totalPlotSpaceCost.toFixed(2)}
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={6}>
+                                        <Typography variant="body2" sx={{ color: 'grey.400' }}>
+                                          Total Distance Cost ({totalDistance > 0 ? `${totalDistance} miles` : 'N/A'}):
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={6}>
+                                        <Typography variant="body1" sx={{ color: 'white', fontWeight: 'bold' }}>
+                                          £{totalDistanceCost.toFixed(2)}
+                                          {totalDistance > 0 && (
+                                            <Typography component="span" variant="caption" sx={{ color: 'grey.500', ml: 1 }}>
+                                              ({PalletPricingService.getDistanceTierInfo(totalDistance).description})
+                                            </Typography>
+                                          )}
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={6}>
+                                        <Typography variant="body2" sx={{ color: 'grey.400' }}>
+                                          Total Weight Ratio Cost:
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={6}>
+                                        <Typography variant="body1" sx={{ color: 'white', fontWeight: 'bold' }}>
+                                          £{totalWeightRatioCost.toFixed(2)}
+                                          {avgWeightRatio > 0 && (
+                                            <Typography component="span" variant="caption" sx={{ color: 'grey.500', ml: 1 }}>
+                                              ({PalletPricingService.getWeightRatioTierInfo(avgWeightRatio).description})
+                                            </Typography>
+                                          )}
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={12}>
+                                        <Divider sx={{ my: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+                                      </Grid>
+                                      <Grid item xs={6}>
+                                        <Typography variant="h6" sx={{ color: 'success.main', fontWeight: 'bold' }}>
+                                          GRAND TOTAL:
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={6}>
+                                        <Typography variant="h6" sx={{ color: 'success.main', fontWeight: 'bold' }}>
+                                          £{grandTotal.toFixed(2)}
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={6}>
+                                        <Typography variant="body2" sx={{ color: 'grey.400' }}>
+                                          Total Weight:
+                                        </Typography>
+                                      </Grid>
+                                      <Grid item xs={6}>
+                                        <Typography variant="body1" sx={{ color: 'white', fontWeight: 'bold' }}>
+                                          {totalWeight}kg
+                                        </Typography>
+                                      </Grid>
+                                    </Grid>
+                                  );
+                                })()}
                               </Box>
                             )}
 

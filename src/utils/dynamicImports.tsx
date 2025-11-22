@@ -61,6 +61,7 @@ export const DynamicComponents = {
   HolidayPlanner: lazy(() => import('../components/HolidayPlanner')),
   BookKeeping: lazy(() => import('../components/BookKeeping')),
   InteractiveStatusChip: lazy(() => import('../components/InteractiveStatusChip')),
+  PricingConfiguration: lazy(() => import('../components/PricingConfiguration')),
 };
 
 // Preloading functions for better performance

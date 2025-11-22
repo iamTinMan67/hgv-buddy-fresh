@@ -79,7 +79,53 @@ function TabPanel(props: TabPanelProps) {
 
 const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { vehicles, defectReports, fleetStatus } = useSelector((state: RootState) => state.vehicle);
+  const { vehicles: reduxVehicles, defectReports, fleetStatus } = useSelector((state: RootState) => state.vehicle);
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  
+  // Load vehicles from database on mount
+  useEffect(() => {
+    const loadVehicles = async () => {
+      try {
+        const result = await VehicleService.getVehicles();
+        if (result.success && result.data) {
+          console.log('FleetManagement - Loaded vehicles from database:', result.data.length);
+          // Map database vehicles to match the expected format
+          // Handle both snake_case and camelCase field names from database
+          const mappedVehicles = result.data.map((v: any) => ({
+            ...v,
+            id: v.id,
+            fleetNumber: v.fleetNumber || v.fleet_number || `FLEET-${v.id.substring(0, 8).toUpperCase()}`,
+            registration: v.registration || '',
+            make: v.make || '',
+            model: v.model || '',
+            year: v.year || new Date().getFullYear(),
+            type: (v.type || 'HGV').charAt(0).toUpperCase() + (v.type || 'HGV').slice(1).toLowerCase(), // Capitalize first letter
+            status: (v.status || 'Available').replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()), // Convert snake_case to Title Case
+            capacity: v.capacity || 0,
+            lastInspection: v.lastInspection || v.last_inspection || '',
+            nextMOT: v.nextMOT || v.next_mot || '',
+            nextService: v.nextService || v.next_service || '',
+            currentDriver: v.currentDriver || v.current_driver || '',
+            location: v.location || '',
+            notes: v.notes || '',
+            permanent_trailer_id: v.permanent_trailer_id || v.permanentTrailerId || null,
+            isActive: v.isActive !== false && v.is_active !== false,
+            createdAt: v.createdAt || v.created_at || new Date().toISOString(),
+            updatedAt: v.updatedAt || v.updated_at || new Date().toISOString(),
+          }));
+          setVehicles(mappedVehicles);
+        } else {
+          console.warn('FleetManagement - No vehicles found in database');
+          setVehicles([]);
+        }
+      } catch (error) {
+        console.error('FleetManagement - Error loading vehicles from database:', error);
+        // Keep whatever is currently shown; do not overwrite with dummy data
+      }
+    };
+    
+    loadVehicles();
+  }, []);
   
   const [tabValue, setTabValue] = useState(0);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
@@ -134,10 +180,10 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
       }
     };
     
-    if (showAssignDriverDialog || showVehicleDialog) {
+    if (showAssignDriverDialog || showVehicleDialog || showAddVehicleDialog) {
       loadDrivers();
     }
-  }, [showAssignDriverDialog, showVehicleDialog]);
+  }, [showAssignDriverDialog, showVehicleDialog, showAddVehicleDialog]);
 
   // Load trailers when vehicle edit dialog opens
   useEffect(() => {
@@ -170,10 +216,10 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
       }
     };
     
-    if (showVehicleDialog) {
+    if (showVehicleDialog || showAddVehicleDialog) {
       loadTrailers();
     }
-  }, [showVehicleDialog, vehicles]);
+  }, [showVehicleDialog, showAddVehicleDialog, vehicles]);
   
   // Form state for vehicle editing
   const [editForm, setEditForm] = useState({
@@ -181,7 +227,7 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
     model: '',
     registration: '',
     year: new Date().getFullYear(),
-    type: 'HGV' as 'HGV' | 'Articulated' | 'PCV' | 'PSV' | 'Van' | 'Car',
+    type: 'HGV' as 'HGV' | 'Articulated' | 'Van' | 'Rigid',
     status: 'Available' as any,
     capacity: 0, // in tons
     location: '',
@@ -337,6 +383,9 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
       // Update Redux store
       dispatch(updateVehicle(updatedVehicle));
       
+      // Update local vehicles state
+      setVehicles(prev => prev.map(v => v.id === selectedVehicle.id ? updatedVehicle : v));
+      
       setShowVehicleDialog(false);
     } catch (error) {
       console.error('Failed to update vehicle:', error);
@@ -350,8 +399,419 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
     }
   };
 
-  const handleAddVehicle = () => {
-    setShowAddVehicleDialog(false);
+  // Helper function to deeply sanitize an object, removing any React components
+  const sanitizeObject = (obj: any): any => {
+    if (obj === null || obj === undefined) {
+      return obj;
+    }
+    
+    // Check if it's a React component
+    if (typeof obj === 'object' && '$$typeof' in obj) {
+      console.warn('Found React component in data, removing it');
+      return null;
+    }
+    
+    // If it's an array, sanitize each element
+    if (Array.isArray(obj)) {
+      return obj.map(item => sanitizeObject(item));
+    }
+    
+    // If it's a plain object, sanitize each property
+    if (typeof obj === 'object' && obj.constructor === Object) {
+      const sanitized: any = {};
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          const value = obj[key];
+          // Skip React components
+          if (typeof value === 'object' && value !== null && '$$typeof' in value) {
+            console.warn(`Skipping React component in key "${key}"`);
+            continue;
+          }
+          sanitized[key] = sanitizeObject(value);
+        }
+      }
+      return sanitized;
+    }
+    
+    // For primitives, return as-is
+    return obj;
+  };
+
+  const handleAddVehicle = async () => {
+    try {
+      // Validate that all form values are primitives (no React components)
+      const formValues = Object.entries(editForm);
+      for (const [key, value] of formValues) {
+        if (value !== null && value !== undefined && typeof value === 'object' && '$$typeof' in value) {
+          console.error(`Form field "${key}" contains a React component:`, value);
+          alert(`Invalid value in field "${key}". Please check the form and try again.`);
+          return;
+        }
+      }
+      
+      // Create cubage metadata if dimensions are provided (convert meters to cm for storage)
+      let combinedNotes = editForm.notes;
+      if (editForm.lengthM > 0 || editForm.widthM > 0 || editForm.heightM > 0) {
+        const cubageMetadata = {
+          length: editForm.lengthM * 100, // Convert meters to cm
+          width: editForm.widthM * 100,
+          height: editForm.heightM * 100,
+        };
+        const metadataJson = JSON.stringify(cubageMetadata);
+        combinedNotes = editForm.notes
+          ? `${editForm.notes} | CUBAGE_METADATA:${metadataJson}`
+          : `CUBAGE_METADATA:${metadataJson}`;
+      }
+      
+      // Get current driver name if driver is selected
+      let currentDriverName = '';
+      if (editForm.currentDriverId) {
+        const selectedDriver = drivers.find(d => d.id === editForm.currentDriverId);
+        if (selectedDriver) {
+          currentDriverName = selectedDriver.name || `${selectedDriver.firstName || ''} ${selectedDriver.lastName || ''}`.trim();
+        }
+      }
+      
+      // Create vehicle payload - ensure all values are primitives (no React components)
+      // Explicitly convert each value to ensure no React components slip through
+      const newVehicleRaw: any = {};
+      
+      // Convert each field explicitly, checking for React components
+      const safeString = (val: any): string => {
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'object' && '$$typeof' in val) {
+          console.error('React component found in string conversion:', val);
+          return '';
+        }
+        return String(val).trim();
+      };
+      
+      const safeNumber = (val: any, defaultValue: number = 0): number => {
+        if (val === null || val === undefined) return defaultValue;
+        if (typeof val === 'object' && '$$typeof' in val) {
+          console.error('React component found in number conversion:', val);
+          return defaultValue;
+        }
+        const num = Number(val);
+        return isNaN(num) ? defaultValue : num;
+      };
+      
+      newVehicleRaw.registration = safeString(editForm.registration);
+      newVehicleRaw.make = safeString(editForm.make);
+      newVehicleRaw.model = safeString(editForm.model);
+      newVehicleRaw.year = safeNumber(editForm.year, new Date().getFullYear());
+      newVehicleRaw.type = safeString(editForm.type || 'HGV').toLowerCase();
+      newVehicleRaw.capacity = safeNumber(editForm.capacity, 0);
+      newVehicleRaw.status = safeString(editForm.status || 'Available').toLowerCase().replace(/\s+/g, '_');
+      newVehicleRaw.notes = safeString(combinedNotes);
+      newVehicleRaw.location = safeString(editForm.location);
+      
+      // Add permanent_trailer_id if set (must be a valid UUID string)
+      if (editForm.permanentTrailerId) {
+        const trailerId = safeString(editForm.permanentTrailerId);
+        if (trailerId) {
+          newVehicleRaw.permanent_trailer_id = trailerId;
+        }
+      }
+      
+      // Note: currentDriver is not a database field, so we don't include it in the payload
+      
+      // Deep sanitize the payload to remove any React components
+      const newVehicle = sanitizeObject(newVehicleRaw);
+      
+      // Verify payload can be stringified (catches React components)
+      try {
+        JSON.stringify(newVehicle);
+      } catch (e) {
+        console.error('Payload contains non-serializable data:', e);
+        alert('Invalid form data. Please check all fields and try again.');
+        return;
+      }
+      
+      // Final validation - ensure payload is completely clean by stringifying and parsing
+      // This will remove any non-serializable data including React components
+      let finalPayload: any;
+      try {
+        const stringified = JSON.stringify(newVehicle);
+        // Check if stringified result contains React component markers
+        if (stringified.includes('$$typeof') || stringified.includes('react.memo')) {
+          console.error('Payload contains React component markers after stringification');
+          alert('Invalid form data detected. Please refresh the page and try again.');
+          return;
+        }
+        finalPayload = JSON.parse(stringified);
+      } catch (e) {
+        console.error('Failed to serialize payload:', e);
+        alert('Invalid form data. Please check all fields and try again.');
+        return;
+      }
+      
+      // Create in database
+      console.log('Creating vehicle with payload:', JSON.stringify(finalPayload, null, 2));
+      
+      let response;
+      try {
+        response = await VehicleService.createVehicle(finalPayload);
+      } catch (apiError: any) {
+        // Catch any errors that might contain React components
+        console.error('API call error type:', typeof apiError);
+        console.error('API call error:', apiError);
+        
+        // Completely isolate error handling from React components
+        let errorMsg = 'Failed to create vehicle';
+        
+        // Check if error itself is a React component
+        if (apiError && typeof apiError === 'object' && '$$typeof' in apiError) {
+          errorMsg = 'Failed to create vehicle. Please check the form fields and try again.';
+          console.error('API error is a React component');
+        }
+        // Handle string errors
+        else if (typeof apiError === 'string') {
+          errorMsg = apiError;
+        }
+        // Handle object errors
+        else if (apiError && typeof apiError === 'object') {
+          // Check message property
+          if (apiError.message) {
+            if (typeof apiError.message === 'string') {
+              errorMsg = apiError.message;
+            } else if (typeof apiError.message === 'object' && '$$typeof' in apiError.message) {
+              errorMsg = 'Failed to create vehicle. Please check the form fields and try again.';
+              console.error('Error message is a React component');
+            } else {
+              try {
+                const msgStr = JSON.stringify(apiError.message);
+                if (msgStr && !msgStr.includes('$$typeof')) {
+                  errorMsg = msgStr;
+                }
+              } catch {
+                // Ignore
+              }
+            }
+          }
+          // Try to stringify the error object (only if not a React component)
+          else if (!('$$typeof' in apiError)) {
+            try {
+              const stringified = JSON.stringify(apiError);
+              if (stringified && !stringified.includes('$$typeof') && !stringified.includes('react.memo')) {
+                errorMsg = stringified;
+              }
+            } catch {
+              // Ignore
+            }
+          }
+        }
+        
+        // Final safety check
+        if (errorMsg.includes('$$typeof') || errorMsg.includes('react.memo')) {
+          errorMsg = 'Failed to create vehicle. Please check the form fields and try again.';
+        }
+        
+        alert(`Failed to add vehicle: ${errorMsg}`);
+        return;
+      }
+      
+      // Validate response object doesn't contain React components
+      if (response && typeof response === 'object' && '$$typeof' in response) {
+        console.error('Response object is a React component!');
+        alert('Failed to add vehicle. Invalid response format. Please try again.');
+        return;
+      }
+      
+      console.log('Vehicle creation response:', { 
+        success: response?.success, 
+        hasData: !!response?.data, 
+        errorType: typeof response?.error,
+        errorIsString: typeof response?.error === 'string'
+      });
+      
+      if (response?.success && response?.data) {
+        // Safely extract data, ensuring no React components are included
+        const dbVehicle = response.data;
+        
+        // Add to Redux store
+        const vehicleWithId = {
+          id: dbVehicle.id || '',
+          fleetNumber: dbVehicle.fleet_number || `FLEET-${(dbVehicle.id || '').substring(0, 8).toUpperCase()}`,
+          registration: editForm.registration || '',
+          make: editForm.make || '',
+          model: editForm.model || '',
+          year: editForm.year || new Date().getFullYear(),
+          type: editForm.type || 'HGV',
+          status: editForm.status || 'Available',
+          capacity: editForm.capacity || 0,
+          location: editForm.location || '',
+          notes: combinedNotes || '',
+          currentDriver: currentDriverName || '',
+          permanent_trailer_id: editForm.permanentTrailerId || null,
+          lastInspection: editForm.lastInspection || '',
+          nextMOT: editForm.nextMOT || '',
+          nextService: editForm.nextService || '',
+          isActive: true,
+          createdAt: dbVehicle.created_at || new Date().toISOString(),
+          updatedAt: dbVehicle.updated_at || new Date().toISOString(),
+        };
+        
+        dispatch(addVehicle(vehicleWithId));
+        
+        // Update local vehicles state to show new vehicle immediately
+        setVehicles(prev => [...prev, vehicleWithId]);
+        
+        // Reset form
+        setEditForm({
+          make: '',
+          model: '',
+          registration: '',
+          year: new Date().getFullYear(),
+          type: 'HGV',
+          status: 'Available',
+          capacity: 0,
+          location: '',
+          notes: '',
+          lengthM: 0,
+          widthM: 0,
+          heightM: 0,
+          lastInspection: '',
+          nextMOT: '',
+          nextService: '',
+          currentDriverId: '',
+          permanentTrailerId: '',
+        });
+        
+        setShowAddVehicleDialog(false);
+        
+        alert('Vehicle added successfully!');
+      } else {
+        // Safely extract error message - ensure it's always a string
+        let errorMessage = 'Failed to create vehicle';
+        if (response.error !== null && response.error !== undefined) {
+          // Check if it's already a string
+          if (typeof response.error === 'string') {
+            errorMessage = response.error;
+          } 
+          // Check if it has a message property that's a string (and not a React component)
+          else if (response.error && typeof response.error === 'object') {
+            // First check if the error itself is a React component
+            if ('$$typeof' in response.error) {
+              errorMessage = 'Failed to create vehicle. Invalid error format detected.';
+              console.error('Error object is a React component:', response.error);
+            }
+            // Check for message property
+            else if ('message' in response.error) {
+              const msg = (response.error as any).message;
+              // Check if message is a string and not a React component
+              if (typeof msg === 'string') {
+                errorMessage = msg;
+              } else if (msg && typeof msg === 'object' && '$$typeof' in msg) {
+                errorMessage = 'Failed to create vehicle. Error message contains invalid format.';
+                console.error('Error message is a React component:', msg);
+              } else {
+                errorMessage = 'Failed to create vehicle. Please check the console for details.';
+                console.error('Unexpected error message format:', msg);
+              }
+            } 
+            // Try to extract other error properties
+            else if ('error' in response.error) {
+              const err = (response.error as any).error;
+              if (typeof err === 'string') {
+                errorMessage = err;
+              } else if (err && typeof err === 'object' && !('$$typeof' in err)) {
+                try {
+                  errorMessage = JSON.stringify(err);
+                } catch {
+                  errorMessage = 'Failed to create vehicle. Please check the console.';
+                }
+              }
+            }
+            // Last resort: try to stringify, but only if it's not a React component
+            else {
+              try {
+                // Only stringify if it's a plain object, not a React component
+                if (!('$$typeof' in response.error)) {
+                  const stringified = JSON.stringify(response.error);
+                  if (stringified && stringified !== '{}' && !stringified.includes('$$typeof')) {
+                    errorMessage = stringified;
+                  } else {
+                    errorMessage = 'Failed to create vehicle. Please check the console for details.';
+                  }
+                } else {
+                  errorMessage = 'Failed to create vehicle. Invalid error format.';
+                  console.error('Error contains React component:', response.error);
+                }
+              } catch (e) {
+                errorMessage = 'Failed to create vehicle';
+                console.error('Could not stringify error:', e);
+              }
+            }
+          }
+        }
+        throw new Error(errorMessage);
+      }
+    } catch (error: any) {
+      console.error('Failed to add vehicle - error object:', error);
+      console.error('Error type:', typeof error);
+      
+      // Safely extract error message - ensure it's always a string and never contains React components
+      let errorMessage = 'Failed to add vehicle';
+      
+      if (error) {
+        // Check if error itself is a React component
+        if (typeof error === 'object' && '$$typeof' in error) {
+          errorMessage = 'Failed to add vehicle. Please check the form fields and try again.';
+          console.error('Error object is a React component');
+        }
+        // If it's already a string, use it
+        else if (typeof error === 'string') {
+          errorMessage = error;
+        } 
+        // If it has a message property
+        else if (error.message) {
+          // Check if message is a React component
+          if (typeof error.message === 'object' && '$$typeof' in error.message) {
+            errorMessage = 'Failed to add vehicle. Please check the form fields and try again.';
+            console.error('Error message contains React component');
+          }
+          // If message is a string, use it
+          else if (typeof error.message === 'string') {
+            errorMessage = error.message;
+          }
+          // If message is an object but not a React component, try to stringify
+          else if (typeof error.message === 'object' && !('$$typeof' in error.message)) {
+            try {
+              const stringified = JSON.stringify(error.message);
+              if (stringified && stringified !== '{}' && !stringified.includes('$$typeof')) {
+                errorMessage = stringified;
+              }
+            } catch (e) {
+              console.error('Could not stringify error message:', e);
+            }
+          }
+        }
+        // Try to stringify the error object itself (only if not a React component)
+        else if (typeof error === 'object' && !('$$typeof' in error)) {
+          try {
+            const stringified = JSON.stringify(error);
+            // Double check the stringified result doesn't contain React component markers
+            if (stringified && stringified !== '{}' && !stringified.includes('$$typeof') && !stringified.includes('react.memo')) {
+              errorMessage = stringified;
+            } else {
+              errorMessage = 'Failed to add vehicle. Please check the console for details.';
+              console.error('Stringified error contains React component markers');
+            }
+          } catch (e) {
+            console.error('Could not stringify error:', e);
+            errorMessage = 'Failed to add vehicle. Please check the console for details.';
+          }
+        }
+      }
+      
+      // Final safety check - ensure errorMessage is a valid string
+      if (typeof errorMessage !== 'string' || errorMessage.includes('$$typeof') || errorMessage.includes('react.memo')) {
+        errorMessage = 'Failed to add vehicle. Please check the form fields and try again.';
+      }
+      
+      alert(`Failed to add vehicle: ${errorMessage}`);
+    }
   };
 
   // Helper function to format date for HTML date input (YYYY-MM-DD)
@@ -912,10 +1372,8 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
                 >
                   <MenuItem value="HGV">HGV</MenuItem>
                   <MenuItem value="Articulated">Articulated</MenuItem>
-                  <MenuItem value="PCV">PCV</MenuItem>
-                  <MenuItem value="PSV">PSV</MenuItem>
                   <MenuItem value="Van">Van</MenuItem>
-                  <MenuItem value="Car">Car</MenuItem>
+                  <MenuItem value="Rigid">Rigid</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -1306,10 +1764,8 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
                   >
                     <MenuItem value="HGV">HGV</MenuItem>
                     <MenuItem value="Articulated">Articulated</MenuItem>
-                    <MenuItem value="PCV">PCV</MenuItem>
-                    <MenuItem value="PSV">PSV</MenuItem>
                     <MenuItem value="Van">Van</MenuItem>
-                    <MenuItem value="Car">Car</MenuItem>
+                    <MenuItem value="Rigid">Rigid</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
