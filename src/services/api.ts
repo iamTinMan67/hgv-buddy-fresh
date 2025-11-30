@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { Database } from '../lib/supabase';
+import { filterValidColumns, sanitizeForDatabase } from '../utils/databaseValidation';
 
 // Type aliases for easier use
 type Tables = Database['public']['Tables'];
@@ -26,13 +27,26 @@ export class ApiService {
     data: Tables[T]['Insert']
   ): Promise<ApiResponse<Tables[T]['Row']>> {
     try {
+      // Sanitize and filter data to prevent schema mismatches
+      const sanitized = sanitizeForDatabase(data as Record<string, any>);
+      const filtered = filterValidColumns(table as string, sanitized);
+      
       const { data: result, error } = await supabase
         .from(table)
-        .insert(data)
+        .insert(filtered as Tables[T]['Insert'])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Log the actual Supabase error before throwing
+        console.error('Supabase error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
 
       return {
         data: result,
@@ -40,32 +54,44 @@ export class ApiService {
         success: true
       };
     } catch (error: any) {
+      // First check if error is a React component - if so, return immediately
+      if (error && typeof error === 'object' && '$$typeof' in error) {
+        console.error('Caught React component as error in API service');
+        return {
+          data: null,
+          error: 'Failed to create record. Invalid error format.',
+          success: false
+        };
+      }
+      
       // Safely extract error message - ensure it's always a string
       let errorMessage = 'Failed to create record';
       
       if (error) {
         if (typeof error === 'string') {
-          errorMessage = error;
-        } else if (error.message && typeof error.message === 'string') {
-          errorMessage = error.message;
-        } else if (error.details && typeof error.details === 'string') {
-          errorMessage = error.details;
-        } else if (error.hint && typeof error.hint === 'string') {
-          errorMessage = error.hint;
-        } else {
-          // Only try to stringify if it's not a React component
-          try {
-            if (typeof error === 'object' && !('$$typeof' in error)) {
+          if (!error.includes('$$typeof') && !error.includes('react.memo')) {
+            errorMessage = error;
+          }
+        } else if (typeof error === 'object' && !('$$typeof' in error)) {
+          // Only access properties if we've confirmed it's not a React component
+          if (error.message && typeof error.message === 'string' && !error.message.includes('$$typeof')) {
+            errorMessage = error.message;
+          } else if (error.details && typeof error.details === 'string' && !error.details.includes('$$typeof')) {
+            errorMessage = error.details;
+          } else if (error.hint && typeof error.hint === 'string' && !error.hint.includes('$$typeof')) {
+            errorMessage = error.hint;
+          } else {
+            // Only try to stringify if it's not a React component
+            try {
               const stringified = JSON.stringify(error);
-              if (stringified && stringified !== '{}') {
+              if (stringified && stringified !== '{}' && !stringified.includes('$$typeof') && !stringified.includes('react.memo')) {
                 errorMessage = stringified;
+              } else {
+                errorMessage = 'Failed to create record. Invalid error format.';
               }
-            } else {
-              console.error('Error object contains React component or invalid format:', error);
-              errorMessage = 'Failed to create record. Invalid error format.';
+            } catch (e) {
+              errorMessage = 'Failed to create record';
             }
-          } catch (e) {
-            errorMessage = 'Failed to create record';
           }
         }
       }
@@ -144,9 +170,13 @@ export class ApiService {
     data: Tables[T]['Update']
   ): Promise<ApiResponse<Tables[T]['Row']>> {
     try {
+      // Sanitize and filter data to prevent schema mismatches
+      const sanitized = sanitizeForDatabase(data as Record<string, any>);
+      const filtered = filterValidColumns(table as string, sanitized);
+      
       const { data: result, error } = await supabase
         .from(table)
-        .update({ ...data, updated_at: new Date().toISOString() })
+        .update({ ...filtered, updated_at: new Date().toISOString() } as Tables[T]['Update'])
         .eq('id', id)
         .select()
         .single();

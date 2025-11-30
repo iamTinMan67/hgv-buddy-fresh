@@ -449,19 +449,11 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
         }
       }
       
-      // Create cubage metadata if dimensions are provided (convert meters to cm for storage)
-      let combinedNotes = editForm.notes;
-      if (editForm.lengthM > 0 || editForm.widthM > 0 || editForm.heightM > 0) {
-        const cubageMetadata = {
-          length: editForm.lengthM * 100, // Convert meters to cm
-          width: editForm.widthM * 100,
-          height: editForm.heightM * 100,
-        };
-        const metadataJson = JSON.stringify(cubageMetadata);
-        combinedNotes = editForm.notes
-          ? `${editForm.notes} | CUBAGE_METADATA:${metadataJson}`
-          : `CUBAGE_METADATA:${metadataJson}`;
-      }
+      // Notes field - store user notes only (capacity and dimensions are now in separate columns)
+      let combinedNotes = editForm.notes || '';
+      
+      // Note: Capacity and dimensions are now stored in separate database columns
+      // We only store user-entered notes in the notes field
       
       // Get current driver name if driver is selected
       let currentDriverName = '';
@@ -496,15 +488,65 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
         return isNaN(num) ? defaultValue : num;
       };
       
-      newVehicleRaw.registration = safeString(editForm.registration);
+      // Generate fleet number if not provided (optional in database, but useful for identification)
+      // Use registration as base, or generate a unique one
+      const registration = safeString(editForm.registration);
+      const fleetNumber = registration 
+        ? `FLEET-${registration.replace(/\s+/g, '').toUpperCase().substring(0, 8)}`
+        : `FLEET-${Date.now().toString().slice(-8)}`;
+      
+      // Fleet number is now optional, but we'll still generate one for consistency
+      newVehicleRaw.fleet_number = fleetNumber;
+      newVehicleRaw.registration = registration;
       newVehicleRaw.make = safeString(editForm.make);
       newVehicleRaw.model = safeString(editForm.model);
       newVehicleRaw.year = safeNumber(editForm.year, new Date().getFullYear());
-      newVehicleRaw.type = safeString(editForm.type || 'HGV').toLowerCase();
+      
+      // Map type to database values (database only accepts: HGV, Articulated, PCV, PSV, Van, Car)
+      // Map 'Rigid' to 'HGV' for now (or update database schema to include 'Rigid')
+      const typeMapping: Record<string, string> = {
+        'HGV': 'HGV',
+        'Articulated': 'Articulated',
+        'Van': 'Van',
+        'Rigid': 'HGV', // Map Rigid to HGV until database schema is updated
+        'PCV': 'PCV',
+        'PSV': 'PSV',
+        'Car': 'Car'
+      };
+      const formType = safeString(editForm.type || 'HGV');
+      newVehicleRaw.type = typeMapping[formType] || 'HGV';
+      
+      // Add capacity (now that column exists in database)
       newVehicleRaw.capacity = safeNumber(editForm.capacity, 0);
-      newVehicleRaw.status = safeString(editForm.status || 'Available').toLowerCase().replace(/\s+/g, '_');
-      newVehicleRaw.notes = safeString(combinedNotes);
-      newVehicleRaw.location = safeString(editForm.location);
+      
+      // Add dimension columns (in cm, matching cubage metadata format)
+      if (editForm.lengthM > 0) {
+        newVehicleRaw.length = editForm.lengthM * 100; // Convert meters to cm
+      }
+      if (editForm.widthM > 0) {
+        newVehicleRaw.width = editForm.widthM * 100; // Convert meters to cm
+      }
+      if (editForm.heightM > 0) {
+        newVehicleRaw.height = editForm.heightM * 100; // Convert meters to cm
+      }
+      
+      // Status is optional - only include if column exists in database
+      // After migration runs, this will always be included
+      const statusValue = safeString(editForm.status || 'Available').toLowerCase().replace(/\s+/g, '_');
+      if (statusValue) {
+        newVehicleRaw.status = statusValue;
+      }
+      
+      // Notes is optional, only include if there's content
+      if (combinedNotes) {
+        newVehicleRaw.notes = safeString(combinedNotes);
+      }
+      
+      // Location is optional
+      const locationValue = safeString(editForm.location);
+      if (locationValue) {
+        newVehicleRaw.location = locationValue;
+      }
       
       // Add permanent_trailer_id if set (must be a valid UUID string)
       if (editForm.permanentTrailerId) {
@@ -618,6 +660,13 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
         return;
       }
       
+      // Validate response object doesn't contain React components
+      if (response && typeof response === 'object' && '$$typeof' in response) {
+        console.error('Response object is a React component!');
+        alert('Failed to add vehicle. Invalid response format. Please try again.');
+        return;
+      }
+      
       console.log('Vehicle creation response:', { 
         success: response?.success, 
         hasData: !!response?.data, 
@@ -684,20 +733,31 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
       } else {
         // Safely extract error message - ensure it's always a string
         let errorMessage = 'Failed to create vehicle';
+        
+        // First, ensure response is safe to access
+        if (!response || typeof response !== 'object' || '$$typeof' in response) {
+          errorMessage = 'Failed to create vehicle. Invalid response format.';
+          alert(errorMessage);
+          return;
+        }
+        
         if (response.error !== null && response.error !== undefined) {
+          // Check if error itself is a React component BEFORE accessing any properties
+          if (typeof response.error === 'object' && '$$typeof' in response.error) {
+            errorMessage = 'Failed to create vehicle. Invalid error format detected.';
+            console.error('Error object is a React component');
+            alert(errorMessage);
+            return;
+          }
+          
           // Check if it's already a string
           if (typeof response.error === 'string') {
             errorMessage = response.error;
           } 
           // Check if it has a message property that's a string (and not a React component)
-          else if (response.error && typeof response.error === 'object') {
-            // First check if the error itself is a React component
-            if ('$$typeof' in response.error) {
-              errorMessage = 'Failed to create vehicle. Invalid error format detected.';
-              console.error('Error object is a React component:', response.error);
-            }
+          else if (response.error && typeof response.error === 'object' && !('$$typeof' in response.error)) {
             // Check for message property
-            else if ('message' in response.error) {
+            if ('message' in response.error) {
               const msg = (response.error as any).message;
               // Check if message is a string and not a React component
               if (typeof msg === 'string') {
@@ -745,46 +805,51 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
             }
           }
         }
-        throw new Error(errorMessage);
+        // Ensure errorMessage is a safe string before throwing
+        const safeErrorMsg = typeof errorMessage === 'string' && !errorMessage.includes('$$typeof') && !errorMessage.includes('react.memo')
+          ? errorMessage
+          : 'Failed to create vehicle. Please check the form fields and try again.';
+        throw new Error(safeErrorMsg);
       }
     } catch (error: any) {
-      console.error('Failed to add vehicle - error object:', error);
-      console.error('Error type:', typeof error);
+      // First, check if error is a React component - if so, handle it immediately without accessing properties
+      if (error && typeof error === 'object' && '$$typeof' in error) {
+        console.error('Caught React component as error - this should not happen');
+        alert('Failed to add vehicle. Please check the form fields and try again.');
+        return;
+      }
+      
+      // Now safe to log error details (but be careful)
+      try {
+        console.error('Failed to add vehicle - error type:', typeof error);
+        if (error && typeof error === 'object' && !('$$typeof' in error)) {
+          console.error('Failed to add vehicle - error object:', error);
+        }
+      } catch (logError) {
+        console.error('Could not log error details');
+      }
       
       // Safely extract error message - ensure it's always a string and never contains React components
       let errorMessage = 'Failed to add vehicle';
       
       if (error) {
-        // Check if error itself is a React component
-        if (typeof error === 'object' && '$$typeof' in error) {
-          errorMessage = 'Failed to add vehicle. Please check the form fields and try again.';
-          console.error('Error object is a React component');
-        }
-        // If it's already a string, use it
-        else if (typeof error === 'string') {
-          errorMessage = error;
+        // If it's already a string, use it (but check for React component markers)
+        if (typeof error === 'string') {
+          if (!error.includes('$$typeof') && !error.includes('react.memo')) {
+            errorMessage = error;
+          }
         } 
-        // If it has a message property
-        else if (error.message) {
+        // If it has a message property (only access if we've confirmed it's not a React component)
+        else if (typeof error === 'object' && !('$$typeof' in error) && 'message' in error) {
+          const msg = error.message;
           // Check if message is a React component
-          if (typeof error.message === 'object' && '$$typeof' in error.message) {
+          if (msg && typeof msg === 'object' && '$$typeof' in msg) {
             errorMessage = 'Failed to add vehicle. Please check the form fields and try again.';
-            console.error('Error message contains React component');
+            console.error('Error message is a React component');
           }
           // If message is a string, use it
-          else if (typeof error.message === 'string') {
-            errorMessage = error.message;
-          }
-          // If message is an object but not a React component, try to stringify
-          else if (typeof error.message === 'object' && !('$$typeof' in error.message)) {
-            try {
-              const stringified = JSON.stringify(error.message);
-              if (stringified && stringified !== '{}' && !stringified.includes('$$typeof')) {
-                errorMessage = stringified;
-              }
-            } catch (e) {
-              console.error('Could not stringify error message:', e);
-            }
+          else if (typeof msg === 'string' && !msg.includes('$$typeof') && !msg.includes('react.memo')) {
+            errorMessage = msg;
           }
         }
         // Try to stringify the error object itself (only if not a React component)
@@ -810,7 +875,10 @@ const FleetManagement: React.FC<FleetManagementProps> = ({ onClose }) => {
         errorMessage = 'Failed to add vehicle. Please check the form fields and try again.';
       }
       
-      alert(`Failed to add vehicle: ${errorMessage}`);
+      // Ensure errorMessage is a primitive string before using it
+      const safeErrorMessage = String(errorMessage).replace(/[$$typeof|react\.memo]/g, '');
+      
+      alert(`Failed to add vehicle: ${safeErrorMessage}`);
     }
   };
 

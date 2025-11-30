@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  // Configure source maps for development
+  css: {
+    devSourcemap: true
+  },
   build: {
     rollupOptions: {
       input: {
@@ -79,7 +83,7 @@ export default defineConfig({
       }
     },
     chunkSizeWarningLimit: 1000,
-    sourcemap: false,
+    sourcemap: false, // Disable source maps in production builds
     minify: 'terser',
     terserOptions: {
       compress: {
