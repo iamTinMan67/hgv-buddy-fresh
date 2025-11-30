@@ -20,9 +20,11 @@ import {
   Report,
   Assignment,
   Home,
+  Article,
 } from '@mui/icons-material';
 
 import ComplianceTracking from './ComplianceTracking';
+import LegislationUpdates from './LegislationUpdates';
 import { generatePlaceholderCards, PlaceholderCard } from '../utils/placeholderCards';
 
 interface LegalHubProps {
@@ -30,10 +32,10 @@ interface LegalHubProps {
 }
 
 const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
-  const [currentView, setCurrentView] = useState<'main' | 'compliance'>('main');
+  const [currentView, setCurrentView] = useState<'main' | 'compliance' | 'legislation'>('main');
 
   // Define the cards configuration
-  const functionalCards = 1; // Compliance Tracking
+  const functionalCards = 2; // Compliance Tracking, Legislation Updates
   const comingSoonCards = 0; // Coming soon cards replaced with placeholders
   const columnsPerRow = 3;
   
@@ -47,21 +49,26 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
   console.log('LegalHub - Total cards:', functionalCards + comingSoonCards + placeholderCards.length);
 
   const handleNavigateToCompliance = () => setCurrentView('compliance');
+  const handleNavigateToLegislation = () => setCurrentView('legislation');
   const handleBackToMain = () => setCurrentView('main');
 
   if (currentView === 'compliance') {
     return <ComplianceTracking onClose={handleBackToMain} />;
   }
 
+  if (currentView === 'legislation') {
+    return <LegislationUpdates onClose={handleBackToMain} />;
+  }
+
   // Main Legal Hub
   return (
     <Box sx={{ py: 2, px: 3, bgcolor: 'black', minHeight: '100vh', color: 'white', width: '100%' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1" sx={{ color: 'white', mr: 2 }}>
+        <Typography variant="h4" gutterBottom sx={{ mr: 2 }}>
           <Gavel sx={{ mr: 1, verticalAlign: 'middle' }} />
           Legal Hub
         </Typography>
-        <IconButton onClick={onClose} sx={{ color: 'yellow' }}>
+        <IconButton onClick={onClose} sx={{ color: 'yellow', fontSize: '1.5rem' }}>
           <Home />
         </IconButton>
       </Box>
@@ -114,6 +121,60 @@ const LegalHub: React.FC<LegalHubProps> = ({ onClose }) => {
                 <Chip 
                   icon={<Assignment />} 
                   label="Qualifications" 
+                  size="small" 
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Legislation Updates Card */}
+        <Grid item xs={12} sm={6} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+            onClick={handleNavigateToLegislation}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
+                  <Article />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" component="div">
+                    Legislation Updates
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Latest regulatory changes and updates
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ mt: 2, minHeight: '60px' }}>
+                <Chip 
+                  icon={<Article />} 
+                  label="DVSA Updates" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Article />} 
+                  label="DfT Regulations" 
+                  size="small" 
+                  sx={{ mr: 1, mb: 1 }}
+                />
+                <Chip 
+                  icon={<Article />} 
+                  label="Traffic Commissioners" 
                   size="small" 
                   sx={{ mb: 1 }}
                 />

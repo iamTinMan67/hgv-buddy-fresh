@@ -95,9 +95,12 @@ interface ComplianceItem {
 const ComplianceTracking: React.FC<ComplianceTrackingProps> = ({ onClose }) => {
   const [tabValue, setTabValue] = useState(0);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingItem, setEditingItem] = useState<ComplianceItem | null>(null);
+  const [formData, setFormData] = useState<Partial<ComplianceItem>>({});
 
   // Mock compliance data
-  const [complianceItems] = useState<ComplianceItem[]>([
+  const [complianceItems, setComplianceItems] = useState<ComplianceItem[]>([
     {
       id: '1',
       type: 'driver',
@@ -264,25 +267,29 @@ const ComplianceTracking: React.FC<ComplianceTrackingProps> = ({ onClose }) => {
 
   return (
     <Box sx={{ py: 2, px: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Compliance Tracking
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ mr: 2 }}>
+          Company Compliance
         </Typography>
-        <Box>
+        <IconButton
+          onClick={onClose}
+          sx={{ 
+            color: 'yellow', 
+            fontSize: '1.5rem',
+            height: '2.5rem', // Match h4 typography height
+            width: '2.5rem'
+          }}
+        >
+          <Home />
+        </IconButton>
+        <Box sx={{ ml: 'auto' }}>
           <Button
             startIcon={<Add />}
             variant="contained"
             onClick={() => setShowAddDialog(true)}
-            sx={{ mr: 2 }}
           >
             Add Compliance Item
           </Button>
-          <IconButton
-            onClick={onClose}
-            sx={{ color: 'yellow', fontSize: '1.5rem' }}
-          >
-            <Home />
-          </IconButton>
         </Box>
       </Box>
 
@@ -470,7 +477,26 @@ const ComplianceTracking: React.FC<ComplianceTrackingProps> = ({ onClose }) => {
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Edit">
-                      <IconButton size="small" color="primary">
+                      <IconButton 
+                        size="small" 
+                        color="primary"
+                        onClick={() => {
+                          setEditingItem(item);
+                          setFormData({
+                            type: item.type,
+                            category: item.category,
+                            title: item.title,
+                            description: item.description,
+                            status: item.status,
+                            priority: item.priority,
+                            dueDate: item.dueDate,
+                            expiryDate: item.expiryDate,
+                            responsible: item.responsible,
+                            notes: item.notes,
+                          });
+                          setShowEditDialog(true);
+                        }}
+                      >
                         <Edit />
                       </IconButton>
                     </Tooltip>
@@ -636,7 +662,26 @@ const ComplianceTracking: React.FC<ComplianceTrackingProps> = ({ onClose }) => {
                             </TableCell>
                             <TableCell>{item.responsible}</TableCell>
                             <TableCell>
-                              <IconButton size="small" color="primary">
+                              <IconButton 
+                                size="small" 
+                                color="primary"
+                                onClick={() => {
+                                  setEditingItem(item);
+                                  setFormData({
+                                    type: item.type,
+                                    category: item.category,
+                                    title: item.title,
+                                    description: item.description,
+                                    status: item.status,
+                                    priority: item.priority,
+                                    dueDate: item.dueDate,
+                                    expiryDate: item.expiryDate,
+                                    responsible: item.responsible,
+                                    notes: item.notes,
+                                  });
+                                  setShowEditDialog(true);
+                                }}
+                              >
                                 <Edit />
                               </IconButton>
                             </TableCell>
@@ -765,6 +810,169 @@ const ComplianceTracking: React.FC<ComplianceTrackingProps> = ({ onClose }) => {
           </Button>
           <Button variant="contained">
             Add Item
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Compliance Item Dialog */}
+      <Dialog open={showEditDialog} onClose={() => {
+        setShowEditDialog(false);
+        setEditingItem(null);
+        setFormData({});
+      }} maxWidth="md" fullWidth>
+        <DialogTitle>Edit Compliance Item</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Type</InputLabel>
+                <Select 
+                  label="Type"
+                  value={formData.type || ''}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value as ComplianceItem['type'] })}
+                >
+                  <MenuItem value="driver">Driver</MenuItem>
+                  <MenuItem value="vehicle">Vehicle</MenuItem>
+                  <MenuItem value="document">Document</MenuItem>
+                  <MenuItem value="safety">Safety</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField 
+                fullWidth 
+                label="Category"
+                value={formData.category || ''}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField 
+                fullWidth 
+                label="Title"
+                value={formData.title || ''}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField 
+                fullWidth 
+                label="Description" 
+                multiline 
+                rows={2}
+                value={formData.description || ''}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select 
+                  label="Status"
+                  value={formData.status || ''}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as ComplianceItem['status'] })}
+                >
+                  <MenuItem value="compliant">Compliant</MenuItem>
+                  <MenuItem value="warning">Warning</MenuItem>
+                  <MenuItem value="non-compliant">Non-Compliant</MenuItem>
+                  <MenuItem value="expired">Expired</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Priority</InputLabel>
+                <Select 
+                  label="Priority"
+                  value={formData.priority || ''}
+                  onChange={(e) => setFormData({ ...formData, priority: e.target.value as ComplianceItem['priority'] })}
+                >
+                  <MenuItem value="low">Low</MenuItem>
+                  <MenuItem value="medium">Medium</MenuItem>
+                  <MenuItem value="high">High</MenuItem>
+                  <MenuItem value="critical">Critical</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField 
+                fullWidth 
+                label="Due Date" 
+                type="date" 
+                InputLabelProps={{ shrink: true }}
+                value={formData.dueDate || ''}
+                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField 
+                fullWidth 
+                label="Expiry Date" 
+                type="date" 
+                InputLabelProps={{ shrink: true }}
+                value={formData.expiryDate || ''}
+                onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField 
+                fullWidth 
+                label="Responsible Person"
+                value={formData.responsible || ''}
+                onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField 
+                fullWidth 
+                label="Last Checked" 
+                type="date" 
+                InputLabelProps={{ shrink: true }}
+                value={editingItem?.lastChecked || ''}
+                disabled
+                helperText="Last checked date (read-only)"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField 
+                fullWidth 
+                label="Notes" 
+                multiline 
+                rows={3}
+                value={formData.notes || ''}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setShowEditDialog(false);
+            setEditingItem(null);
+            setFormData({});
+          }}>
+            Cancel
+          </Button>
+          <Button 
+            variant="contained"
+            onClick={() => {
+              if (editingItem) {
+                setComplianceItems(complianceItems.map(item => 
+                  item.id === editingItem.id 
+                    ? { 
+                        ...item, 
+                        ...formData,
+                        lastChecked: item.lastChecked // Preserve lastChecked
+                      } 
+                    : item
+                ));
+                setShowEditDialog(false);
+                setEditingItem(null);
+                setFormData({});
+              }
+            }}
+          >
+            Save Changes
           </Button>
         </DialogActions>
       </Dialog>

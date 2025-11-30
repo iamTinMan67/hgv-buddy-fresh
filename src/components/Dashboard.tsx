@@ -27,6 +27,7 @@ import {
   History,
   Receipt,
   Analytics,
+  AdminPanelSettings,
 } from '@mui/icons-material';
 import { logout } from '../store/slices/authSlice';
 import { AppDispatch } from '../store';
@@ -50,8 +51,7 @@ const {
   AccountingHub,
   InvoiceUpload,
   ClientHub,
-  CompanyInfo,
-  PricingConfiguration,
+  AdminHub,
 } = DynamicComponents;
 
 interface User {
@@ -69,8 +69,12 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const dispatch = useDispatch<AppDispatch>();
   
-  // Define the cards configuration for main dashboard
-  const functionalCards = 8; // Fleet, Staff, Legal, Jobs & Planning, Print Screen, Financial, Clients, Company Info
+  // Calculate functional cards based on user role
+  // Base cards: Fleet, Staff, Legal, Jobs & Planning, Print Screen, Financial, Clients = 7
+  // Admin-only: Admin Hub = 1 (only for admin/supa_admin)
+  const baseCards = 7;
+  const adminHubCard = (user?.role === 'admin' || user?.role === 'supa_admin') ? 1 : 0;
+  const functionalCards = baseCards + adminHubCard;
   const comingSoonCards = 0; // Coming soon cards replaced with placeholders
   const columnsPerRow = 3;
   
@@ -99,8 +103,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [showAccountingHub, setShowAccountingHub] = useState(false);
   const [showInvoiceUpload, setShowInvoiceUpload] = useState(false);
   const [showClientHub, setShowClientHub] = useState(false);
-  const [showCompanyInfo, setShowCompanyInfo] = useState(false);
-  const [showPricingConfiguration, setShowPricingConfiguration] = useState(false);
+  const [showAdminHub, setShowAdminHub] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -309,26 +312,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     );
   }
 
-  // Show company info if requested
-  if (showCompanyInfo) {
-    return (
-      <Box sx={{ py: 2 }}>
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingSpinner />}>
-            <CompanyInfo onClose={() => setShowCompanyInfo(false)} />
-          </Suspense>
-        </ErrorBoundary>
-      </Box>
-    );
-  }
-
-  // Show pricing configuration if requested (Admin only)
-  if (showPricingConfiguration) {
+  // Show admin hub if requested (Admin only)
+  if (showAdminHub) {
     return (
       <Box sx={{ py: 2, bgcolor: 'black', minHeight: '100vh', color: 'white' }}>
         <ErrorBoundary>
           <Suspense fallback={<LoadingSpinner />}>
-            <PricingConfiguration onClose={() => setShowPricingConfiguration(false)} />
+            <AdminHub onClose={() => setShowAdminHub(false)} />
           </Suspense>
         </ErrorBoundary>
       </Box>
@@ -601,113 +591,134 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </Grid>
 
             {/* Additional Tools Row */}
-            <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)', width: 'calc(100% - 20px)' }}>
-                <CardContent sx={{ textAlign: 'center' }}>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ 
+                transform: 'scale(0.94)',
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
                   <Schedule sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
                   <Typography variant="h6">Jobs & Planning Manager</Typography>
+                </CardContent>
+                <Box sx={{ p: 2, textAlign: 'center' }}>
                   <Button 
                     variant="contained" 
-                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
+                    sx={{ width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowPlanningHub(true)}
                   >
                     Main Hub
                   </Button>
-                </CardContent>
+                </Box>
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)', width: '100%' }}>
-                <CardContent sx={{ textAlign: 'center' }}>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ 
+                transform: 'scale(0.94)',
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
                   <Assessment sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
                   <Typography variant="h6">Print Manager</Typography>
+                </CardContent>
+                <Box sx={{ p: 2, textAlign: 'center' }}>
                   <Button 
                     variant="contained" 
-                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
+                    sx={{ width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowReportsHub(true)}
                   >
                     PrintOut Hub
                   </Button>
-                </CardContent>
+                </Box>
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)', width: '100%' }}>
-                <CardContent sx={{ textAlign: 'center' }}>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ 
+                transform: 'scale(0.94)',
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
                   <AccountBalance sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
                   <Typography variant="h6">Financial</Typography>
+                </CardContent>
+                <Box sx={{ p: 2, textAlign: 'center' }}>
                   <Button 
                     variant="contained" 
-                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
+                    sx={{ width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowAccountingHub(true)}
                   >
                     Finance Hub
                   </Button>
-                </CardContent>
+                </Box>
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)', width: '100%' }}>
-                <CardContent sx={{ textAlign: 'center' }}>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ 
+                transform: 'scale(0.94)',
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
                   <Business sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
                   <Typography variant="h6">Clients Manager</Typography>
+                </CardContent>
+                <Box sx={{ p: 2, textAlign: 'center' }}>
                   <Button 
                     variant="contained" 
-                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
+                    sx={{ width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
                     onClick={() => setShowClientHub(true)}
                   >
                     Client Hub
                   </Button>
-                </CardContent>
+                </Box>
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Card sx={{ transform: 'scale(0.94)', width: '100%' }}>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Business sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-                  <Typography variant="h6">Company Info Manager</Typography>
-                  <Button 
-                    variant="contained" 
-                    sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'primary.main', '&:hover': { backgroundColor: 'primary.dark' } }}
-                    onClick={() => setShowCompanyInfo(true)}
-                  >
-                    Update
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Pricing Configuration - Admin Only */}
+            {/* Admin Hub - Admin Only */}
             {(user.role === 'admin' || user.role === 'supa_admin') && (
-              <Grid item xs={12} md={6} lg={4}>
-                <Card sx={{ transform: 'scale(0.94)', width: '100%', border: '2px solid', borderColor: 'warning.main' }}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Receipt sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
-                    <Typography variant="h6">Pricing Configuration</Typography>
-                    <Chip 
-                      label="Admin Only" 
-                      size="small" 
-                      sx={{ mt: 1, mb: 1, bgcolor: 'warning.main', color: 'black' }} 
-                    />
+              <Grid item xs={12} md={4}>
+                <Card sx={{ 
+                  transform: 'scale(0.94)', 
+                  width: '100%', 
+                  border: '2px solid', 
+                  borderColor: 'warning.main',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
+                    <AdminPanelSettings sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
+                    <Typography variant="h6">Admin Hub</Typography>
+                  </CardContent>
+                  <Box sx={{ p: 2, textAlign: 'center' }}>
                     <Button 
                       variant="contained" 
-                      sx={{ mt: 2, width: 'calc(100% - 160px)', backgroundColor: 'warning.main', color: 'black', '&:hover': { backgroundColor: 'warning.dark' } }}
-                      onClick={() => setShowPricingConfiguration(true)}
+                      sx={{ width: 'calc(100% - 160px)', backgroundColor: 'warning.main', color: 'black', '&:hover': { backgroundColor: 'warning.dark' } }}
+                      onClick={() => setShowAdminHub(true)}
                     >
-                      Configure Pricing
+                      Admin Hub
                     </Button>
-                  </CardContent>
+                  </Box>
                 </Card>
               </Grid>
             )}
 
             {/* Dynamic Placeholder Cards */}
             {placeholderCards.map((card) => (
-              <Grid item xs={12} md={6} lg={4} key={card.id}>
+              <Grid item xs={12} md={4} key={card.id}>
                 <Card sx={{ 
                   transform: 'scale(0.94)',
                   opacity: 0.7,
